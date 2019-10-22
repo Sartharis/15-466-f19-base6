@@ -178,6 +178,7 @@ GAME_NAMES =
 	MenuMode
 	main
 	data_path
+	collide
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff
