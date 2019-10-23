@@ -12,30 +12,46 @@
 #include <vector>
 #include <list>
 
-struct Plant
+/* Contains info on how a plant works and looks like*/
+struct PlantType
 {
-	virtual void update( float elapsed );
+	PlantType(const Mesh* mesh_in );
+	const Mesh* get_mesh() const;
+
+private:
+	const Mesh* mesh = nullptr;
 };
 
+/* Contains info on how a tile works and looks like*/
 struct GroundTileType
 {
 	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in );
 	const Mesh* get_mesh() const;
+	bool get_can_plant() const;
 
 private:
 	bool can_plant = true;
 	const Mesh* mesh = nullptr;
 };
 
+/* Actual instance of a tile with a plant */
 struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
+	bool try_add_plant(const PlantType* plant_type_in );
+	bool try_remove_plant();
 
+	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
-	Plant* active_plant = nullptr;
-	Scene::Drawable* drawable = nullptr;
+	const PlantType* plant_type = nullptr;
+	Scene::Drawable* tile_drawable = nullptr;
+	Scene::Drawable* plant_drawable = nullptr;
+
+	// Tile data
 	int grid_x = 0;
 	int grid_y = 0;
+
+	// Plant data
 };
 
 // The 'PlantMode':
