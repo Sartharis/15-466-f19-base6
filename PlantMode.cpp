@@ -23,16 +23,19 @@
 PlantType const* test_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
+GroundTileType const* obstacle_tile = nullptr;
 
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* plant_mesh = nullptr;
+Mesh const* obstacle_tile_mesh = nullptr;
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
 	sea_tile_mesh = &ret->lookup("SeaTile");
 	ground_tile_mesh = &ret->lookup("GroundTile");
 	plant_mesh = &ret->lookup( "Plant" );
+	obstacle_tile_mesh = &ret->lookup("WeedTile");
 	return ret;
 });
 
@@ -47,6 +50,11 @@ PlantType::PlantType( const Mesh* mesh_in ) : mesh(mesh_in)
 const Mesh* PlantType::get_mesh() const
 {
 	return mesh;
+}
+
+const float PlantType::get_growth_time() const
+{
+	return growth_time;
 }
 
 GroundTileType::GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in )
@@ -71,6 +79,23 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 	tile_drawable->pipeline.count = tile_type->get_mesh()->count;
 }
 
+void GroundTile::update( float elapsed )
+{
+	if( plant_type )
+	{
+		float target_time = plant_type->get_growth_time();
+		current_grow_time += elapsed;
+		if( current_grow_time > target_time ) current_grow_time = target_time;
+		update_plant_visuals( current_grow_time / target_time );
+	}
+}
+
+void GroundTile::update_plant_visuals( float percent_grown )
+{
+	//TEMP!!!!!!
+	plant_drawable->transform->position.z = glm::mix( start_height, end_height, percent_grown );
+}
+
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 {
 	// If we can plant on the tile and there is no plant already there, add a plant
@@ -79,6 +104,9 @@ bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 		plant_type = plant_type_in;
 		plant_drawable->pipeline.start = plant_type->get_mesh()->start;
 		plant_drawable->pipeline.count = plant_type->get_mesh()->count;
+
+		current_grow_time = 0.0f;
+		update_plant_visuals( 0.0f );
 		return true;
 	}
 	return false;
@@ -97,12 +125,18 @@ bool GroundTile::try_remove_plant()
 	return false;
 }
 
+bool GroundTile::is_tile_harvestable()
+{
+	return current_grow_time >= plant_type->get_growth_time();
+}
+
 
 PlantMode::PlantMode() 
 {
 	{
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
+		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
 		test_plant = new PlantType( plant_mesh );
 	}
 
@@ -163,7 +197,15 @@ PlantMode::PlantMode()
 	{
 		for( int32_t x = 7; x < 13; ++x )
 		{
-			for( int32_t y = 8; y < 12; ++y )
+			for( int32_t y = 8; y < 13; ++y )
+			{
+				grid[x][y].change_tile_type( obstacle_tile );
+			}
+		}
+
+		for( int32_t x = 8; x < 12; ++x )
+		{
+			for( int32_t y = 9; y < 12; ++y )
 			{
 				grid[x][y].change_tile_type( ground_tile );
 			}
@@ -191,9 +233,106 @@ PlantMode::PlantMode()
 PlantMode::~PlantMode() {
 }
 
+void PlantMode::on_click( int x, int y )
+{
+	//Get ray from camera to mouse in world space
+	GLint dim_viewport[4];
+	glGetIntegerv( GL_VIEWPORT, dim_viewport );
+	int width = dim_viewport[2];
+	int height = dim_viewport[3];
+
+	glm::vec3 ray_nds = glm::vec3( 2.0f * x / width - 1.0f, 1.0f - ( 2.0f * y ) / height, 1.0f );
+	glm::vec4 ray_clip = glm::vec4( ray_nds.x, ray_nds.y, -1.0f, 1.0f );
+	glm::vec4 ray_cam = glm::inverse( camera->make_projection() ) * ray_clip;
+	ray_cam = glm::vec4( ray_cam.x, ray_cam.y, -1.0f, 0.0f );
+	glm::vec4 ray_wort = glm::inverse( camera->transform->make_world_to_local() ) * ray_cam;
+	glm::vec3 ray_wor = glm::vec3( ray_wort.x, ray_wort.y, ray_wort.z );
+	ray_wor = glm::normalize( ray_wor );
+
+
+	float col_check_dist = 1000.0f;
+	glm::vec3 from_camera_start = camera->transform->position;
+	glm::vec3 from_camera_dir = ray_wor;//camera->transform->rotation * glm::vec3( 0.0f, 0.0f, -1.0f );
+
+	// Check collision against each tile
+	GroundTile* collided_tile = nullptr;
+	for( int32_t x = 0; x < plant_grid_x; ++x )
+	{
+		for( int32_t y = 0; y < plant_grid_y; ++y )
+		{
+			// For now do a small sphere sweep against each triangle (TODO: optimize to line vs box collision if this is really bad)
+			float sphere_radius = 0.0001f;
+			glm::vec3 sphere_sweep_from = from_camera_start;
+			glm::vec3 sphere_sweep_to = from_camera_start + col_check_dist * from_camera_dir;
+
+			glm::vec3 sphere_sweep_min = glm::min( sphere_sweep_from, sphere_sweep_to ) - glm::vec3( sphere_radius );
+			glm::vec3 sphere_sweep_max = glm::max( sphere_sweep_from, sphere_sweep_to ) + glm::vec3( sphere_radius );
+
+
+			float collision_t = 1.0f;
+			glm::vec3 collision_at = glm::vec3( 0.0f );
+			glm::vec3 collision_out = glm::vec3( 0.0f );
+
+			glm::mat4x3 collider_to_world = grid[x][y].tile_drawable->transform->make_local_to_world();
+			const Mesh& collider_mesh = *( grid[x][y].tile_type->get_mesh() );
+
+			assert( collider_mesh.type == GL_TRIANGLES ); //only have code for TRIANGLES not other primitive types
+			for( GLuint v = 0; v + 2 < collider_mesh.count; v += 3 )
+			{
+
+				//get vertex positions from associated positions buffer:
+				glm::vec3 a = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 0], 1.0f );
+				glm::vec3 b = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 1], 1.0f );
+				glm::vec3 c = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 2], 1.0f );
+				//check triangle:
+				bool did_collide = collide_swept_sphere_vs_triangle(
+					sphere_sweep_from, sphere_sweep_to, sphere_radius,
+					a, b, c,
+					&collision_t, &collision_at, &collision_out );
+
+				if( did_collide )
+				{
+					collided_tile = &grid[x][y];
+				}
+			}
+		}
+	}
+
+	if( collided_tile )
+	{
+		if( collided_tile->plant_type )
+		{
+			if( collided_tile->is_tile_harvestable() )
+			{
+				collided_tile->try_remove_plant();
+			}
+		}
+		else
+		{
+			if( collided_tile->tile_type == obstacle_tile )
+			{
+				collided_tile->change_tile_type(ground_tile);
+			}
+			else
+			{
+				collided_tile->try_add_plant( test_plant );
+			}
+		}
+	}
+}
+
 bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
 	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
+		return false;
+	}
+
+	if( evt.type == SDL_MOUSEBUTTONDOWN )
+	{
+		if( evt.button.button == SDL_BUTTON_LEFT )
+		{
+			on_click( evt.motion.x, evt.motion.y );
+		}
 		return false;
 	}
 
@@ -203,6 +342,17 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 void PlantMode::update(float elapsed) 
 {
 	//camera_azimuth += elapsed;
+
+	// update tiles
+	{
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid[x][y].update( elapsed );
+			}
+		}
+	}
 
 	// Update Camera Position
 	{
@@ -224,75 +374,7 @@ void PlantMode::update(float elapsed)
 	const Uint32 state = SDL_GetMouseState( &x, &y );
 	if( state & SDL_BUTTON( SDL_BUTTON_LEFT ) )
 	{
-		//Get ray from camera to mouse in world space
-			
-
-		GLint dim_viewport[4];
-		glGetIntegerv( GL_VIEWPORT, dim_viewport );
-		int width = dim_viewport[2];
-		int height = dim_viewport[3];
-
-		glm::vec3 ray_nds = glm::vec3( 2.0f * x / width - 1.0f, 1.0f - ( 2.0f * y ) / height, 1.0f );
-		glm::vec4 ray_clip = glm::vec4( ray_nds.x, ray_nds.y, -1.0f, 1.0f );
-		glm::vec4 ray_cam = glm::inverse( camera->make_projection() ) * ray_clip;
-		ray_cam = glm::vec4( ray_cam.x, ray_cam.y, -1.0f, 0.0f );
-		glm::vec4 ray_wort = glm::inverse( camera->transform->make_world_to_local() ) * ray_cam;
-		glm::vec3 ray_wor = glm::vec3(ray_wort.x, ray_wort.y, ray_wort.z);
-		ray_wor = glm::normalize( ray_wor );
 		
-
-		float col_check_dist = 1000.0f;
-		glm::vec3 from_camera_start = camera->transform->position;
-		glm::vec3 from_camera_dir = ray_wor;//camera->transform->rotation * glm::vec3( 0.0f, 0.0f, -1.0f );
-
-		// Check collision against each tile
-		GroundTile* collided_tile = nullptr;
-		for( int32_t x = 0; x < plant_grid_x; ++x )
-		{
-			for( int32_t y = 0; y < plant_grid_y; ++y )
-			{
-				// For now do a small sphere sweep against each triangle (TODO: optimize to line vs box collision if this is really bad)
-				float sphere_radius = 0.0001f; 
-				glm::vec3 sphere_sweep_from = from_camera_start;
-				glm::vec3 sphere_sweep_to = from_camera_start + col_check_dist * from_camera_dir;
-
-				glm::vec3 sphere_sweep_min = glm::min( sphere_sweep_from, sphere_sweep_to ) - glm::vec3( sphere_radius );
-				glm::vec3 sphere_sweep_max = glm::max( sphere_sweep_from, sphere_sweep_to ) + glm::vec3( sphere_radius );
-
-				
-				float collision_t = 1.0f;
-				glm::vec3 collision_at = glm::vec3( 0.0f );
-				glm::vec3 collision_out = glm::vec3( 0.0f );
-
-				glm::mat4x3 collider_to_world = grid[x][y].tile_drawable->transform->make_local_to_world();
-				const Mesh& collider_mesh = *(grid[x][y].tile_type->get_mesh());
-
-				assert( collider_mesh.type == GL_TRIANGLES ); //only have code for TRIANGLES not other primitive types
-				for( GLuint v = 0; v + 2 < collider_mesh.count; v += 3 ) 
-				{
-					
-					//get vertex positions from associated positions buffer:
-					glm::vec3 a = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 0], 1.0f );
-					glm::vec3 b = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 1], 1.0f );
-					glm::vec3 c = collider_to_world * glm::vec4( plant_meshes->positions[collider_mesh.start + v + 2], 1.0f );
-					//check triangle:
-					bool did_collide = collide_swept_sphere_vs_triangle(
-						sphere_sweep_from, sphere_sweep_to, sphere_radius,
-						a, b, c,
-						&collision_t, &collision_at, &collision_out );
-
-					if( did_collide ) 
-					{
-						collided_tile = &grid[x][y];
-					}
-				}
-			}
-		}
-
-		if( collided_tile )
-		{
-			collided_tile->try_add_plant( test_plant );
-		}
 	}
 }
 

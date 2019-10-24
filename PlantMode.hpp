@@ -17,9 +17,11 @@ struct PlantType
 {
 	PlantType(const Mesh* mesh_in );
 	const Mesh* get_mesh() const;
+	const float get_growth_time() const;
 
 private:
 	const Mesh* mesh = nullptr;
+	float growth_time = 5.0f;
 };
 
 /* Contains info on how a tile works and looks like*/
@@ -38,8 +40,11 @@ private:
 struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
+	void update( float elapsed );
+	void update_plant_visuals( float percent_grown );
 	bool try_add_plant(const PlantType* plant_type_in );
 	bool try_remove_plant();
+	bool is_tile_harvestable();
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -52,6 +57,11 @@ struct GroundTile
 	int grid_y = 0;
 
 	// Plant data
+	float current_grow_time = 0.0f;
+
+	//TEMP!!!!!
+	float start_height = -1.5f;
+	float end_height = 0.0f;
 };
 
 // The 'PlantMode':
@@ -59,7 +69,7 @@ struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
-
+	void on_click( int x, int y );
 	virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
