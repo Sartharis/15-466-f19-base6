@@ -35,10 +35,10 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	for (auto p : ret->meshes) {
 		std::cout << p.first << std::endl;
 	}
-	sea_tile_mesh = &ret->lookup("SeaTile");
-	ground_tile_mesh = &ret->lookup("GroundTile");
-	plant_mesh = &ret->lookup( "Plant" );
-	obstacle_tile_mesh = &ret->lookup("WeedTile");
+	sea_tile_mesh = &ret->lookup("unoccupied");
+	ground_tile_mesh = &ret->lookup("soil");
+	plant_mesh = &ret->lookup( "leaf2" );
+	obstacle_tile_mesh = &ret->lookup("path");
 	return ret;
 });
 
@@ -283,7 +283,7 @@ PlantMode::PlantMode()
 		glBindVertexArray(0);
 		GL_ERRORS();
 
-		// ------ ping pong framebuffers for gaussian blur
+		// ------ ping pong framebuffers for gaussian blur (use this for aura effect later)
 		glGenFramebuffers(2, pingpong_fbo);
 		glGenTextures(2, pingpongBuffers);
 		for (unsigned int i = 0; i < 2; i++) {

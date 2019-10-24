@@ -1,3 +1,5 @@
+*.DS_Store
+*.ccls-cache/
 objs/
 dist/README-SDL.txt
 dist/README-glm.txt

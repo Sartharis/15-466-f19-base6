@@ -79,7 +79,7 @@ struct PlantMode : public Mode {
 	Scene::Camera *camera = nullptr;
 
 	GroundTile** grid = nullptr;
-	glm::vec2 plant_grid_tile_size = glm::vec2( 2.0f, 2.0f );
+	glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
 	int plant_grid_x = 20;
 	int plant_grid_y = 20;
 
