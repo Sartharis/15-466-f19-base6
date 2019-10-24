@@ -86,4 +86,31 @@ struct PlantMode : public Mode {
 	float camera_radius = 15.0f;
 	float camera_azimuth = glm::radians(90.0f);
 	float camera_elevation = glm::radians(45.0f);
+
+	//-------- opengl stuff 
+
+	// TODO: if want to allow resize, have to find a better way to pass this
+	glm::vec2 screen_size = glm::vec2(960, 600); 
+
+	GLuint firstpass_fbo = 0;
+	GLuint colorBuffers[2];
+	GLuint depthBuffer = 0;
+	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+
+	GLuint pingpong_fbo[2];
+	GLuint pingpongBuffers[2];
+
+	std::vector<float> trivial_vector = {
+		-1, -1, 0,
+		-1, 1, 0,
+		1, 1, 0,
+		-1, -1, 0,
+		1, 1, 0,
+		1, -1, 0
+	};
+
+	GLuint trivial_vao = 0;
+	GLuint trivial_vbo = 0;
+
+	//--------
 };

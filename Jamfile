@@ -172,13 +172,13 @@ GAME_NAMES =
 	load_opus
 	DrawSprites
 	ColorTextureProgram
-	LitColorTextureProgram
-	BoneLitColorTextureProgram
 	Sprite
 	MenuMode
 	main
 	data_path
 	collide
+  FirstpassProgram
+  PostprocessingProgram
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff

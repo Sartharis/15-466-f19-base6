@@ -1,7 +1,7 @@
 #include "PlantMode.hpp"
 
-#include "LitColorTextureProgram.hpp"
-#include "BoneLitColorTextureProgram.hpp"
+#include "FirstpassProgram.hpp"
+#include "PostprocessingProgram.hpp"
 #include "Load.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
@@ -32,6 +32,9 @@ Mesh const* obstacle_tile_mesh = nullptr;
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
+	for (auto p : ret->meshes) {
+		std::cout << p.first << std::endl;
+	}
 	sea_tile_mesh = &ret->lookup("SeaTile");
 	ground_tile_mesh = &ret->lookup("GroundTile");
 	plant_mesh = &ret->lookup( "Plant" );
@@ -39,8 +42,8 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	return ret;
 });
 
-Load< GLuint > plant_meshes_for_lit_color_texture_program(LoadTagDefault, [](){
-	return new GLuint(plant_meshes->make_vao_for_program(lit_color_texture_program->program));
+Load< GLuint > plant_meshes_for_firstpass_program(LoadTagDefault, [](){
+	return new GLuint(plant_meshes->make_vao_for_program(firstpass_program->program));
 });
 
 PlantType::PlantType( const Mesh* mesh_in ) : mesh(mesh_in)
@@ -152,8 +155,8 @@ PlantMode::PlantMode()
 	//Populate the tile grid (default is sea)
 	{
 		Scene::Drawable::Pipeline default_info;
-		default_info = lit_color_texture_program_pipeline;
-		default_info.vao = *plant_meshes_for_lit_color_texture_program;
+		default_info = firstpass_program_pipeline;
+		default_info.vao = *plant_meshes_for_firstpass_program;
 		default_info.start = 0;
 		default_info.count = 0;
 
@@ -228,6 +231,78 @@ PlantMode::PlantMode()
 		camera->fovy = glm::radians(45.0f);
 	}
 
+	{ // init the opengl stuff
+		// ------ generate framebuffer for firstpass
+		glGenFramebuffers(1, &firstpass_fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
+		// and its two color output layers
+		glGenTextures(2, colorBuffers);
+		for (GLuint i=0; i<2; i++) {
+			glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+			glTexImage2D(
+				// ended up disabling high resolution draw so the program runs at a reasonable framerate...
+				GL_TEXTURE_2D, 0, GL_RGBA, 
+				(GLint)(screen_size.x/postprocessing_program->pixel_size), 
+				(GLint)(screen_size.y/postprocessing_program->pixel_size), 
+				0, GL_RGBA, GL_FLOAT, NULL    
+			);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, colorBuffers[i], 0    
+			);
+		}
+		// setup associated depth buffer
+		glGenRenderbuffers(1, &depthBuffer);
+		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screen_size.x, screen_size.y);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+		glDrawBuffers(2, color_attachments);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+
+		// ------ set up 2nd pass pipeline
+		glGenVertexArrays(1, &trivial_vao);
+		glBindVertexArray(trivial_vao);
+
+		glGenBuffers(1, &trivial_vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, trivial_vbo);
+		glBufferData(
+			GL_ARRAY_BUFFER, 
+			trivial_vector.size() * sizeof(float),
+			trivial_vector.data(),
+			GL_STATIC_DRAW);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+		GL_ERRORS();
+
+		// ------ ping pong framebuffers for gaussian blur
+		glGenFramebuffers(2, pingpong_fbo);
+		glGenTextures(2, pingpongBuffers);
+		for (unsigned int i = 0; i < 2; i++) {
+			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbo[i]);
+			glBindTexture(GL_TEXTURE_2D, pingpongBuffers[i]);
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA, screen_size.x, screen_size.y, 0, GL_RGBA, GL_FLOAT, NULL
+			); // w&h of drawable size
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffers[i], 0
+			);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
 }
 
 PlantMode::~PlantMode() {
@@ -267,7 +342,8 @@ void PlantMode::on_click( int x, int y )
 
 			glm::vec3 sphere_sweep_min = glm::min( sphere_sweep_from, sphere_sweep_to ) - glm::vec3( sphere_radius );
 			glm::vec3 sphere_sweep_max = glm::max( sphere_sweep_from, sphere_sweep_to ) + glm::vec3( sphere_radius );
-
+			(void)sphere_sweep_min;
+			(void)sphere_sweep_max;
 
 			float collision_t = 1.0f;
 			glm::vec3 collision_at = glm::vec3( 0.0f );
@@ -382,19 +458,51 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	//Draw scene:
 	camera->aspect = drawable_size.x / float(drawable_size.y);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	//---- first pass ----
+	glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
+	glViewport(0, 0, 
+		screen_size.x / postprocessing_program->pixel_size, 
+		screen_size.y / postprocessing_program->pixel_size);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//set up basic OpenGL state:
+	//-- set up basic OpenGL state --
+	// depth test
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
+	glDepthFunc(GL_LEQUAL);
+	// blend
+	glDisable(GL_BLEND);
+	// draw the scene
 	scene.draw(*camera);
 
+	//---- postprocessing pass ----
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(postprocessing_program->program);
+	glBindVertexArray(trivial_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, trivial_vbo);
+	glActiveTexture(GL_TEXTURE0);
+	glViewport(0, 0, screen_size.x, screen_size.y);
+	// set uniform so the shader performs copy to screen directly
+	glUniform1i(postprocessing_program->TASK_int, 3);
+	// set uniform for texture offset
+	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
+		postprocessing_program->pixel_size / screen_size.x, 
+		postprocessing_program->pixel_size / screen_size.y);
+	// bind input
+	glUniform1i(postprocessing_program->TEX1_tex, 0);
+	glUniform1i(postprocessing_program->TEX2_tex, 1);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[1]);
+
+	// draw
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	// unbind things
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
 	GL_ERRORS();
 }
 
