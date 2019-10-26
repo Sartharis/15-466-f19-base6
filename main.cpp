@@ -2,7 +2,8 @@
 #include "Mode.hpp"
 
 //Starting mode:
-#include "demo_menu.hpp"
+//#include "demo_menu.hpp"
+#include "PlantMode.hpp"
 
 //Deal with calling resource loading functions:
 #include "Load.hpp"
@@ -99,7 +100,8 @@ int main(int argc, char **argv) {
 	call_load_functions();
 
 	//------------ create game mode + make current --------------
-	Mode::set_current(demo_menu);
+	//Mode::set_current(demo_menu);
+	Mode::set_current(std::make_shared< PlantMode >());
 
 	//------------ main loop ------------
 
@@ -133,7 +135,7 @@ int main(int argc, char **argv) {
 				//handle input:
 				if (Mode::current && Mode::current->handle_event(evt, window_size)) {
 					// mode handled it; great
-				} else if (evt.type == SDL_QUIT) {
+				} else if (evt.type == SDL_QUIT || (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE)) {
 					Mode::set_current(nullptr);
 					break;
 				} else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F4) {

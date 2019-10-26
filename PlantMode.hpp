@@ -5,6 +5,7 @@
 #include "BoneAnimation.hpp"
 #include "GL.hpp"
 #include "Scene.hpp"
+#include "Sprite.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
@@ -22,9 +23,9 @@ struct PlantType
 			   std::string name_in = "Default Name", 
 			   std::string description_in = "Default Description." )
 	 : mesh( mesh_in ), 
+		growth_time(growth_time_in), 
 		cost(cost_in), 
 		harvest_gain(harvest_gain_in),
-		growth_time(growth_time_in), 
 		name(name_in), 
 		description(description_in)  {};
 
@@ -44,6 +45,30 @@ private:
 	std::string description = "Default Description.";
 };
 
+struct Aura { // TODO: free resources on deallocation
+	struct Dot {
+		glm::vec3 position = glm::vec3(0, 0, 2);
+		float radius = 0.1f;
+		// TODO: color, etc.
+	};
+	struct Vertex {
+		Vertex(glm::vec3 _pos, glm::vec2 _tex) : position(_pos), tex_coord(_tex) {}
+		glm::vec3 position;
+		glm::vec2 tex_coord;
+		glm::u8vec4 color = glm::u8vec4(255, 100, 100, 255);
+	};
+	Aura(SpriteAtlas const & _atlas);
+	void update(float elapsed, glm::vec3 camera_position);
+	void draw();
+	// internals
+	std::vector<Dot> dots;
+	std::vector<Vertex> dots_vbo;
+	SpriteAtlas const &atlas;
+	// TODO: properties like, center(stored), camera pos(passed in)
+	// opengl-related stuff
+	GLuint vao, vbo;
+};
+
 /* Contains info on how a tile works and looks like*/
 struct GroundTileType
 {
@@ -60,7 +85,7 @@ private:
 struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
-	void update( float elapsed );
+	void update( float elapsed, glm::vec3 camera_position );
 	void update_plant_visuals( float percent_grown );
 	bool try_add_plant(const PlantType* plant_type_in );
 	bool try_remove_plant();
@@ -78,6 +103,9 @@ struct GroundTile
 
 	// Plant data
 	float current_grow_time = 0.0f;
+
+	// aura
+	Aura* aura = nullptr;
 
 	//TEMP!!!!!
 	float start_height = -0.4f;
@@ -109,7 +137,7 @@ struct PlantMode : public Mode {
 	int energy = 20;
 
 	float camera_radius = 7.5f;
-	float camera_azimuth = glm::radians(90.0f);
+	float camera_azimuth = glm::radians(45.0f);
 	float camera_elevation = glm::radians(45.0f);
 
 	//-------- opengl stuff 

@@ -2,6 +2,7 @@
 
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
+#include "ColorTextureProgram.hpp"
 #include "Load.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
@@ -21,7 +22,6 @@
 #include <random>
 #include <unordered_map>
 
-
 PlantType const* test_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
@@ -31,13 +31,27 @@ Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* plant_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
+Mesh const* billboard = nullptr;
+
+Sprite const *aura = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
 
+Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
+	auto ret = new SpriteAtlas( data_path( "solidarity" ) );
+	std::cout << "----2D sprites loaded:" << std::endl;
+	for (auto p : ret->sprites) {
+		std::cout << p.first << std::endl;
+	}
+	aura = &ret->lookup( "blurredDot" );
+	return ret;
+} );
+
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
+	std::cout << "----meshes loaded:" << std::endl;
 	for (auto p : ret->meshes) {
 		std::cout << p.first << std::endl;
 	}
@@ -45,6 +59,7 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	ground_tile_mesh = &ret->lookup("soil");
 	plant_mesh = &ret->lookup( "leaf2" );
 	obstacle_tile_mesh = &ret->lookup("path");
+	billboard = &ret->lookup("unit_sq");
 	return ret;
 });
 
@@ -59,7 +74,7 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 	tile_drawable->pipeline.count = tile_type->get_mesh()->count;
 }
 
-void GroundTile::update( float elapsed )
+void GroundTile::update( float elapsed, glm::vec3 camera_position )
 {
 	if( plant_type )
 	{
@@ -67,6 +82,10 @@ void GroundTile::update( float elapsed )
 		current_grow_time += elapsed;
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
+	}
+	if( aura )
+	{
+		aura->update(elapsed, camera_position);
 	}
 }
 
@@ -108,6 +127,91 @@ bool GroundTile::try_remove_plant()
 bool GroundTile::is_tile_harvestable()
 { 
 	return plant_type && current_grow_time >= plant_type->get_growth_time();
+}
+
+Aura::Aura(SpriteAtlas const &_atlas) : atlas(_atlas) {
+	dots = std::vector<Dot>(1);
+
+	{ // opengl related
+		glGenVertexArrays(1, &vao);
+		glGenBuffers(1, &vbo);
+		glBindVertexArray(vao);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+		glVertexAttribPointer(
+			color_texture_program->Position_vec4,
+			3, // size
+			GL_FLOAT, // type
+			GL_FALSE, // normalized
+			sizeof(Aura::Vertex), // stride size
+			(GLbyte*) 0 + offsetof(Aura::Vertex, position) // offset
+		);
+		glEnableVertexAttribArray(color_texture_program->Position_vec4);
+
+		glVertexAttribPointer(
+			color_texture_program->TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Aura::Vertex), // stride size
+			(GLbyte *) 0 + offsetof(Aura::Vertex, tex_coord) //offset
+		);
+		glEnableVertexAttribArray(color_texture_program->TexCoord_vec2);
+
+		glVertexAttribPointer(
+			color_texture_program->Color_vec4, //attribute
+			4, //size
+			GL_UNSIGNED_BYTE, //type
+			GL_TRUE, //normalized
+			sizeof(Aura::Vertex), //stride
+			(GLbyte *) 0 + offsetof(Aura::Vertex, color) //offset
+		);
+		glEnableVertexAttribArray(color_texture_program->Color_vec4);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+	}
+}
+
+void Aura::update(float elapsed, glm::vec3 camera_position) {
+	for(int i=0; i<dots.size(); i++) {
+		// TODO: update position... then:
+		glm::vec3 c = dots[i].position; // center of dot
+		float r = dots[i].radius;
+		glm::mat3 rotation = glm::mat3(glm::lookAt(
+			dots[i].position, camera_position, glm::vec3(0, 0, 1)
+		));
+		Vertex tl = Vertex(rotation * glm::vec3(-0.5, 0.5, 0) * r + c, aura->min_px);
+		Vertex tr = Vertex(rotation * glm::vec3(0.5, 0.5, 0) * r + c, glm::vec2(aura->max_px.x, aura->min_px.y));
+		Vertex bl = Vertex(rotation * glm::vec3(-0.5, -0.5, 0) * r + c, glm::vec2(aura->min_px.x, aura->max_px.y));
+		Vertex br = Vertex(rotation * glm::vec3(0.5, -0.5, 0) * r + c, aura->max_px);
+		// make the square and append it to vbo
+		std::vector<Vertex> billboard_this = { tl, bl, br, tl, br, tr };	
+		dots_vbo.insert(dots_vbo.end(), billboard_this.begin(), billboard_this.end());
+	}
+}
+
+void Aura::draw() {
+	// config opengl
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+
+	// draw the dots w ColorTextureProgram
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, dots_vbo.size() * sizeof(Vertex), dots_vbo.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glUseProgram(color_texture_program->program);
+	glBindVertexArray(vao);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, atlas.tex);
+
+	glDrawArrays(GL_TRIANGLES, 0, GLsizei(dots_vbo.size() * sizeof(Vertex)));
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindVertexArray(0);
+	glUseProgram(0);
 }
 
 
@@ -411,17 +515,6 @@ void PlantMode::update(float elapsed)
 {
 	//camera_azimuth += elapsed;
 
-	// update tiles
-	{
-		for( int32_t x = 0; x < plant_grid_x; ++x )
-		{
-			for( int32_t y = 0; y < plant_grid_y; ++y )
-			{
-				grid[x][y].update( elapsed );
-			}
-		}
-	}
-
 	// Update Camera Position
 	{
 		float ce = std::cos( camera_elevation );
@@ -437,9 +530,21 @@ void PlantMode::update(float elapsed)
 			) ) ) );
 	}
 
+	// update tiles
+	{
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid[x][y].update( elapsed, camera->transform->position );
+			}
+		}
+	}
+
 	// Query for hovered tile
 	int x, y;
 	const Uint32 state = SDL_GetMouseState( &x, &y );
+	(void)state;
 	if( true )
 	{
 		GroundTile* hovered_tile = get_tile_under_mouse( x, y );
