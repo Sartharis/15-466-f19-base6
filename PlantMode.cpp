@@ -9,6 +9,7 @@
 #include "data_path.hpp"
 #include "load_save_png.hpp"
 #include "collide.hpp"
+#include "DrawSprites.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -20,6 +21,7 @@
 #include <random>
 #include <unordered_map>
 
+
 PlantType const* test_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
@@ -29,6 +31,10 @@ Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* plant_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
+
+Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
+	return new SpriteAtlas( data_path( "trade-font" ) );
+} );
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
@@ -45,35 +51,6 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 Load< GLuint > plant_meshes_for_firstpass_program(LoadTagDefault, [](){
 	return new GLuint(plant_meshes->make_vao_for_program(firstpass_program->program));
 });
-
-PlantType::PlantType( const Mesh* mesh_in ) : mesh(mesh_in)
-{
-}
-
-const Mesh* PlantType::get_mesh() const
-{
-	return mesh;
-}
-
-const float PlantType::get_growth_time() const
-{
-	return growth_time;
-}
-
-GroundTileType::GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in )
-	: can_plant(can_plant_in), mesh(tile_mesh_in)
-{
-}
-
-const Mesh* GroundTileType::get_mesh() const
-{
-	return mesh;
-}
-
-bool GroundTileType::get_can_plant() const
-{
-	return can_plant;
-}
 
 void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 {
@@ -129,8 +106,8 @@ bool GroundTile::try_remove_plant()
 }
 
 bool GroundTile::is_tile_harvestable()
-{
-	return current_grow_time >= plant_type->get_growth_time();
+{ 
+	return plant_type && current_grow_time >= plant_type->get_growth_time();
 }
 
 
@@ -140,7 +117,8 @@ PlantMode::PlantMode()
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
-		test_plant = new PlantType( plant_mesh );
+		test_plant = new PlantType( plant_mesh, 5, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		selectedPlant = test_plant;
 	}
 
 	// Make the tile grid
@@ -200,7 +178,7 @@ PlantMode::PlantMode()
 	{
 		for( int32_t x = 7; x < 13; ++x )
 		{
-			for( int32_t y = 8; y < 13; ++y )
+			for( int32_t y = 7; y < 13; ++y )
 			{
 				grid[x][y].change_tile_type( obstacle_tile );
 			}
@@ -208,7 +186,7 @@ PlantMode::PlantMode()
 
 		for( int32_t x = 8; x < 12; ++x )
 		{
-			for( int32_t y = 9; y < 12; ++y )
+			for( int32_t y = 8; y < 12; ++y )
 			{
 				grid[x][y].change_tile_type( ground_tile );
 			}
@@ -257,7 +235,7 @@ PlantMode::PlantMode()
 		// setup associated depth buffer
 		glGenRenderbuffers(1, &depthBuffer);
 		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screen_size.x, screen_size.y);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
 
 		glDrawBuffers(2, color_attachments);
@@ -290,7 +268,7 @@ PlantMode::PlantMode()
 			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbo[i]);
 			glBindTexture(GL_TEXTURE_2D, pingpongBuffers[i]);
 			glTexImage2D(
-				GL_TEXTURE_2D, 0, GL_RGBA, screen_size.x, screen_size.y, 0, GL_RGBA, GL_FLOAT, NULL
+				GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)screen_size.x, (GLsizei)screen_size.y, 0, GL_RGBA, GL_FLOAT, NULL
 			); // w&h of drawable size
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -309,6 +287,40 @@ PlantMode::~PlantMode() {
 }
 
 void PlantMode::on_click( int x, int y )
+{
+	GroundTile* collided_tile = get_tile_under_mouse( x, y );
+
+	if( collided_tile )
+	{
+		if( collided_tile->plant_type )
+		{
+			if( collided_tile->is_tile_harvestable() )
+			{
+				int gain = collided_tile->plant_type->get_harvest_gain();
+				if( collided_tile->try_remove_plant() )
+				{
+					energy += gain;
+				}
+			}
+		}
+		else
+		{
+			if( collided_tile->tile_type == obstacle_tile )
+			{
+				collided_tile->change_tile_type(ground_tile);
+			}
+			else if(selectedPlant && energy >= selectedPlant->get_cost())
+			{
+				if( collided_tile->try_add_plant( selectedPlant ) )
+				{
+					energy -= selectedPlant->get_cost();
+				}
+			}
+		}
+	}
+}
+
+GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 {
 	//Get ray from camera to mouse in world space
 	GLint dim_viewport[4];
@@ -373,28 +385,8 @@ void PlantMode::on_click( int x, int y )
 			}
 		}
 	}
-
-	if( collided_tile )
-	{
-		if( collided_tile->plant_type )
-		{
-			if( collided_tile->is_tile_harvestable() )
-			{
-				collided_tile->try_remove_plant();
-			}
-		}
-		else
-		{
-			if( collided_tile->tile_type == obstacle_tile )
-			{
-				collided_tile->change_tile_type(ground_tile);
-			}
-			else
-			{
-				collided_tile->try_add_plant( test_plant );
-			}
-		}
-	}
+	
+	return collided_tile;
 }
 
 bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -445,12 +437,31 @@ void PlantMode::update(float elapsed)
 			) ) ) );
 	}
 
-	// Query for clicked tile
+	// Query for hovered tile
 	int x, y;
 	const Uint32 state = SDL_GetMouseState( &x, &y );
-	if( state & SDL_BUTTON( SDL_BUTTON_LEFT ) )
+	if( true )
 	{
-		
+		GroundTile* hovered_tile = get_tile_under_mouse( x, y );
+		if( hovered_tile && hovered_tile->plant_type)
+		{
+			if( hovered_tile->is_tile_harvestable() )
+			{
+				action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
+			}
+			else
+			{
+				action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
+			}
+		}
+		else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
+		{
+			action_description = "Plant -" + std::to_string(selectedPlant->get_cost());
+		}
+		else
+		{
+			action_description = "";
+		}
 	}
 }
 
@@ -461,8 +472,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	//---- first pass ----
 	glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
 	glViewport(0, 0, 
-		screen_size.x / postprocessing_program->pixel_size, 
-		screen_size.y / postprocessing_program->pixel_size);
+		(GLsizei)(screen_size.x / postprocessing_program->pixel_size),
+		(GLsizei)(screen_size.y / postprocessing_program->pixel_size));
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
@@ -482,7 +493,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glBindVertexArray(trivial_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, trivial_vbo);
 	glActiveTexture(GL_TEXTURE0);
-	glViewport(0, 0, screen_size.x, screen_size.y);
+	glViewport(0, 0, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
 	// set uniform so the shader performs copy to screen directly
 	glUniform1i(postprocessing_program->TASK_int, 3);
 	// set uniform for texture offset
@@ -504,6 +515,18 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glBindVertexArray(0);
 	glUseProgram(0);
 	GL_ERRORS();
+
+	// TEXT
+	glEnable( GL_BLEND );
+	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+	glDisable( GL_DEPTH_TEST );
+
+	{ //draw all the text
+		DrawSprites draw( *font_atlas, glm::vec2( -1.0f, -1.0f ), glm::vec2( 1.0f, 1.0f ), drawable_size, DrawSprites::AlignSloppy );
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :" + selectedPlant->get_description(), glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
+		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
+	}
 }
 
 

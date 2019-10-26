@@ -15,21 +15,41 @@
 /* Contains info on how a plant works and looks like*/
 struct PlantType
 {
-	PlantType(const Mesh* mesh_in );
-	const Mesh* get_mesh() const;
-	const float get_growth_time() const;
+	PlantType( const Mesh* mesh_in,
+			   int cost_in = 5,
+			   int harvest_gain_in = 7,
+			   float growth_time_in = 5.0f, 
+			   std::string name_in = "Default Name", 
+			   std::string description_in = "Default Description." )
+	 : mesh( mesh_in ), 
+		cost(cost_in), 
+		harvest_gain(harvest_gain_in),
+		growth_time(growth_time_in), 
+		name(name_in), 
+		description(description_in)  {};
+
+	const Mesh* get_mesh() const { return mesh; };
+	float get_growth_time() const { return growth_time; };
+	int get_cost() const { return cost; };
+	int get_harvest_gain() const { return harvest_gain; };
+	std::string get_name() const { return name; };
+	std::string get_description() const { return description; };
 
 private:
 	const Mesh* mesh = nullptr;
 	float growth_time = 5.0f;
+	int cost = 5;
+	int harvest_gain = 7;
+	std::string name = "Default Name";
+	std::string description = "Default Description.";
 };
 
 /* Contains info on how a tile works and looks like*/
 struct GroundTileType
 {
-	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in );
-	const Mesh* get_mesh() const;
-	bool get_can_plant() const;
+	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in ) : can_plant( can_plant_in ), mesh( tile_mesh_in ){};
+	const Mesh* get_mesh() const{ return mesh; };
+	bool get_can_plant() const { return can_plant; };
 
 private:
 	bool can_plant = true;
@@ -60,7 +80,7 @@ struct GroundTile
 	float current_grow_time = 0.0f;
 
 	//TEMP!!!!!
-	float start_height = -1.5f;
+	float start_height = -0.4f;
 	float end_height = 0.0f;
 };
 
@@ -70,11 +90,14 @@ struct PlantMode : public Mode {
 	virtual ~PlantMode();
 
 	void on_click( int x, int y );
+	GroundTile* get_tile_under_mouse( int x, int y);
 	virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	//scene:
+	std::string action_description = "";
+	const PlantType* selectedPlant = nullptr;
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 
@@ -83,7 +106,9 @@ struct PlantMode : public Mode {
 	int plant_grid_x = 20;
 	int plant_grid_y = 20;
 
-	float camera_radius = 15.0f;
+	int energy = 20;
+
+	float camera_radius = 7.5f;
 	float camera_azimuth = glm::radians(90.0f);
 	float camera_elevation = glm::radians(45.0f);
 
