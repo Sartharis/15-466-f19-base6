@@ -19,29 +19,37 @@
 struct PlantType
 {
 	PlantType( const Mesh* mesh_in,
-			   int cost_in = 5,
+				 Aura::Type aura_type_in,
+				 int cost_in = 5,
+				 bool is_harvestable_in = true,
 			   int harvest_gain_in = 7,
 			   float growth_time_in = 5.0f, 
 			   std::string name_in = "Default Name", 
 			   std::string description_in = "Default Description." )
-	 : mesh( mesh_in ), 
+	 :mesh(mesh_in), 
+	  aura_type(aura_type_in),
 		growth_time(growth_time_in), 
 		cost(cost_in), 
+		is_harvestable(is_harvestable_in),
 		harvest_gain(harvest_gain_in),
 		name(name_in), 
 		description(description_in) {};
 
 	const Mesh* get_mesh() const { return mesh; };
+	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
+	bool get_harvestable() const { return is_harvestable; }
 	int get_harvest_gain() const { return harvest_gain; };
 	std::string get_name() const { return name; };
 	std::string get_description() const { return description; };
 
 private:
 	const Mesh* mesh = nullptr;
+	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;
 	int cost = 5;
+	bool is_harvestable = true;
 	int harvest_gain = 7;
 	std::string name = "Default Name";
 	std::string description = "Default Description.";
@@ -67,6 +75,7 @@ struct GroundTile
 	void update_plant_visuals( float percent_grown );
 	bool try_add_plant(const PlantType* plant_type_in );
 	bool try_remove_plant();
+	bool try_remove_aura();
 	bool is_tile_harvestable();
 
 	// Tile and plant types
@@ -82,7 +91,7 @@ struct GroundTile
 	// Plant data
 	float current_grow_time = 0.0f;
 
-	// aura
+	// Aura data
 	Aura* aura = nullptr;
 
 	//TEMP!!!!!
@@ -116,7 +125,7 @@ struct PlantMode : public Mode {
 
 	float camera_radius = 7.5f;
 	float camera_azimuth = glm::radians(35.0f);
-	float camera_elevation = glm::radians(30.0f);
+	float camera_elevation = glm::radians(40.0f);
 
 	//-------- opengl stuff 
 

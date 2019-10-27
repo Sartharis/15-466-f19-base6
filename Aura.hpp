@@ -6,10 +6,10 @@
 #include <vector>
 #include <list>
 
-// manages aura dots for a tile location (or, manage aura for all tiles?)
+// manages aura dots for a tile location (TODO: manage aura for all tiles? Or make it AuraType instead?)
 struct Aura { 
 
-	enum Type { fire, aqua };
+	enum Type { fire, aqua, none };
 
 	struct Dot {
 		Dot(glm::vec3 _center);
@@ -32,11 +32,14 @@ struct Aura {
 				case aqua:
 					color = glm::u8vec4(50, 135, 255, 255);
 					break;
+				default:
+					assert("non-exhaustive match of aura type??");
+					break;
 			}
 		}
 		glm::vec3 position;
 		glm::vec2 tex_coord = glm::vec2(0, 0);
-		glm::u8vec4 color = glm::u8vec4(255, 255, 255, 255);
+		glm::u8vec4 color;
 	};
 
 	Aura(glm::vec3 _center, Type _type);
@@ -48,9 +51,11 @@ struct Aura {
 	int num_dots = 16; // maximum strength
 	int strength = 10;
 	glm::vec3 center;
+
 	// internals
 	std::vector<Dot> dots;
 	std::vector<Vertex> dots_vbo;
+
 	// opengl-related stuff
 	GLuint vao, vbo, white_tex;
 };

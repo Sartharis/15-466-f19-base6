@@ -6,6 +6,8 @@
 #include <iostream>
 
 Aura::Aura(glm::vec3 _center, Type _type) : type(_type), center(_center) {
+	assert(_type != none);
+
 	dots = std::vector<Dot>();
 	for (int i=0; i<num_dots; i++) {
 		dots.emplace_back(_center);
@@ -99,7 +101,7 @@ void Aura::update(float elapsed, Scene::Transform* cam) {
 		// then turn it to face the camera
 		glm::vec3 c = dots[i].position; // center of dot
 		float r = dots[i].dot_radius;
-		glm::quat rotation = cam->rotation;// glm::mat3(glm::lookAt( c, camera_position, glm::vec3(0, 1, 0) ));
+		glm::quat rotation = cam->rotation;
 		Vertex tl = Vertex(r * (rotation * glm::vec3(-0.5, 0.5, 0)) + c, type);
 		Vertex tr = Vertex(r * (rotation * glm::vec3(0.5, 0.5, 0)) + c, type);
 		Vertex bl = Vertex(r * (rotation * glm::vec3(-0.5, -0.5, 0)) + c, type);

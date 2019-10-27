@@ -22,6 +22,7 @@
 #include <unordered_map>
 
 PlantType const* test_plant = nullptr;
+PlantType const* fire_flower = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
@@ -29,23 +30,12 @@ GroundTileType const* obstacle_tile = nullptr;
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* plant_mesh = nullptr;
+Mesh const* fire_flower_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
-
-/*
-Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
-	auto ret = new SpriteAtlas( data_path( "solidarity" ) );
-	std::cout << "----2D sprites loaded:" << std::endl;
-	for (auto p : ret->sprites) {
-		std::cout << p.first << std::endl;
-	}
-	aura = &ret->lookup( "blurredDot" );
-	return ret;
-} );
-*/
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
@@ -55,7 +45,8 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	}
 	sea_tile_mesh = &ret->lookup("unoccupied");
 	ground_tile_mesh = &ret->lookup("soil");
-	plant_mesh = &ret->lookup( "leaf2" );
+	plant_mesh = &ret->lookup("leaf2");
+	fire_flower_mesh = &ret->lookup("leaf3_root");
 	obstacle_tile_mesh = &ret->lookup("path");
 	return ret;
 });
@@ -73,17 +64,29 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 
 void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 {
+	// update plant state
 	if( plant_type )
 	{
 		float target_time = plant_type->get_growth_time();
 		current_grow_time += elapsed;
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
+		// non-harvestable plants are automatically removed (?)
+		if( current_grow_time >= target_time && !plant_type->get_harvestable() ) try_remove_plant(); 
 	}
-	if( aura )
-	{
-		aura->update(elapsed, camera_transform);
-	}
+
+	// update aura after plant update is done
+	if( plant_type && (plant_type->get_aura_type() != Aura::none) ) {
+		if( aura && (plant_type->get_aura_type() == aura->type) )
+		{ // the tile already has the plant's aura
+			aura->update( elapsed, camera_transform );
+		}
+		else
+		{ // the tile doesn't has the plant's aura: either it has something else, or doesn't have any
+			try_remove_aura();
+			aura = new Aura( tile_drawable->transform->position, plant_type->get_aura_type() );
+		}
+	} else try_remove_aura();
 }
 
 void GroundTile::update_plant_visuals( float percent_grown )
@@ -121,11 +124,25 @@ bool GroundTile::try_remove_plant()
 	return false;
 }
 
-bool GroundTile::is_tile_harvestable()
-{ 
-	return plant_type && current_grow_time >= plant_type->get_growth_time();
+bool GroundTile::try_remove_aura() 
+{
+	// set the aura pointer to null. 
+	// However if the tile has a plant that gives aura, will add one in next iteration anyway
+	if( aura ) 
+	{
+		delete aura;
+		aura = nullptr;
+		return true;
+	}
+	return false;
 }
 
+bool GroundTile::is_tile_harvestable()
+{
+	return plant_type 
+		&& plant_type->get_harvestable()
+		&& current_grow_time >= plant_type->get_growth_time();
+}
 
 PlantMode::PlantMode() 
 {
@@ -133,8 +150,12 @@ PlantMode::PlantMode()
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
-		test_plant = new PlantType( plant_mesh, 5, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-		selectedPlant = test_plant;
+
+		test_plant = new PlantType( plant_mesh, Aura::none, 5, true, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		fire_flower = new PlantType ( fire_flower_mesh, Aura::fire, 10, false, 0, 10.0f, 
+				"Fire flower", "Gives off fire aura." );
+
+		selectedPlant = fire_flower;
 	}
 
 	// Make the tile grid
@@ -208,10 +229,6 @@ PlantMode::PlantMode()
 			}
 		}
 	}
-
-	// test aura
-	grid[10][10].aura = new Aura(grid[10][10].tile_drawable->transform->position, Aura::aqua);
-
 
 	{ //make a camera:
 		scene.transforms.emplace_back();
@@ -336,7 +353,7 @@ PlantMode::PlantMode()
 PlantMode::~PlantMode() {
 	for (int i=0; i<plant_grid_x; i++) {
 		for (int j=0; j<plant_grid_y; j++) {
-			if (grid[i][j].aura) delete grid[i][j].aura;
+			grid[i][j].try_remove_aura();
 		}
 	}
 }
