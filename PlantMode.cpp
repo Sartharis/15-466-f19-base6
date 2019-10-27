@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <map>
 #include <cstddef>
 #include <random>
@@ -75,8 +76,8 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 		if( current_grow_time >= target_time && !plant_type->get_harvestable() ) try_remove_plant(); 
 	}
 
-	// update aura after plant update is done
-	if( plant_type && (plant_type->get_aura_type() != Aura::none) ) {
+	// update aura state after plant update is done
+	if( plant_type && (plant_type->get_aura_type() != Aura::none) ) { 
 		if( aura && (plant_type->get_aura_type() == aura->type) )
 		{ // the tile already has the plant's aura
 			aura->update( elapsed, camera_transform );
@@ -93,6 +94,14 @@ void GroundTile::update_plant_visuals( float percent_grown )
 {
 	//TEMP!!!!!!
 	plant_drawable->transform->position.z = glm::mix( start_height, end_height, percent_grown );
+}
+
+void GroundTile::apply_pending_update()
+{
+	fire_aura_effect = std::min( 1.0f, fire_aura_effect + pending_update.fire_aura_effect );
+	aqua_aura_effect = std::min( 1.0f, aqua_aura_effect + pending_update.aqua_aura_effect );
+	pending_update.fire_aura_effect = 0.0f;
+	pending_update.aqua_aura_effect = 0.0f;
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -304,7 +313,6 @@ PlantMode::PlantMode()
 		// check status, unbind things
 		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		GL_ERRORS();
 
 		// ------ set up 2nd pass pipeline
 		glGenVertexArrays(1, &trivial_vao);
@@ -500,11 +508,59 @@ void PlantMode::update(float elapsed)
 
 	// update tiles
 	{
+		// initial update for grids themselves
 		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
 				grid[x][y].update( elapsed, camera->transform );
+			}
+		}
+		// apply aura's effect on nearby tiles (if there is aura)
+		float full_amount = 0.2f * elapsed;
+		float half_amount = 0.1f * elapsed;
+		auto try_apply_aura = [](GroundTile& target, Aura::Type aura_type, float amount) {
+			if( target.tile_type->get_can_plant() ) {
+				switch (aura_type) {
+					case Aura::fire:
+						target.pending_update.fire_aura_effect = amount;
+						break;
+					case Aura::aqua:
+						target.pending_update.aqua_aura_effect = amount;
+						break;
+					default:
+						std::cerr << "non-exhaustive matching of aura type??";
+						break;
+				}
+			}
+		};
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				if( grid[x][y].aura )
+				{ // apply full effect on horizontal/vertical neighbors, half effect on diagonal neighbors
+					// TODO: should this effect be cumulative (stronger over time), or constant?
+					Aura::Type aura_type = grid[x][y].aura->type;
+					// diagonals
+					if( x-1>=0 && y-1>=0 ) try_apply_aura( grid[x-1][y-1], aura_type, half_amount );
+					if( x-1>=0 && y+1<plant_grid_y ) try_apply_aura( grid[x-1][y+1], aura_type, half_amount );
+					if( x+1<plant_grid_x && y-1>=0 ) try_apply_aura( grid[x+1][y-1], aura_type, half_amount );
+					if( x+1<plant_grid_x && y+1<plant_grid_y ) try_apply_aura( grid[x+1][y+1], aura_type, half_amount );
+					// horizontal/vertical
+					if( x-1>=0 ) try_apply_aura( grid[x-1][y], aura_type, full_amount );
+					if( x+1<plant_grid_x ) try_apply_aura( grid[x+1][y], aura_type, full_amount );
+					if( y-1>=0 ) try_apply_aura( grid[x][y-1], aura_type, full_amount );
+					if( y+1<plant_grid_y ) try_apply_aura( grid[x][y+1], aura_type, full_amount );
+				}
+			}
+		}
+		// apply pending update
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid[x][y].apply_pending_update();
 			}
 		}
 	}
@@ -534,6 +590,23 @@ void PlantMode::update(float elapsed)
 		else
 		{
 			action_description = "";
+		}
+
+		if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
+		{
+			auto f2s = [](float f) { // from: https://stackoverflow.com/questions/16605967/set-precision-of-stdto-string-when-converting-floating-point-values
+				std::ostringstream out;
+				out.precision(2);
+				out << std::fixed << f;
+				return out.str();
+			};
+			std::string fire = f2s( hovered_tile->fire_aura_effect );
+			std::string aqua = f2s( hovered_tile->aqua_aura_effect );
+			tile_status_summary = "Fire: " + fire + ", Aqua: " + aqua;
+		}
+		else
+		{
+			tile_status_summary = "";
 		}
 	}
 }
@@ -626,9 +699,10 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( -1.0f, -1.0f ), glm::vec2( 1.0f, 1.0f ), drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :" + selectedPlant->get_description(), glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") : " + selectedPlant->get_description(), glm::vec2( -1.5f, 0.85f ), 0.006f);
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
 		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
+		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 	}
 }
 

@@ -73,6 +73,7 @@ struct GroundTile
 	void change_tile_type( const GroundTileType* tile_type_in );
 	void update( float elapsed, Scene::Transform* camera_transform );
 	void update_plant_visuals( float percent_grown );
+	void apply_pending_update();
 	bool try_add_plant(const PlantType* plant_type_in );
 	bool try_remove_plant();
 	bool try_remove_aura();
@@ -84,14 +85,22 @@ struct GroundTile
 	Scene::Drawable* tile_drawable = nullptr;
 	Scene::Drawable* plant_drawable = nullptr;
 
-	// Tile data
+	// Tile data. TODO: other properties like fertility?
 	int grid_x = 0;
 	int grid_y = 0;
+	float fire_aura_effect = 0.0f; // in range 0 - 1
+	float aqua_aura_effect = 0.0f;
+	// each time a tile updates, its aura modifies nearby tiles' pending update struct
+	// which gets applied at the end of update call
+	struct {
+		float fire_aura_effect = 0.0f;
+		float aqua_aura_effect = 0.0f;
+	} pending_update;
 
 	// Plant data
 	float current_grow_time = 0.0f;
 
-	// Aura data
+	// Aura 
 	Aura* aura = nullptr;
 
 	//TEMP!!!!!
@@ -112,6 +121,7 @@ struct PlantMode : public Mode {
 
 	//scene:
 	std::string action_description = "";
+	std::string tile_status_summary = ""; // TEMP
 	const PlantType* selectedPlant = nullptr;
 	Scene scene;
 	Scene::Camera *camera = nullptr;
