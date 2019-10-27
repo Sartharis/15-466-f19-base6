@@ -2,7 +2,6 @@
 
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
-#include "ColorTextureProgram.hpp"
 #include "Load.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
@@ -31,14 +30,12 @@ Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* plant_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
-Mesh const* billboard = nullptr;
-
-Sprite const *aura = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
 
+/*
 Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	auto ret = new SpriteAtlas( data_path( "solidarity" ) );
 	std::cout << "----2D sprites loaded:" << std::endl;
@@ -48,6 +45,7 @@ Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	aura = &ret->lookup( "blurredDot" );
 	return ret;
 } );
+*/
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
@@ -59,7 +57,6 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	ground_tile_mesh = &ret->lookup("soil");
 	plant_mesh = &ret->lookup( "leaf2" );
 	obstacle_tile_mesh = &ret->lookup("path");
-	billboard = &ret->lookup("unit_sq");
 	return ret;
 });
 
@@ -74,7 +71,7 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 	tile_drawable->pipeline.count = tile_type->get_mesh()->count;
 }
 
-void GroundTile::update( float elapsed, glm::vec3 camera_position )
+void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 {
 	if( plant_type )
 	{
@@ -85,7 +82,7 @@ void GroundTile::update( float elapsed, glm::vec3 camera_position )
 	}
 	if( aura )
 	{
-		aura->update(elapsed, camera_position);
+		aura->update(elapsed, camera_transform);
 	}
 }
 
@@ -127,91 +124,6 @@ bool GroundTile::try_remove_plant()
 bool GroundTile::is_tile_harvestable()
 { 
 	return plant_type && current_grow_time >= plant_type->get_growth_time();
-}
-
-Aura::Aura(SpriteAtlas const &_atlas) : atlas(_atlas) {
-	dots = std::vector<Dot>(1);
-
-	{ // opengl related
-		glGenVertexArrays(1, &vao);
-		glGenBuffers(1, &vbo);
-		glBindVertexArray(vao);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-		glVertexAttribPointer(
-			color_texture_program->Position_vec4,
-			3, // size
-			GL_FLOAT, // type
-			GL_FALSE, // normalized
-			sizeof(Aura::Vertex), // stride size
-			(GLbyte*) 0 + offsetof(Aura::Vertex, position) // offset
-		);
-		glEnableVertexAttribArray(color_texture_program->Position_vec4);
-
-		glVertexAttribPointer(
-			color_texture_program->TexCoord_vec2, //attribute
-			2, //size
-			GL_FLOAT, //type
-			GL_FALSE, //normalized
-			sizeof(Aura::Vertex), // stride size
-			(GLbyte *) 0 + offsetof(Aura::Vertex, tex_coord) //offset
-		);
-		glEnableVertexAttribArray(color_texture_program->TexCoord_vec2);
-
-		glVertexAttribPointer(
-			color_texture_program->Color_vec4, //attribute
-			4, //size
-			GL_UNSIGNED_BYTE, //type
-			GL_TRUE, //normalized
-			sizeof(Aura::Vertex), //stride
-			(GLbyte *) 0 + offsetof(Aura::Vertex, color) //offset
-		);
-		glEnableVertexAttribArray(color_texture_program->Color_vec4);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-}
-
-void Aura::update(float elapsed, glm::vec3 camera_position) {
-	for(int i=0; i<dots.size(); i++) {
-		// TODO: update position... then:
-		glm::vec3 c = dots[i].position; // center of dot
-		float r = dots[i].radius;
-		glm::mat3 rotation = glm::mat3(glm::lookAt(
-			dots[i].position, camera_position, glm::vec3(0, 0, 1)
-		));
-		Vertex tl = Vertex(rotation * glm::vec3(-0.5, 0.5, 0) * r + c, aura->min_px);
-		Vertex tr = Vertex(rotation * glm::vec3(0.5, 0.5, 0) * r + c, glm::vec2(aura->max_px.x, aura->min_px.y));
-		Vertex bl = Vertex(rotation * glm::vec3(-0.5, -0.5, 0) * r + c, glm::vec2(aura->min_px.x, aura->max_px.y));
-		Vertex br = Vertex(rotation * glm::vec3(0.5, -0.5, 0) * r + c, aura->max_px);
-		// make the square and append it to vbo
-		std::vector<Vertex> billboard_this = { tl, bl, br, tl, br, tr };	
-		dots_vbo.insert(dots_vbo.end(), billboard_this.begin(), billboard_this.end());
-	}
-}
-
-void Aura::draw() {
-	// config opengl
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-
-	// draw the dots w ColorTextureProgram
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, dots_vbo.size() * sizeof(Vertex), dots_vbo.data(), GL_STREAM_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glUseProgram(color_texture_program->program);
-	glBindVertexArray(vao);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, atlas.tex);
-
-	glDrawArrays(GL_TRIANGLES, 0, GLsizei(dots_vbo.size() * sizeof(Vertex)));
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindVertexArray(0);
-	glUseProgram(0);
 }
 
 
@@ -297,6 +209,9 @@ PlantMode::PlantMode()
 		}
 	}
 
+	// test aura
+	grid[10][10].aura = new Aura(grid[10][10].tile_drawable->transform->position, Aura::aqua);
+
 
 	{ //make a camera:
 		scene.transforms.emplace_back();
@@ -318,9 +233,9 @@ PlantMode::PlantMode()
 		glGenFramebuffers(1, &firstpass_fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
 		// and its two color output layers
-		glGenTextures(2, colorBuffers);
+		glGenTextures(2, firstpass_color_attachments);
 		for (GLuint i=0; i<2; i++) {
-			glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+			glBindTexture(GL_TEXTURE_2D, firstpass_color_attachments[i]);
 			glTexImage2D(
 				// ended up disabling high resolution draw so the program runs at a reasonable framerate...
 				GL_TEXTURE_2D, 0, GL_RGBA, 
@@ -333,18 +248,46 @@ PlantMode::PlantMode()
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, colorBuffers[i], 0    
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, firstpass_color_attachments[i], 0    
 			);
 		}
 		// setup associated depth buffer
-		glGenRenderbuffers(1, &depthBuffer);
-		glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+		glGenRenderbuffers(1, &firstpass_depth_attachment);
+		glBindRenderbuffer(GL_RENDERBUFFER, firstpass_depth_attachment);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment);
 
 		glDrawBuffers(2, color_attachments);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// ------ set up fbo for aura
+		glGenFramebuffers(1, &aura_fbo);
+		glBindFramebuffer(GL_FRAMEBUFFER, aura_fbo);
+		// and its color output
+		glGenTextures(1, &aura_color_attachment);
+		glBindTexture(GL_TEXTURE_2D, aura_color_attachment);
+		glTexImage2D(
+			GL_TEXTURE_2D, 0, GL_RGBA, 
+			(GLint)(screen_size.x/postprocessing_program->pixel_size), 
+			(GLint)(screen_size.y/postprocessing_program->pixel_size), 
+			0, GL_RGBA, GL_FLOAT, NULL    
+		);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aura_color_attachment, 0    
+		);
+		// make it share depth buffer with firstpass
+		glBindRenderbuffer(GL_RENDERBUFFER, firstpass_depth_attachment);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		// check status, unbind things
+		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		GL_ERRORS();
 
 		// ------ set up 2nd pass pipeline
 		glGenVertexArrays(1, &trivial_vao);
@@ -366,20 +309,23 @@ PlantMode::PlantMode()
 		GL_ERRORS();
 
 		// ------ ping pong framebuffers for gaussian blur (use this for aura effect later)
-		glGenFramebuffers(2, pingpong_fbo);
-		glGenTextures(2, pingpongBuffers);
+		glGenFramebuffers(2, pingpong_fbos);
+		glGenTextures(2, pingpong_color_attachments);
 		for (unsigned int i = 0; i < 2; i++) {
-			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbo[i]);
-			glBindTexture(GL_TEXTURE_2D, pingpongBuffers[i]);
+			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos[i]);
+			glBindTexture(GL_TEXTURE_2D, pingpong_color_attachments[i]);
 			glTexImage2D(
-				GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)screen_size.x, (GLsizei)screen_size.y, 0, GL_RGBA, GL_FLOAT, NULL
+				GL_TEXTURE_2D, 0, GL_RGBA, 
+				(GLint)(screen_size.x/postprocessing_program->pixel_size), 
+				(GLint)(screen_size.y/postprocessing_program->pixel_size), 
+				0, GL_RGBA, GL_FLOAT, NULL
 			); // w&h of drawable size
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffers[i], 0
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_color_attachments[i], 0
 			);
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -388,6 +334,11 @@ PlantMode::PlantMode()
 }
 
 PlantMode::~PlantMode() {
+	for (int i=0; i<plant_grid_x; i++) {
+		for (int j=0; j<plant_grid_y; j++) {
+			if (grid[i][j].aura) delete grid[i][j].aura;
+		}
+	}
 }
 
 void PlantMode::on_click( int x, int y )
@@ -513,7 +464,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	//camera_azimuth += elapsed;
+	// camera_azimuth += 0.5f * elapsed;
 
 	// Update Camera Position
 	{
@@ -536,7 +487,7 @@ void PlantMode::update(float elapsed)
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				grid[x][y].update( elapsed, camera->transform->position );
+				grid[x][y].update( elapsed, camera->transform );
 			}
 		}
 	}
@@ -582,36 +533,66 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
-	// depth test
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	// blend
 	glDisable(GL_BLEND);
 	// draw the scene
 	scene.draw(*camera);
+	// draw aura
+	glBindFramebuffer(GL_FRAMEBUFFER, aura_fbo);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
+	for (int i=0; i<plant_grid_x; i++) {
+		for (int j=0; j<plant_grid_y; j++) {
+			if (grid[i][j].aura) grid[i][j].aura->draw(world_to_clip);
+		}
+	}
 
 	//---- postprocessing pass ----
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_DEPTH_TEST);
 	glUseProgram(postprocessing_program->program);
 	glBindVertexArray(trivial_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, trivial_vbo);
+
+	// gaussian blur
 	glActiveTexture(GL_TEXTURE0);
+	bool horizontal = true, first_iteration = true;
+	int amount = 2; // must be even
+	for (int i=0; i<amount; i++) {
+		glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos[!horizontal]);
+		// set horizontal uniform (task)
+		glUniform1i(postprocessing_program->TASK_int, (int)(!horizontal));
+		// bind input texture
+		glUniform1i(postprocessing_program->TEX0_tex, 0);
+		glBindTexture(GL_TEXTURE_2D, 
+			first_iteration ? aura_color_attachment : pingpong_color_attachments[horizontal]
+		);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		horizontal = !horizontal;
+		if (first_iteration) first_iteration = false;
+	}
+
+	//-- combine all results
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
-	// set uniform so the shader performs copy to screen directly
+	// set uniform so the shader performs desired task
 	glUniform1i(postprocessing_program->TASK_int, 3);
 	// set uniform for texture offset
 	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
 		postprocessing_program->pixel_size / screen_size.x, 
 		postprocessing_program->pixel_size / screen_size.y);
-	// bind input
-	glUniform1i(postprocessing_program->TEX1_tex, 0);
-	glUniform1i(postprocessing_program->TEX2_tex, 1);
+	// bind inputs
+	glUniform1i(postprocessing_program->TEX0_tex, 0);
+	glUniform1i(postprocessing_program->TEX1_tex, 1);
+	glUniform1i(postprocessing_program->TEX2_tex, 2);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+	glBindTexture(GL_TEXTURE_2D, firstpass_color_attachments[0]);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, colorBuffers[1]);
+	glBindTexture(GL_TEXTURE_2D, firstpass_color_attachments[1]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, pingpong_color_attachments[1]);
 
 	// draw
 	glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -179,6 +179,7 @@ GAME_NAMES =
 	collide
   FirstpassProgram
   PostprocessingProgram
+	Aura
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff

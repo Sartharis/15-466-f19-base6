@@ -6,12 +6,14 @@
 #include "GL.hpp"
 #include "Scene.hpp"
 #include "Sprite.hpp"
+#include "Aura.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
 
 #include <vector>
 #include <list>
+#include <iostream>
 
 /* Contains info on how a plant works and looks like*/
 struct PlantType
@@ -27,7 +29,7 @@ struct PlantType
 		cost(cost_in), 
 		harvest_gain(harvest_gain_in),
 		name(name_in), 
-		description(description_in)  {};
+		description(description_in) {};
 
 	const Mesh* get_mesh() const { return mesh; };
 	float get_growth_time() const { return growth_time; };
@@ -43,30 +45,6 @@ private:
 	int harvest_gain = 7;
 	std::string name = "Default Name";
 	std::string description = "Default Description.";
-};
-
-struct Aura { // TODO: free resources on deallocation
-	struct Dot {
-		glm::vec3 position = glm::vec3(0, 0, 2);
-		float radius = 0.1f;
-		// TODO: color, etc.
-	};
-	struct Vertex {
-		Vertex(glm::vec3 _pos, glm::vec2 _tex) : position(_pos), tex_coord(_tex) {}
-		glm::vec3 position;
-		glm::vec2 tex_coord;
-		glm::u8vec4 color = glm::u8vec4(255, 100, 100, 255);
-	};
-	Aura(SpriteAtlas const & _atlas);
-	void update(float elapsed, glm::vec3 camera_position);
-	void draw();
-	// internals
-	std::vector<Dot> dots;
-	std::vector<Vertex> dots_vbo;
-	SpriteAtlas const &atlas;
-	// TODO: properties like, center(stored), camera pos(passed in)
-	// opengl-related stuff
-	GLuint vao, vbo;
 };
 
 /* Contains info on how a tile works and looks like*/
@@ -85,7 +63,7 @@ private:
 struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
-	void update( float elapsed, glm::vec3 camera_position );
+	void update( float elapsed, Scene::Transform* camera_transform );
 	void update_plant_visuals( float percent_grown );
 	bool try_add_plant(const PlantType* plant_type_in );
 	bool try_remove_plant();
@@ -137,21 +115,24 @@ struct PlantMode : public Mode {
 	int energy = 20;
 
 	float camera_radius = 7.5f;
-	float camera_azimuth = glm::radians(45.0f);
-	float camera_elevation = glm::radians(45.0f);
+	float camera_azimuth = glm::radians(35.0f);
+	float camera_elevation = glm::radians(30.0f);
 
 	//-------- opengl stuff 
 
 	// TODO: if want to allow resize, have to find a better way to pass this
 	glm::vec2 screen_size = glm::vec2(960, 600); 
-
-	GLuint firstpass_fbo = 0;
-	GLuint colorBuffers[2];
-	GLuint depthBuffer = 0;
 	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 
-	GLuint pingpong_fbo[2];
-	GLuint pingpongBuffers[2];
+	GLuint firstpass_fbo = 0;
+	GLuint firstpass_color_attachments[2]; 
+	GLuint firstpass_depth_attachment = 0;
+
+	GLuint aura_fbo = 0; // shares depth attachment with firstpass_fbo
+	GLuint aura_color_attachment = 0;
+
+	GLuint pingpong_fbos[2];
+	GLuint pingpong_color_attachments[2];
 
 	std::vector<float> trivial_vector = {
 		-1, -1, 0,

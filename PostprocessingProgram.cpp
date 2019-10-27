@@ -32,9 +32,9 @@ PostprocessingProgram::PostprocessingProgram() {
 
   //look up the locations of uniforms (frag attributes):
   TASK_int = glGetUniformLocation(program, "TASK");
-  TEX0_tex = glGetUniformLocation(program, "IMG");
-  TEX1_tex = glGetUniformLocation(program, "FRAME");
-  TEX2_tex = glGetUniformLocation(program, "HIGHLIGHT");
+  TEX0_tex = glGetUniformLocation(program, "TEX0");
+  TEX1_tex = glGetUniformLocation(program, "TEX1");
+  TEX2_tex = glGetUniformLocation(program, "TEX2");
   TEX_OFFSET_vec2 = glGetUniformLocation(program, "TEX_OFFSET");
 
   assert(TASK_int != -1U);

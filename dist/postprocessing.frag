@@ -1,9 +1,9 @@
 #version 330
 
 in vec2 TexCoords;
-uniform sampler2D IMG;
-uniform sampler2D FRAME; // only used when TASK==2: the originally rendered frame
-uniform sampler2D HIGHLIGHT; // used as shadow in 3
+uniform sampler2D TEX0; //IMG;
+uniform sampler2D TEX1; //FRAME; // only used when TASK==2: the originally rendered frame
+uniform sampler2D TEX2; //HIGHLIGHT; // used as shadow in 3
 uniform vec2 TEX_OFFSET;
 
 // 0: blur horizontally; 
@@ -30,42 +30,43 @@ vec4 over(vec4 elem, vec4 canvas) {
 float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
 void main() {
-  if (TASK == 0 || TASK == 1) {
-    vec2 tex_offset = 1.0 / textureSize(IMG, 0);
-    vec4 result = texture(IMG, TexCoords) * weight[0];
+  if (TASK == 0 || TASK == 1) { // TEX0: input img to be blurred
+    vec2 tex_offset = 1.0 / textureSize(TEX0, 0);
+    vec4 result = texture(TEX0, TexCoords) * weight[0];
     if (TASK == 0) { // horizontal blur
       for(int i = 1; i < 5; ++i) {
-        result += texture(IMG, TexCoords + vec2(tex_offset.x * i, 0)) * weight[i];
-        result += texture(IMG, TexCoords - vec2(tex_offset.x * i, 0)) * weight[i];
+        result += texture(TEX0, TexCoords + vec2(tex_offset.x * i, 0)) * weight[i];
+        result += texture(TEX0, TexCoords - vec2(tex_offset.x * i, 0)) * weight[i];
       }
     } else if (TASK == 1) { // vertical blur
       for(int i = 1; i < 5; ++i) {
-        result += texture(IMG, TexCoords + vec2(0, tex_offset.y * i)) * weight[i];
-        result += texture(IMG, TexCoords - vec2(0, tex_offset.y * i)) * weight[i];
+        result += texture(TEX0, TexCoords + vec2(0, tex_offset.y * i)) * weight[i];
+        result += texture(TEX0, TexCoords - vec2(0, tex_offset.y * i)) * weight[i];
       }
     }
     fragColor = result;
-  } else if (TASK == 2) { // combine with first pass result
-    vec4 firstpass = texture(FRAME, TexCoords);
-    vec4 highlight = texture(HIGHLIGHT, TexCoords);
-    vec4 tex = texture(IMG, TexCoords);
+  } else if (TASK == 2) { // (currently not in use)
+    vec4 firstpass = texture(TEX1, TexCoords);
+    vec4 highlight = texture(TEX2, TexCoords);
+    vec4 tex = texture(TEX0, TexCoords);
     if (is_light(highlight)) {
       fragColor = firstpass + tex * 0.5;
     } else {
       fragColor = firstpass + tex;
     }
-  } else if (TASK == 3) { // toon shade + pixelate + maybe outline
-    vec4 firstpass = texture(FRAME, TexCoords);
-    vec4 shadow = texture(HIGHLIGHT, TexCoords);
+  } else if (TASK == 3) { // toon shade + pixelate + maybe outline + combine w aura
+    vec4 firstpass = texture(TEX0, TexCoords);
+    vec4 shadow = texture(TEX1, TexCoords);
+		vec4 aura = texture(TEX2, TexCoords);
     // combine albedo & shadow
-    fragColor = shadow.a > 0 ? shadow : firstpass;
+    fragColor = (shadow.a > 0 ? shadow : firstpass) + aura;
     // edge detection
-    float difX = length(firstpass - texture(FRAME, TexCoords + vec2(TEX_OFFSET.x, 0)));
-    float difY = length(firstpass - texture(FRAME, TexCoords + vec2(0, TEX_OFFSET.y)));
+    float difX = length(firstpass - texture(TEX1, TexCoords + vec2(TEX_OFFSET.x, 0)));
+    float difY = length(firstpass - texture(TEX1, TexCoords + vec2(0, TEX_OFFSET.y)));
     if (difX > 0.05 || difY > 0.05) fragColor = fragColor;// vec4(77/255, 46/255, 29/255, 1);// -= vec4(0.2, 0.15, 0.1, 0);
   } else if (TASK == 4) { // debug use
-    vec4 firstpass = texture(HIGHLIGHT, TexCoords);
-    fragColor = firstpass;
+    vec4 tex = texture(TEX0, TexCoords);
+    fragColor = tex;
   } else {
     fragColor = vec4(1,1,1,1);
   }
