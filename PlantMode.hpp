@@ -45,6 +45,7 @@ struct PlantType
 	std::string get_description() const { return description; };
 
 private:
+	// TODO: each plant type should have multiple meshes attached (always 3?)
 	const Mesh* mesh = nullptr;
 	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;

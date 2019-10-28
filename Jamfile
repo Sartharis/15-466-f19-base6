@@ -180,6 +180,7 @@ GAME_NAMES =
   FirstpassProgram
   PostprocessingProgram
 	Aura
+	UIElement
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff

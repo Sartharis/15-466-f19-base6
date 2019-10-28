@@ -23,6 +23,8 @@
 #include <unordered_map>
 
 PlantType const* test_plant = nullptr;
+PlantType const* carrot = nullptr;
+PlantType const* cactus = nullptr;
 PlantType const* fireflower = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
@@ -32,7 +34,7 @@ GroundTileType const* obstacle_tile = nullptr;
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
-// test plant (looks like fern)?
+// test plant
 Mesh const* test_plant_1_mesh = nullptr;
 Mesh const* test_plant_2_mesh = nullptr;
 Mesh const* test_plant_3_mesh = nullptr;
