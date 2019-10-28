@@ -29,9 +29,9 @@ int plant_grid_y = 20;
 PlantType const* test_plant = nullptr;
 PlantType const* friend_plant = nullptr;
 PlantType const* vampire_plant = nullptr;
-PlantType const* carrot = nullptr;
-PlantType const* cactus = nullptr;
-PlantType const* fireflower = nullptr;
+PlantType const* carrot_plant = nullptr;
+PlantType const* cactus_plant = nullptr;
+PlantType const* fireflower_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
@@ -234,7 +234,7 @@ void GroundTile::update_plant_visuals( float percent_grown )
 	}
 	else if( plant_type == friend_plant )
 	{
-		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
+		plant_drawable->transform->position.z = glm::mix( -0.7f, 0.0f, percent_grown );
 	}
 }
 
@@ -304,9 +304,9 @@ PlantMode::PlantMode()
 		test_plant = new PlantType( test_plant_mesh, Aura::none, 5, true, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
 		friend_plant = new PlantType( friend_plant_mesh, Aura::none, 10, true, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
 		vampire_plant = new PlantType( vampire_plant_mesh, Aura::none, 20, true, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
-		fireflower = new PlantType ( fireflower_3_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
+		fireflower_plant = new PlantType ( fireflower_3_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
-		selectedPlant = fireflower;
+		selectedPlant = fireflower_plant;
 
 	}
 
@@ -644,6 +644,9 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_3:
 			selectedPlant = vampire_plant;
 			break;
+		case SDLK_4:
+			selectedPlant = fireflower_plant;
+			break;
 		default:
 			break;
 		}
@@ -784,7 +787,7 @@ void PlantMode::update(float elapsed)
 	//Selector positioning
 	if( hovered_tile )
 	{
-		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, 0.0f );
+		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.01f );
 	}
 	else
 	{
