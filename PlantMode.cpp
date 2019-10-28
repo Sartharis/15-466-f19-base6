@@ -23,16 +23,31 @@
 #include <unordered_map>
 
 PlantType const* test_plant = nullptr;
-PlantType const* fire_flower = nullptr;
+PlantType const* fireflower = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
 
+// ground tiles
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
-Mesh const* plant_mesh = nullptr;
-Mesh const* fire_flower_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
+// test plant (looks like fern)?
+Mesh const* test_plant_1_mesh = nullptr;
+Mesh const* test_plant_2_mesh = nullptr;
+Mesh const* test_plant_3_mesh = nullptr;
+// carrot
+Mesh const* carrot_1_mesh = nullptr;
+Mesh const* carrot_2_mesh = nullptr;
+Mesh const* carrot_3_mesh = nullptr;
+// cactus
+Mesh const* cactus_1_mesh = nullptr;
+Mesh const* cactus_2_mesh = nullptr;
+Mesh const* cactus_3_mesh = nullptr;
+// fireflower
+Mesh const* fireflower_1_mesh = nullptr;
+Mesh const* fireflower_2_mesh = nullptr;
+Mesh const* fireflower_3_mesh = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
@@ -46,9 +61,19 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	}
 	sea_tile_mesh = &ret->lookup("sea");
 	ground_tile_mesh = &ret->lookup("soil");
-	plant_mesh = &ret->lookup("leaf2");
-	fire_flower_mesh = &ret->lookup("leaf3");
 	obstacle_tile_mesh = &ret->lookup("unoccupied");
+	test_plant_1_mesh = &ret->lookup("leaf1");
+	test_plant_2_mesh = &ret->lookup("leaf2");
+	test_plant_3_mesh = &ret->lookup("leaf3");
+	carrot_1_mesh = &ret->lookup("carrot1");
+	carrot_2_mesh = &ret->lookup("carrot2");
+	carrot_3_mesh = &ret->lookup("carrot3");
+	cactus_1_mesh = &ret->lookup("cactus1");
+	cactus_2_mesh = &ret->lookup("cactus2");
+	cactus_3_mesh = &ret->lookup("cactus3");
+	fireflower_1_mesh = &ret->lookup("fireflower1");
+	fireflower_2_mesh = &ret->lookup("fireflower2");
+	fireflower_3_mesh = &ret->lookup("fireflower3");
 	return ret;
 });
 
@@ -160,10 +185,10 @@ PlantMode::PlantMode()
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
 
-		test_plant = new PlantType( plant_mesh, Aura::none, 5, true, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-		fire_flower = new PlantType ( fire_flower_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
+		test_plant = new PlantType( test_plant_2_mesh, Aura::none, 5, true, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		fireflower = new PlantType ( fireflower_3_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
-		selectedPlant = test_plant;
+		selectedPlant = fireflower;
 	}
 
 	// Make the tile grid

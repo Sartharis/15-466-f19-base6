@@ -134,7 +134,7 @@ struct PlantMode : public Mode {
 	int energy = 20;
 
 	float camera_radius = 7.5f;
-	float camera_azimuth = glm::radians(35.0f);
+	float camera_azimuth = glm::radians(125.0f);
 	float camera_elevation = glm::radians(40.0f);
 
 	//-------- opengl stuff 
