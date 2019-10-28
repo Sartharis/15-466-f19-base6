@@ -85,9 +85,7 @@ struct GroundTile
 	// aura
 	Aura* aura = nullptr;
 
-	//TEMP!!!!!
-	float start_height = -0.4f;
-	float end_height = 0.0f;
+
 };
 
 // The 'PlantMode':
@@ -106,17 +104,15 @@ struct PlantMode : public Mode {
 	const PlantType* selectedPlant = nullptr;
 	Scene scene;
 	Scene::Camera *camera = nullptr;
+	Scene::Drawable* selector = nullptr;
 
-	GroundTile** grid = nullptr;
 	glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
-	int plant_grid_x = 20;
-	int plant_grid_y = 20;
 
-	int energy = 20;
+	int energy = 30;
 
 	float camera_radius = 7.5f;
-	float camera_azimuth = glm::radians(35.0f);
-	float camera_elevation = glm::radians(30.0f);
+	float camera_azimuth = glm::radians( 90.0f );//glm::radians(35.0f);
+	float camera_elevation = glm::radians( 45.0f ); //glm::radians(30.0f);
 
 	//-------- opengl stuff 
 

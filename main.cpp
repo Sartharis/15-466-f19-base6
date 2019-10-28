@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 	Sound::init();
 
 	//random seed
-	srand(time(0));
+	srand((unsigned int)(time(0)));
 
 	//Hide mouse cursor (note: showing can be useful for debugging):
 	//SDL_ShowCursor(SDL_DISABLE);

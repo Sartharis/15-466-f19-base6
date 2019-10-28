@@ -21,15 +21,24 @@
 #include <random>
 #include <unordered_map>
 
+GroundTile** grid = nullptr;
+int plant_grid_x = 20;
+int plant_grid_y = 20;
+
 PlantType const* test_plant = nullptr;
+PlantType const* friend_plant = nullptr;
+PlantType const* vampire_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
 
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
-Mesh const* plant_mesh = nullptr;
+Mesh const* test_plant_mesh = nullptr;
+Mesh const* friend_plant_mesh = nullptr;
+Mesh const* vampire_plant_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
+Mesh const* selector_mesh = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
@@ -47,6 +56,16 @@ Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 } );
 */
 
+Load< MeshBuffer > ui_meshes( LoadTagDefault, [](){
+	auto ret = new MeshBuffer( data_path( "solidarityui.pnct" ) );
+	std::cout << "----meshes loaded:" << std::endl;
+	for( auto p : ret->meshes ) {
+		std::cout << p.first << std::endl;
+	}
+	selector_mesh = &ret->lookup( "Selector" );
+	return ret;
+} );
+
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
 	std::cout << "----meshes loaded:" << std::endl;
@@ -55,10 +74,16 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	}
 	sea_tile_mesh = &ret->lookup("unoccupied");
 	ground_tile_mesh = &ret->lookup("soil");
-	plant_mesh = &ret->lookup( "leaf2" );
+	test_plant_mesh = &ret->lookup( "leaf2" );
+	friend_plant_mesh = &ret->lookup( "leaf3_leaf" );
+	vampire_plant_mesh = &ret->lookup( "tree_2" );
 	obstacle_tile_mesh = &ret->lookup("path");
 	return ret;
 });
+
+Load< GLuint > ui_meshes_for_firstpass_program( LoadTagDefault, [](){
+	return new GLuint( ui_meshes->make_vao_for_program( firstpass_program->program ) );
+} );
 
 Load< GLuint > plant_meshes_for_firstpass_program(LoadTagDefault, [](){
 	return new GLuint(plant_meshes->make_vao_for_program(firstpass_program->program));
@@ -75,8 +100,85 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 {
 	if( plant_type )
 	{
+		if( plant_type == test_plant )
+		{
+			current_grow_time += elapsed;
+		}
+		else if( plant_type == friend_plant )
+		{
+			bool has_neighbor = false;
+			for( int x = -1; x <= 1; x += 2 )
+			{
+				if( grid_x + x >= 0 && grid_x + x < plant_grid_x)
+				{
+					GroundTile tile = grid[grid_x + x][grid_y];
+					const PlantType* plant = tile.plant_type;
+					if( plant )
+					{
+						has_neighbor = true;
+						//Boost the neighbor
+						tile.current_grow_time += elapsed * 0.1f;
+					}
+				}
+			}
+			for( int y = -1; y <= 1; y += 2 )
+			{
+				if(grid_y + y >= 0 && grid_y + y < plant_grid_y )
+				{
+					GroundTile& tile = grid[grid_x][grid_y + y];
+					const PlantType* plant = tile.plant_type;
+					if( plant )
+					{
+						has_neighbor = true;
+						//Boost the neighbor
+						tile.current_grow_time += elapsed * 0.1f;
+					}
+				}
+			}
+
+			if( has_neighbor )
+			{
+				current_grow_time += elapsed;
+			}
+			else
+			{
+				current_grow_time -= elapsed;
+			}
+		}
+		else if( plant_type == vampire_plant )
+		{
+			std::vector<GroundTile*> victims;
+
+			for( int x = -1; x <= 1; x += 1 )
+			{
+				for( int y = -1; y <= 1; y += 1 )
+				{
+					if( grid_x + x >= 0 && grid_x + x < plant_grid_x && grid_y + y >= 0 && grid_y + y < plant_grid_y && (x != 0 || y != 0) )
+					{
+						GroundTile& tile = grid[grid_x + x][grid_y + y];
+						const PlantType* plant = tile.plant_type;
+						if( plant )
+						{
+							victims.push_back( &tile );
+						}
+					}
+				}
+			}
+
+			if( victims.size() > 0 )
+			{
+				
+				victims[rand() % victims.size()]->current_grow_time -= elapsed * 3.0f;
+				current_grow_time += elapsed;
+			}
+			else
+			{
+				current_grow_time -= elapsed;
+			}
+		}
+
 		float target_time = plant_type->get_growth_time();
-		current_grow_time += elapsed;
+		if( current_grow_time < -1.0f ) try_remove_plant();
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
 	}
@@ -89,7 +191,18 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 void GroundTile::update_plant_visuals( float percent_grown )
 {
 	//TEMP!!!!!!
-	plant_drawable->transform->position.z = glm::mix( start_height, end_height, percent_grown );
+	if( plant_type == test_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.4f, 0.0f, percent_grown );
+	}
+	else if( plant_type == vampire_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
+	}
+	else if( plant_type == friend_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
+	}
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -133,7 +246,9 @@ PlantMode::PlantMode()
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
-		test_plant = new PlantType( plant_mesh, 5, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		test_plant = new PlantType( test_plant_mesh, 5, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		friend_plant = new PlantType( friend_plant_mesh, 10, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
+		vampire_plant = new PlantType( vampire_plant_mesh, 20, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
 		selectedPlant = test_plant;
 	}
 
@@ -187,6 +302,20 @@ PlantMode::PlantMode()
 
 			}
 		}
+
+		//Create a selector mesh
+		scene.transforms.emplace_back();
+		Scene::Transform* selector_transform = &scene.transforms.back();
+		selector_transform->position =tile_center_pos;
+		scene.drawables.emplace_back( selector_transform );
+		selector = &scene.drawables.back();
+
+		Scene::Drawable::Pipeline selector_info;
+		selector_info = firstpass_program_pipeline;
+		selector_info.vao = *ui_meshes_for_firstpass_program;
+		selector_info.start = selector_mesh->start;
+		selector_info.count = selector_mesh->count;
+		selector->pipeline = selector_info;
 	}
 
 
@@ -450,6 +579,23 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		return false;
 	}
 
+	if( evt.type == SDL_KEYDOWN )
+	{
+		switch( evt.key.keysym.sym ){
+		case SDLK_1:
+			selectedPlant = test_plant;
+			break;
+		case SDLK_2:
+			selectedPlant = friend_plant;
+			break;
+		case SDLK_3:
+			selectedPlant = vampire_plant;
+			break;
+		default:
+			break;
+		}
+	}
+
 	if( evt.type == SDL_MOUSEBUTTONDOWN )
 	{
 		if( evt.button.button == SDL_BUTTON_LEFT )
@@ -464,7 +610,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	// camera_azimuth += 0.5f * elapsed;
+	//camera_azimuth += 0.5f * elapsed;
 
 	// Update Camera Position
 	{
@@ -496,28 +642,35 @@ void PlantMode::update(float elapsed)
 	int x, y;
 	const Uint32 state = SDL_GetMouseState( &x, &y );
 	(void)state;
-	if( true )
+	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
+	if( hovered_tile && hovered_tile->plant_type)
 	{
-		GroundTile* hovered_tile = get_tile_under_mouse( x, y );
-		if( hovered_tile && hovered_tile->plant_type)
+		if( hovered_tile->is_tile_harvestable() )
 		{
-			if( hovered_tile->is_tile_harvestable() )
-			{
-				action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
-			}
-			else
-			{
-				action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
-			}
-		}
-		else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
-		{
-			action_description = "Plant -" + std::to_string(selectedPlant->get_cost());
+			action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
 		}
 		else
 		{
-			action_description = "";
+			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
 		}
+	}
+	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
+	{
+		action_description = "Plant -" + std::to_string(selectedPlant->get_cost());
+	}
+	else
+	{
+		action_description = "";
+	}
+
+	//Selector positioning
+	if( hovered_tile )
+	{
+		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, 0.0f );
+	}
+	else
+	{
+		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 	}
 }
 
@@ -609,7 +762,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( -1.0f, -1.0f ), glm::vec2( 1.0f, 1.0f ), drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :" + selectedPlant->get_description(), glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :", glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( selectedPlant->get_description(), glm::vec2( -1.5f, 0.75f ), 0.004f );
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
 		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
 	}
