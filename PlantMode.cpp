@@ -44,11 +44,11 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	for (auto p : ret->meshes) {
 		std::cout << p.first << std::endl;
 	}
-	sea_tile_mesh = &ret->lookup("unoccupied");
+	sea_tile_mesh = &ret->lookup("sea");
 	ground_tile_mesh = &ret->lookup("soil");
 	plant_mesh = &ret->lookup("leaf2");
-	fire_flower_mesh = &ret->lookup("leaf3_root");
-	obstacle_tile_mesh = &ret->lookup("path");
+	fire_flower_mesh = &ret->lookup("leaf3");
+	obstacle_tile_mesh = &ret->lookup("unoccupied");
 	return ret;
 });
 
@@ -161,10 +161,9 @@ PlantMode::PlantMode()
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
 
 		test_plant = new PlantType( plant_mesh, Aura::none, 5, true, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-		fire_flower = new PlantType ( fire_flower_mesh, Aura::fire, 10, false, 0, 10.0f, 
-				"Fire flower", "Gives off fire aura." );
+		fire_flower = new PlantType ( fire_flower_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
-		selectedPlant = fire_flower;
+		selectedPlant = test_plant;
 	}
 
 	// Make the tile grid
