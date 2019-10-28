@@ -15,6 +15,9 @@
 #include <list>
 #include <iostream>
 
+/* State of magic book */
+is_magicbook_open = false;
+
 /* Contains info on how a plant works and looks like*/
 struct PlantType
 {

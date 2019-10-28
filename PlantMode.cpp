@@ -34,9 +34,46 @@ Mesh const* plant_mesh = nullptr;
 Mesh const* fire_flower_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
 
+Sprite const *magic_book_sprite = nullptr;
+
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
+
+Load< SpriteAtlas > magicbook_sprites_load(LoadTagDefault, []() -> SpriteAtlas const * {
+	SpriteAtlas const *kret = new SpriteAtlas(data_path("magicbook"));
+	magic_book_sprite =  &kret->lookup("magic-book");
+	return kret;
+}
+
+void PlantMode::enter_magicbook(){
+	std::vector< MenuMode::Item > items;
+	glm::vec2 at(3.0f, view_max.y - 3.0f - 11.0f);
+	auto add_text = [&items,&at](std::string text) {
+		items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0xff), nullptr, at);
+		at.y -= 10.0f;
+	};
+	auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
+		//assert(text);
+		items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
+		items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
+		// items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
+		//at.y -= text->max_px.y - text->min_px.y;
+		at.y -= 15.0f;
+	};
+
+	add_choice("Carrot", [this](MenuMode::Item const &){
+		// location = kitchen_state;
+		// Mode::current = shared_from_this();
+		});
+	add_choice("Auora flower", [this](MenuMode::Item const &){
+		// location = garden_state;
+		// Mode::current = shared_from_this();
+	});
+	at.y = view_min.y + 40.0f; //gap before choices
+	add_text("Seeds you can buy...");
+
+}
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
@@ -366,6 +403,17 @@ PlantMode::~PlantMode() {
 	}
 }
 
+void PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size){
+	if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_SPACE) {
+		if(is_magicbook_open==false){
+			is_magicbook_open = true;
+		}else{
+			is_magicbook_open = false;
+		}
+	}
+
+}
+
 void PlantMode::on_click( int x, int y )
 {
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
@@ -639,6 +687,11 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		}
 	}
 
+	//draw magic book
+	if(is_magicbook_open){
+		draw.draw(*kitchen_empty, ul);
+	}
+
 	//---- postprocessing pass ----
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
@@ -703,6 +756,9 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
 		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
 		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
+
+	// draw hint text
+		draw.draw_text("Enter Space to open magic book",glm::vec2(0,1f,0,16f),0.0002f);
 	}
 }
 
