@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <map>
 #include <cstddef>
 #include <random>
@@ -28,33 +29,41 @@ int plant_grid_y = 20;
 PlantType const* test_plant = nullptr;
 PlantType const* friend_plant = nullptr;
 PlantType const* vampire_plant = nullptr;
+PlantType const* carrot = nullptr;
+PlantType const* cactus = nullptr;
+PlantType const* fireflower = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
 
+// ground tiles
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* test_plant_mesh = nullptr;
 Mesh const* friend_plant_mesh = nullptr;
 Mesh const* vampire_plant_mesh = nullptr;
-Mesh const* obstacle_tile_mesh = nullptr;
 Mesh const* selector_mesh = nullptr;
+Mesh const* obstacle_tile_mesh = nullptr;
+// test plant
+Mesh const* test_plant_1_mesh = nullptr;
+Mesh const* test_plant_2_mesh = nullptr;
+Mesh const* test_plant_3_mesh = nullptr;
+// carrot
+Mesh const* carrot_1_mesh = nullptr;
+Mesh const* carrot_2_mesh = nullptr;
+Mesh const* carrot_3_mesh = nullptr;
+// cactus
+Mesh const* cactus_1_mesh = nullptr;
+Mesh const* cactus_2_mesh = nullptr;
+Mesh const* cactus_3_mesh = nullptr;
+// fireflower
+Mesh const* fireflower_1_mesh = nullptr;
+Mesh const* fireflower_2_mesh = nullptr;
+Mesh const* fireflower_3_mesh = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
-
-/*
-Load< SpriteAtlas> sprite_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
-	auto ret = new SpriteAtlas( data_path( "solidarity" ) );
-	std::cout << "----2D sprites loaded:" << std::endl;
-	for (auto p : ret->sprites) {
-		std::cout << p.first << std::endl;
-	}
-	aura = &ret->lookup( "blurredDot" );
-	return ret;
-} );
-*/
 
 Load< MeshBuffer > ui_meshes( LoadTagDefault, [](){
 	auto ret = new MeshBuffer( data_path( "solidarityui.pnct" ) );
@@ -72,12 +81,24 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	for (auto p : ret->meshes) {
 		std::cout << p.first << std::endl;
 	}
-	sea_tile_mesh = &ret->lookup("unoccupied");
+	sea_tile_mesh = &ret->lookup("sea");
 	ground_tile_mesh = &ret->lookup("soil");
 	test_plant_mesh = &ret->lookup( "leaf2" );
-	friend_plant_mesh = &ret->lookup( "leaf3_leaf" );
+	friend_plant_mesh = &ret->lookup( "cactus2" );
 	vampire_plant_mesh = &ret->lookup( "tree_2" );
-	obstacle_tile_mesh = &ret->lookup("path");
+	obstacle_tile_mesh = &ret->lookup("unoccupied");
+	test_plant_1_mesh = &ret->lookup("leaf1");
+	test_plant_2_mesh = &ret->lookup("leaf2");
+	test_plant_3_mesh = &ret->lookup("leaf3");
+	carrot_1_mesh = &ret->lookup("carrot1");
+	carrot_2_mesh = &ret->lookup("carrot2");
+	carrot_3_mesh = &ret->lookup("carrot3");
+	cactus_1_mesh = &ret->lookup("cactus1");
+	cactus_2_mesh = &ret->lookup("cactus2");
+	cactus_3_mesh = &ret->lookup("cactus3");
+	fireflower_1_mesh = &ret->lookup("fireflower1");
+	fireflower_2_mesh = &ret->lookup("fireflower2");
+	fireflower_3_mesh = &ret->lookup("fireflower3");
 	return ret;
 });
 
@@ -98,6 +119,7 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 
 void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 {
+	// update plant state
 	if( plant_type )
 	{
 		if( plant_type == test_plant )
@@ -181,11 +203,22 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 		if( current_grow_time < -1.0f ) try_remove_plant();
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
+		// non-harvestable plants are automatically removed (?)
+		if( current_grow_time >= target_time && !plant_type->get_harvestable() ) try_remove_plant(); 
 	}
-	if( aura )
-	{
-		aura->update(elapsed, camera_transform);
-	}
+
+	// update aura state after plant update is done
+	if( plant_type && (plant_type->get_aura_type() != Aura::none) ) { 
+		if( aura && (plant_type->get_aura_type() == aura->type) )
+		{ // the tile already has the plant's aura
+			aura->update( elapsed, camera_transform );
+		}
+		else
+		{ // the tile doesn't has the plant's aura: either it has something else, or doesn't have any
+			try_remove_aura();
+			aura = new Aura( tile_drawable->transform->position, plant_type->get_aura_type() );
+		}
+	} else try_remove_aura();
 }
 
 void GroundTile::update_plant_visuals( float percent_grown )
@@ -203,6 +236,14 @@ void GroundTile::update_plant_visuals( float percent_grown )
 	{
 		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
 	}
+}
+
+void GroundTile::apply_pending_update()
+{
+	fire_aura_effect = std::min( 1.0f, fire_aura_effect + pending_update.fire_aura_effect );
+	aqua_aura_effect = std::min( 1.0f, aqua_aura_effect + pending_update.aqua_aura_effect );
+	pending_update.fire_aura_effect = 0.0f;
+	pending_update.aqua_aura_effect = 0.0f;
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -234,11 +275,25 @@ bool GroundTile::try_remove_plant()
 	return false;
 }
 
-bool GroundTile::is_tile_harvestable()
-{ 
-	return plant_type && current_grow_time >= plant_type->get_growth_time();
+bool GroundTile::try_remove_aura() 
+{
+	// set the aura pointer to null. 
+	// However if the tile has a plant that gives aura, will add one in next iteration anyway
+	if( aura ) 
+	{
+		delete aura;
+		aura = nullptr;
+		return true;
+	}
+	return false;
 }
 
+bool GroundTile::is_tile_harvestable()
+{
+	return plant_type 
+		&& plant_type->get_harvestable()
+		&& current_grow_time >= plant_type->get_growth_time();
+}
 
 PlantMode::PlantMode() 
 {
@@ -246,10 +301,13 @@ PlantMode::PlantMode()
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
-		test_plant = new PlantType( test_plant_mesh, 5, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-		friend_plant = new PlantType( friend_plant_mesh, 10, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
-		vampire_plant = new PlantType( vampire_plant_mesh, 20, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
-		selectedPlant = test_plant;
+		test_plant = new PlantType( test_plant_mesh, Aura::none, 5, true, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		friend_plant = new PlantType( friend_plant_mesh, Aura::none, 10, true, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
+		vampire_plant = new PlantType( vampire_plant_mesh, Aura::none, 20, true, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
+		fireflower = new PlantType ( fireflower_3_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
+
+		selectedPlant = fireflower;
+
 	}
 
 	// Make the tile grid
@@ -338,10 +396,6 @@ PlantMode::PlantMode()
 		}
 	}
 
-	// test aura
-	grid[10][10].aura = new Aura(grid[10][10].tile_drawable->transform->position, Aura::aqua);
-
-
 	{ //make a camera:
 		scene.transforms.emplace_back();
 		Scene::Transform *transform = &scene.transforms.back();
@@ -416,7 +470,6 @@ PlantMode::PlantMode()
 		// check status, unbind things
 		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		GL_ERRORS();
 
 		// ------ set up 2nd pass pipeline
 		glGenVertexArrays(1, &trivial_vao);
@@ -465,7 +518,7 @@ PlantMode::PlantMode()
 PlantMode::~PlantMode() {
 	for (int i=0; i<plant_grid_x; i++) {
 		for (int j=0; j<plant_grid_y; j++) {
-			if (grid[i][j].aura) delete grid[i][j].aura;
+			grid[i][j].try_remove_aura();
 		}
 	}
 }
@@ -629,11 +682,59 @@ void PlantMode::update(float elapsed)
 
 	// update tiles
 	{
+		// initial update for grids themselves
 		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
 				grid[x][y].update( elapsed, camera->transform );
+			}
+		}
+		// apply aura's effect on nearby tiles (if there is aura)
+		float full_amount = 0.2f * elapsed;
+		float half_amount = 0.1f * elapsed;
+		auto try_apply_aura = [](GroundTile& target, Aura::Type aura_type, float amount) {
+			if( target.tile_type->get_can_plant() ) {
+				switch (aura_type) {
+					case Aura::fire:
+						target.pending_update.fire_aura_effect = amount;
+						break;
+					case Aura::aqua:
+						target.pending_update.aqua_aura_effect = amount;
+						break;
+					default:
+						std::cerr << "non-exhaustive matching of aura type??";
+						break;
+				}
+			}
+		};
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				if( grid[x][y].aura )
+				{ // apply full effect on horizontal/vertical neighbors, half effect on diagonal neighbors
+					// TODO: should this effect be cumulative (stronger over time), or constant?
+					Aura::Type aura_type = grid[x][y].aura->type;
+					// diagonals
+					if( x-1>=0 && y-1>=0 ) try_apply_aura( grid[x-1][y-1], aura_type, half_amount );
+					if( x-1>=0 && y+1<plant_grid_y ) try_apply_aura( grid[x-1][y+1], aura_type, half_amount );
+					if( x+1<plant_grid_x && y-1>=0 ) try_apply_aura( grid[x+1][y-1], aura_type, half_amount );
+					if( x+1<plant_grid_x && y+1<plant_grid_y ) try_apply_aura( grid[x+1][y+1], aura_type, half_amount );
+					// horizontal/vertical
+					if( x-1>=0 ) try_apply_aura( grid[x-1][y], aura_type, full_amount );
+					if( x+1<plant_grid_x ) try_apply_aura( grid[x+1][y], aura_type, full_amount );
+					if( y-1>=0 ) try_apply_aura( grid[x][y-1], aura_type, full_amount );
+					if( y+1<plant_grid_y ) try_apply_aura( grid[x][y+1], aura_type, full_amount );
+				}
+			}
+		}
+		// apply pending update
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid[x][y].apply_pending_update();
 			}
 		}
 	}
@@ -652,6 +753,23 @@ void PlantMode::update(float elapsed)
 		else
 		{
 			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
+		}
+
+		if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
+		{
+			auto f2s = [](float f) { // from: https://stackoverflow.com/questions/16605967/set-precision-of-stdto-string-when-converting-floating-point-values
+				std::ostringstream out;
+				out.precision(2);
+				out << std::fixed << f;
+				return out.str();
+			};
+			std::string fire = f2s( hovered_tile->fire_aura_effect );
+			std::string aqua = f2s( hovered_tile->aqua_aura_effect );
+			tile_status_summary = "Fire: " + fire + ", Aqua: " + aqua;
+		}
+		else
+		{
+			tile_status_summary = "";
 		}
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
@@ -766,6 +884,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		draw.draw_text( selectedPlant->get_description(), glm::vec2( -1.5f, 0.75f ), 0.004f );
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
 		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
+		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 	}
 }
 
