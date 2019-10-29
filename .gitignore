@@ -17,6 +17,7 @@ sprites/pack-sprites.exe
 sprites/pack-sprites.ilk
 sprites/pack-sprites.pdb
 sprites/trade-font/
+sprites/sprites/*.psd
 scenes/*.blend[0-9]
 scenes/show-meshes
 scenes/show-meshes.exe

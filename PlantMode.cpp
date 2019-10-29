@@ -133,7 +133,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 			{
 				if( grid_x + x >= 0 && grid_x + x < plant_grid_x)
 				{
-					GroundTile tile = grid[grid_x + x][grid_y];
+					GroundTile& tile = grid[grid_x + x][grid_y];
 					const PlantType* plant = tile.plant_type;
 					if( plant )
 					{
@@ -198,6 +198,10 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 				current_grow_time -= elapsed;
 			}
 		}
+		else if( plant_type == fireflower_plant )
+		{
+			current_grow_time += elapsed;
+		}
 
 		float target_time = plant_type->get_growth_time();
 		if( current_grow_time < -1.0f ) try_remove_plant();
@@ -219,6 +223,45 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 			aura = new Aura( tile_drawable->transform->position, plant_type->get_aura_type() );
 		}
 	} else try_remove_aura();
+
+	// apply aura effect on neighbors (by putting into pending update)
+	if( aura )
+	{
+		auto try_apply_aura = [elapsed](GroundTile& target, Aura::Type aura_type) {
+			if( target.tile_type->get_can_plant() ) {
+				switch (aura_type) {
+					case Aura::fire:
+						target.pending_update.fire_aura_effect += 0.2f * elapsed;
+						break;
+					case Aura::aqua:
+						target.pending_update.aqua_aura_effect += 0.2f * elapsed;
+						break;
+					default:
+						std::cerr << "non-exhaustive matching of aura type??";
+						break;
+				}
+			}
+		};
+		for( int x = -1; x <= 1; x += 2 )
+		{
+			if( grid_x + x >= 0 && grid_x + x < plant_grid_x)
+			{
+				GroundTile& tile = grid[grid_x + x][grid_y];
+				try_apply_aura(tile, aura->type); 
+			}
+		}
+		for( int y = -1; y <= 1; y += 2 )
+		{
+			if(grid_y + y >= 0 && grid_y + y < plant_grid_y )
+			{
+				GroundTile& tile = grid[grid_x][grid_y + y];
+				try_apply_aura(tile, aura->type); 
+			}
+		}
+	}
+
+	// aura effect decreases over time
+	
 }
 
 void GroundTile::update_plant_visuals( float percent_grown )
@@ -693,6 +736,7 @@ void PlantMode::update(float elapsed)
 				grid[x][y].update( elapsed, camera->transform );
 			}
 		}
+		/*
 		// apply aura's effect on nearby tiles (if there is aura)
 		float full_amount = 0.2f * elapsed;
 		float half_amount = 0.1f * elapsed;
@@ -732,6 +776,7 @@ void PlantMode::update(float elapsed)
 				}
 			}
 		}
+		*/
 		// apply pending update
 		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
@@ -758,22 +803,6 @@ void PlantMode::update(float elapsed)
 			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
 		}
 
-		if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
-		{
-			auto f2s = [](float f) { // from: https://stackoverflow.com/questions/16605967/set-precision-of-stdto-string-when-converting-floating-point-values
-				std::ostringstream out;
-				out.precision(2);
-				out << std::fixed << f;
-				return out.str();
-			};
-			std::string fire = f2s( hovered_tile->fire_aura_effect );
-			std::string aqua = f2s( hovered_tile->aqua_aura_effect );
-			tile_status_summary = "Fire: " + fire + ", Aqua: " + aqua;
-		}
-		else
-		{
-			tile_status_summary = "";
-		}
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
 	{
@@ -792,6 +821,24 @@ void PlantMode::update(float elapsed)
 	else
 	{
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
+	}
+
+	//Description for aura effect
+	if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
+	{
+		auto f2s = [](float f) { // from: https://stackoverflow.com/questions/16605967/set-precision-of-stdto-string-when-converting-floating-point-values
+			std::ostringstream out;
+			out.precision(2);
+			out << std::fixed << f;
+			return out.str();
+		};
+		std::string fire = f2s( hovered_tile->fire_aura_effect );
+		std::string aqua = f2s( hovered_tile->aqua_aura_effect );
+		tile_status_summary = "Fire: " + fire + ", Aqua: " + aqua;
+	}
+	else
+	{
+		tile_status_summary = "";
 	}
 }
 
