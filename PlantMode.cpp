@@ -375,7 +375,7 @@ PlantMode::PlantMode()
 		friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, Aura::none, 10, true, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
 		vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, Aura::none, 20, true, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
 		cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, Aura::none, 10, true, 20, 20.0f, "Cactus", "Grows faster under fire aura's influence but dislikes aqua aura." );
-		fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
+		fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, true, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
 		selectedPlant = test_plant;
 
