@@ -15,8 +15,7 @@
 #include <list>
 #include <iostream>
 
-/* State of magic book */
-is_magicbook_open = false;
+
 
 /* Contains info on how a plant works and looks like*/
 struct PlantType
@@ -42,7 +41,7 @@ struct PlantType
 	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
-	bool get_harvestable() const { return is_harvestable; }
+	bool get_harvestable() const { return is_harvestable; };
 	int get_harvest_gain() const { return harvest_gain; };
 	std::string get_name() const { return name; };
 	std::string get_description() const { return description; };
@@ -110,11 +109,63 @@ struct GroundTile
 
 };
 
+
+// 	PlantType( const Mesh* mesh_in,
+// 				 Aura::Type aura_type_in,
+// 				 int cost_in = 5,
+// 				 bool is_harvestable_in = true,
+// 			   int harvest_gain_in = 7,
+// 			   float growth_time_in = 5.0f, 
+// 			   std::string name_in = "Default Name", 
+// 			   std::string description_in = "Default Description." )
+// 	 :mesh(mesh_in), 
+// 	  aura_type(aura_type_in),
+// 		growth_time(growth_time_in), 
+// 		cost(cost_in), 
+// 		is_harvestable(is_harvestable_in),
+// 		harvest_gain(harvest_gain_in),
+// 		name(name_in), 
+// 		description(description_in) {};
+
+// 	const Mesh* get_mesh() const { return mesh; };
+// 	Aura::Type get_aura_type() const { return aura_type; };
+// 	float get_growth_time() const { return growth_time; };
+// 	int get_cost() const { return cost; };
+// 	bool get_harvestable() const { return is_harvestable; }
+// 	int get_harvest_gain() const { return harvest_gain; };
+// 	std::string get_name() const { return name; };
+// 	std::string get_description() const { return description; };
+
+// private:
+// 	// TODO: each plant type should have multiple meshes attached (always 3?)
+// 	const Mesh* mesh = nullptr;
+// 	Aura::Type aura_type = Aura::none;
+// 	float growth_time = 5.0f;
+// 	int cost = 5;
+// 	bool is_harvestable = true;
+// 	int harvest_gain = 7;
+// 	std::string name = "Default Name";
+// 	std::string description = "Default Description.";
+// };
+
+
 // The 'PlantMode':
 struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
+	bool is_magicbook_open = false;
+	int fire_flower_seed_num = 1;
+	int fern_seed_num = 1;
+	int sapsucker_seed_num = 1;
+	int friend_fern_seed_num = 1;
+	//called to create menu for current scene:
+	void open_book();
+	glm::vec2 view_min = glm::vec2(0,0);
+	glm::vec2 view_max = glm::vec2(259, 225);
+	Scene::Drawable* magic_book = nullptr;
+
+    
 	void on_click( int x, int y );
 	GroundTile* get_tile_under_mouse( int x, int y);
 	virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;

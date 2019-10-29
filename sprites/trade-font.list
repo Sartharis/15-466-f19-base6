@@ -11,7 +11,7 @@ trade.xcf?font 88 1 +9 +11 +0 +11 "J"
 trade.xcf?font 98 1 +10 +11 +0 +11 "K"
 trade.xcf?font 109 1 +7 +11 +0 +11 "L"
 trade.xcf?font 117 1 +10 +11 +0 +11 "M"
-trade.xcf?font 128 1 +10 +11 +0 +11 "N"
+trade.xcf?font 128 1 +10 +11 +0 +11 "N"background scenebackground scene
 trade.xcf?font 139 1 +8 +11 +0 +11 "O"
 trade.xcf?font 148 1 +8 +11 +0 +11 "P"
 trade.xcf?font 157 1 +9 +11 +0 +11 "Q"

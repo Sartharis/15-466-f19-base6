@@ -28,3 +28,5 @@ scenes/show-scene.ilk
 scenes/show-scene.pdb
 scenes/SDL2.dll
 scenes/maya
+PlantMode.cpp
+PlantMode.hpp

@@ -10,6 +10,7 @@
 #include "load_save_png.hpp"
 #include "collide.hpp"
 #include "DrawSprites.hpp"
+#include "MenuMode.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,58 +23,70 @@
 #include <random>
 #include <unordered_map>
 
+// Sprite const *kitchen_empty = nullptr;
+
+GroundTile** grid = nullptr;
+int plant_grid_x = 20;
+int plant_grid_y = 20;
+
+
 PlantType const* test_plant = nullptr;
-PlantType const* fire_flower = nullptr;
+PlantType const* friend_plant = nullptr;
+PlantType const* vampire_plant = nullptr;
+PlantType const* carrot_plant = nullptr;
+PlantType const* cactus_plant = nullptr;
+PlantType const* fireflower_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* obstacle_tile = nullptr;
 
+// ground tiles
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
-Mesh const* plant_mesh = nullptr;
-Mesh const* fire_flower_mesh = nullptr;
+Mesh const* test_plant_mesh = nullptr;
+Mesh const* friend_plant_mesh = nullptr;
+Mesh const* vampire_plant_mesh = nullptr;
+Mesh const* selector_mesh = nullptr;
 Mesh const* obstacle_tile_mesh = nullptr;
+// test plant
+Mesh const* test_plant_1_mesh = nullptr;
+Mesh const* test_plant_2_mesh = nullptr;
+Mesh const* test_plant_3_mesh = nullptr;
+// carrot
+Mesh const* carrot_1_mesh = nullptr;
+Mesh const* carrot_2_mesh = nullptr;
+Mesh const* carrot_3_mesh = nullptr;
+// cactus
+Mesh const* cactus_1_mesh = nullptr;
+Mesh const* cactus_2_mesh = nullptr;
+Mesh const* cactus_3_mesh = nullptr;
+// fireflower
+Mesh const* fireflower_1_mesh = nullptr;
+Mesh const* fireflower_2_mesh = nullptr;
+Mesh const* fireflower_3_mesh = nullptr;
 
 Sprite const *magic_book_sprite = nullptr;
+
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
 
-Load< SpriteAtlas > magicbook_sprites_load(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *kret = new SpriteAtlas(data_path("magicbook"));
-	magic_book_sprite =  &kret->lookup("magic-book");
+Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
+	SpriteAtlas const *kret = new SpriteAtlas(data_path("magic_book"));
+	magic_book_sprite =  &kret->lookup("magicbook-bg");
 	return kret;
-}
+});
 
-void PlantMode::enter_magicbook(){
-	std::vector< MenuMode::Item > items;
-	glm::vec2 at(3.0f, view_max.y - 3.0f - 11.0f);
-	auto add_text = [&items,&at](std::string text) {
-		items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0xff), nullptr, at);
-		at.y -= 10.0f;
-	};
-	auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
-		//assert(text);
-		items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
-		items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
-		// items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
-		//at.y -= text->max_px.y - text->min_px.y;
-		at.y -= 15.0f;
-	};
-
-	add_choice("Carrot", [this](MenuMode::Item const &){
-		// location = kitchen_state;
-		// Mode::current = shared_from_this();
-		});
-	add_choice("Auora flower", [this](MenuMode::Item const &){
-		// location = garden_state;
-		// Mode::current = shared_from_this();
-	});
-	at.y = view_min.y + 40.0f; //gap before choices
-	add_text("Seeds you can buy...");
-
-}
+Load< MeshBuffer > ui_meshes( LoadTagDefault, [](){
+	auto ret = new MeshBuffer( data_path( "solidarityui.pnct" ) );
+	std::cout << "----meshes loaded:" << std::endl;
+	for( auto p : ret->meshes ) {
+		std::cout << p.first << std::endl;
+	}
+	selector_mesh = &ret->lookup( "Selector" );
+	return ret;
+} );
 
 Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	auto ret = new MeshBuffer(data_path("solidarity.pnct"));
@@ -81,13 +94,30 @@ Load< MeshBuffer > plant_meshes(LoadTagDefault, [](){
 	for (auto p : ret->meshes) {
 		std::cout << p.first << std::endl;
 	}
-	sea_tile_mesh = &ret->lookup("unoccupied");
+	sea_tile_mesh = &ret->lookup("sea");
 	ground_tile_mesh = &ret->lookup("soil");
-	plant_mesh = &ret->lookup("leaf2");
-	fire_flower_mesh = &ret->lookup("leaf3_root");
-	obstacle_tile_mesh = &ret->lookup("path");
+	test_plant_mesh = &ret->lookup( "leaf2" );
+	friend_plant_mesh = &ret->lookup( "cactus2" );
+	vampire_plant_mesh = &ret->lookup( "tree_2" );
+	obstacle_tile_mesh = &ret->lookup("unoccupied");
+	test_plant_1_mesh = &ret->lookup("leaf1");
+	test_plant_2_mesh = &ret->lookup("leaf2");
+	test_plant_3_mesh = &ret->lookup("leaf3");
+	carrot_1_mesh = &ret->lookup("carrot1");
+	carrot_2_mesh = &ret->lookup("carrot2");
+	carrot_3_mesh = &ret->lookup("carrot3");
+	cactus_1_mesh = &ret->lookup("cactus1");
+	cactus_2_mesh = &ret->lookup("cactus2");
+	cactus_3_mesh = &ret->lookup("cactus3");
+	fireflower_1_mesh = &ret->lookup("fireflower1");
+	fireflower_2_mesh = &ret->lookup("fireflower2");
+	fireflower_3_mesh = &ret->lookup("fireflower3");
 	return ret;
 });
+
+Load< GLuint > ui_meshes_for_firstpass_program( LoadTagDefault, [](){
+	return new GLuint( ui_meshes->make_vao_for_program( firstpass_program->program ) );
+} );
 
 Load< GLuint > plant_meshes_for_firstpass_program(LoadTagDefault, [](){
 	return new GLuint(plant_meshes->make_vao_for_program(firstpass_program->program));
@@ -105,8 +135,85 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 	// update plant state
 	if( plant_type )
 	{
+		if( plant_type == test_plant )
+		{
+			current_grow_time += elapsed;
+		}
+		else if( plant_type == friend_plant )
+		{
+			bool has_neighbor = false;
+			for( int x = -1; x <= 1; x += 2 )
+			{
+				if( grid_x + x >= 0 && grid_x + x < plant_grid_x)
+				{
+					GroundTile tile = grid[grid_x + x][grid_y];
+					const PlantType* plant = tile.plant_type;
+					if( plant )
+					{
+						has_neighbor = true;
+						//Boost the neighbor
+						tile.current_grow_time += elapsed * 0.1f;
+					}
+				}
+			}
+			for( int y = -1; y <= 1; y += 2 )
+			{
+				if(grid_y + y >= 0 && grid_y + y < plant_grid_y )
+				{
+					GroundTile& tile = grid[grid_x][grid_y + y];
+					const PlantType* plant = tile.plant_type;
+					if( plant )
+					{
+						has_neighbor = true;
+						//Boost the neighbor
+						tile.current_grow_time += elapsed * 0.1f;
+					}
+				}
+			}
+
+			if( has_neighbor )
+			{
+				current_grow_time += elapsed;
+			}
+			else
+			{
+				current_grow_time -= elapsed;
+			}
+		}
+		else if( plant_type == vampire_plant )
+		{
+			std::vector<GroundTile*> victims;
+
+			for( int x = -1; x <= 1; x += 1 )
+			{
+				for( int y = -1; y <= 1; y += 1 )
+				{
+					if( grid_x + x >= 0 && grid_x + x < plant_grid_x && grid_y + y >= 0 && grid_y + y < plant_grid_y && (x != 0 || y != 0) )
+					{
+						GroundTile& tile = grid[grid_x + x][grid_y + y];
+						const PlantType* plant = tile.plant_type;
+						if( plant )
+						{
+							victims.push_back( &tile );
+						}
+					}
+				}
+			}
+
+			if( victims.size() > 0 )
+			{
+				
+				victims[rand() % victims.size()]->current_grow_time -= elapsed * 3.0f;
+				current_grow_time += elapsed;
+			}
+			else
+			{
+				current_grow_time -= elapsed;
+			}
+		}
+
 		float target_time = plant_type->get_growth_time();
-		current_grow_time += elapsed;
+		if( current_grow_time < -1.0f ) try_remove_plant();
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
 		// non-harvestable plants are automatically removed (?)
@@ -130,7 +237,18 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 void GroundTile::update_plant_visuals( float percent_grown )
 {
 	//TEMP!!!!!!
-	plant_drawable->transform->position.z = glm::mix( start_height, end_height, percent_grown );
+	if( plant_type == test_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.4f, 0.0f, percent_grown );
+	}
+	else if( plant_type == vampire_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
+	}
+	else if( plant_type == friend_plant )
+	{
+		plant_drawable->transform->position.z = glm::mix( -0.7f, 0.0f, percent_grown );
+	}
 }
 
 void GroundTile::apply_pending_update()
@@ -196,12 +314,13 @@ PlantMode::PlantMode()
 		sea_tile = new GroundTileType( false, sea_tile_mesh );
 		ground_tile = new GroundTileType( true, ground_tile_mesh );
 		obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
+		test_plant = new PlantType( test_plant_mesh, Aura::none, 5, true, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+		friend_plant = new PlantType( friend_plant_mesh, Aura::none, 10, true, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
+		vampire_plant = new PlantType( vampire_plant_mesh, Aura::none, 20, true, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
+		fireflower_plant = new PlantType ( fireflower_3_mesh, Aura::fire, 10, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
-		test_plant = new PlantType( plant_mesh, Aura::none, 5, true, 7, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-		fire_flower = new PlantType ( fire_flower_mesh, Aura::fire, 10, false, 0, 10.0f, 
-				"Fire flower", "Gives off fire aura." );
+		selectedPlant = fireflower_plant;
 
-		selectedPlant = fire_flower;
 	}
 
 	// Make the tile grid
@@ -254,6 +373,20 @@ PlantMode::PlantMode()
 
 			}
 		}
+
+		//Create a selector mesh
+		scene.transforms.emplace_back();
+		Scene::Transform* selector_transform = &scene.transforms.back();
+		selector_transform->position =tile_center_pos;
+		scene.drawables.emplace_back( selector_transform );
+		selector = &scene.drawables.back();
+
+		Scene::Drawable::Pipeline selector_info;
+		selector_info = firstpass_program_pipeline;
+		selector_info.vao = *ui_meshes_for_firstpass_program;
+		selector_info.start = selector_mesh->start;
+		selector_info.count = selector_mesh->count;
+		selector->pipeline = selector_info;
 	}
 
 
@@ -403,17 +536,6 @@ PlantMode::~PlantMode() {
 	}
 }
 
-void PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size){
-	if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_SPACE) {
-		if(is_magicbook_open==false){
-			is_magicbook_open = true;
-		}else{
-			is_magicbook_open = false;
-		}
-	}
-
-}
-
 void PlantMode::on_click( int x, int y )
 {
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
@@ -439,10 +561,32 @@ void PlantMode::on_click( int x, int y )
 			}
 			else if(selectedPlant && energy >= selectedPlant->get_cost())
 			{
-				if( collided_tile->try_add_plant( selectedPlant ) )
-				{
-					energy -= selectedPlant->get_cost();
+				if(selectedPlant->get_name()=="Fern" && fern_seed_num>0){
+					if( collided_tile->try_add_plant( selectedPlant ) )
+					{
+						energy -= selectedPlant->get_cost();
+						fern_seed_num -= 1;
+					}
+				}else if(selectedPlant->get_name()=="Friend Fern"&&friend_fern_seed_num>0){
+					if( collided_tile->try_add_plant( selectedPlant ) )
+					{
+						energy -= selectedPlant->get_cost();
+						friend_fern_seed_num -= 1;
+					}
+				}else if(selectedPlant->get_name()=="Sapsucker"&&friend_fern_seed_num>0){
+					if( collided_tile->try_add_plant( selectedPlant ) )
+					{
+						energy -= selectedPlant->get_cost();
+						sapsucker_seed_num -= 1;
+					}
+				}else if(selectedPlant->get_name()=="Fire flower"&&friend_fern_seed_num>0){
+					if( collided_tile->try_add_plant( selectedPlant ) )
+					{
+						energy -= selectedPlant->get_cost();
+						fire_flower_seed_num -= 1;
+					}
 				}
+				
 			}
 		}
 	}
@@ -523,6 +667,33 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		return false;
 	}
 
+	if( evt.type == SDL_KEYDOWN )
+	{
+		switch( evt.key.keysym.sym ){
+		case SDLK_1:
+			selectedPlant = test_plant;
+			break;
+		case SDLK_2:
+			selectedPlant = friend_plant;
+			break;
+		case SDLK_3:
+			selectedPlant = vampire_plant;
+			break;
+		case SDLK_4:
+			selectedPlant = fireflower_plant;
+			break;
+		case SDLK_SPACE:
+			if(is_magicbook_open==false){
+				is_magicbook_open = true;
+			}else{
+				is_magicbook_open = false;
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
 	if( evt.type == SDL_MOUSEBUTTONDOWN )
 	{
 		if( evt.button.button == SDL_BUTTON_LEFT )
@@ -537,7 +708,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	// camera_azimuth += 0.5f * elapsed;
+	//camera_azimuth += 0.5f * elapsed;
 
 	// Update Camera Position
 	{
@@ -553,6 +724,12 @@ void PlantMode::update(float elapsed)
 			glm::vec3( 0.0f, 0.0f, 1.0f )
 			) ) ) );
 	}
+
+	// // Update magic book
+	// if(is_magicbook_open){
+	// 	open_book();
+	// }
+
 
 	// update tiles
 	{
@@ -617,27 +794,16 @@ void PlantMode::update(float elapsed)
 	int x, y;
 	const Uint32 state = SDL_GetMouseState( &x, &y );
 	(void)state;
-	if( true )
+	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
+	if( hovered_tile && hovered_tile->plant_type)
 	{
-		GroundTile* hovered_tile = get_tile_under_mouse( x, y );
-		if( hovered_tile && hovered_tile->plant_type)
+		if( hovered_tile->is_tile_harvestable() )
 		{
-			if( hovered_tile->is_tile_harvestable() )
-			{
-				action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
-			}
-			else
-			{
-				action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
-			}
-		}
-		else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
-		{
-			action_description = "Plant -" + std::to_string(selectedPlant->get_cost());
+			action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
 		}
 		else
 		{
-			action_description = "";
+			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
 		}
 
 		if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
@@ -656,6 +822,34 @@ void PlantMode::update(float elapsed)
 		{
 			tile_status_summary = "";
 		}
+	}
+	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
+	{    
+		action_description = "Seed ";
+		if(selectedPlant->get_name()=="Fern"){
+			action_description += std::to_string(fern_seed_num);
+		}else if(selectedPlant->get_name()=="Friend Fern"){
+			action_description += std::to_string(friend_fern_seed_num);
+		}else if(selectedPlant->get_name()=="Sapsucker"){
+			action_description += std::to_string(sapsucker_seed_num);
+		}else if(selectedPlant->get_name()=="Fire flower"){
+			action_description += std::to_string(fire_flower_seed_num);
+		}
+		action_description +=" cost: " +std::to_string(selectedPlant->get_cost());
+	}
+	else
+	{
+		action_description = "";
+	}
+
+	//Selector positioning
+	if( hovered_tile )
+	{
+		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.01f );
+	}
+	else
+	{
+		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 	}
 }
 
@@ -685,12 +879,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		for (int j=0; j<plant_grid_y; j++) {
 			if (grid[i][j].aura) grid[i][j].aura->draw(world_to_clip);
 		}
-	}
-
-	//draw magic book
-	if(is_magicbook_open){
-		glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
-		draw.draw(*magic_book_sprite, ul);
 	}
 
 	//---- postprocessing pass ----
@@ -753,14 +941,82 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( -1.0f, -1.0f ), glm::vec2( 1.0f, 1.0f ), drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") : " + selectedPlant->get_description(), glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :", glm::vec2( -1.5f, 0.85f ), 0.006f);
+		draw.draw_text( selectedPlant->get_description(), glm::vec2( -1.5f, 0.75f ), 0.004f );
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
 		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
 		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
-	// draw hint text
-		draw.draw_text("Enter Space to open magic book",glm::vec2(0,1f,0,16f),0.0002f);
+		// draw hint text
+		draw.draw_text("Press Space to open magic book",glm::vec2( -0.7f, 0.85f ), 0.006f);
+	
 	}
+   
+
+    if(is_magicbook_open && Mode::current.get() == this){
+		open_book();
+		// DrawSprites draw(*magicbook_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
+		// glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
+		// draw.draw(*magic_book_sprite,ul);
+	}
+
+
+
 }
 
+void PlantMode::open_book(){
+		std::vector< MenuMode::Item > items;
+		glm::vec2 at(-110.0f, view_max.y - 190.0f);
+		auto add_text = [&items,&at](std::string text) {
+			items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0xff), nullptr, at);
+			at.y -= 10.0f;
+		};
 
+		auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
+			items.emplace_back(text, nullptr, 0.8f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
+			items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
+			at.y -= 15.0f;
+		};
+		add_choice("Fern 2 energy", [this](MenuMode::Item const &){
+			if(energy>=2){
+				energy -= 2;
+				fern_seed_num +=1;
+			}
+			
+			Mode::current = shared_from_this();
+		});
+		add_choice("Friend Fern 5 energy", [this](MenuMode::Item const &){
+			if(energy>=5){
+				energy -= 5;
+				friend_fern_seed_num += 1;
+			}
+			Mode::current = shared_from_this();
+		});
+		add_choice("Sapsucker 10 energy", [this](MenuMode::Item const &){
+			if(energy >=10){
+				energy -= 10;
+				sapsucker_seed_num += 1;
+			}
+			Mode::current = shared_from_this();
+		});
+		add_choice("Fire Flower 10 energy", [this](MenuMode::Item const &){
+			if(energy >=10){
+				energy -= 10;
+				fire_flower_seed_num += 1;
+			}
+			Mode::current = shared_from_this();
+		});
+		add_choice("Close the book", [this](MenuMode::Item const &){
+			is_magicbook_open = false;
+			Mode::current = shared_from_this();
+		});
+		at.y = view_max.y - 170.0f; //gap before choices
+		at.x += 10.0f;
+		add_text("Welcome to magic book");
+		std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
+		menu->atlas = font_atlas; // for test 
+		menu->view_min = view_min;
+		menu->view_max = view_max;
+		menu->background = shared_from_this();
+		Mode::current = menu;
+	}
