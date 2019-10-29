@@ -631,13 +631,13 @@ void PlantMode::on_click( int x, int y )
 						energy -= selectedPlant->get_cost();
 						friend_fern_seed_num -= 1;
 					}
-				}else if(selectedPlant->get_name()=="Sapsucker"&&friend_fern_seed_num>0){
+				}else if(selectedPlant->get_name()=="Sapsucker"&&sapsucker_seed_num>0){
 					if( collided_tile->try_add_plant( selectedPlant ) )
 					{
 						energy -= selectedPlant->get_cost();
 						sapsucker_seed_num -= 1;
 					}
-				}else if(selectedPlant->get_name()=="Fire flower"&&friend_fern_seed_num>0){
+				}else if(selectedPlant->get_name()=="Fire flower"&&fire_flower_seed_num>0){
 					if( collided_tile->try_add_plant( selectedPlant ) )
 					{
 						energy -= selectedPlant->get_cost();
