@@ -48,6 +48,7 @@ struct PlantType
 	std::string get_description() const { return description; };
 
 private:
+	// TODO: each plant type should have multiple meshes attached (always 3?)
 	const Mesh* mesh = nullptr;
 	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;
@@ -106,9 +107,7 @@ struct GroundTile
 	// Aura 
 	Aura* aura = nullptr;
 
-	//TEMP!!!!!
-	float start_height = -0.4f;
-	float end_height = 0.0f;
+
 };
 
 // The 'PlantMode':
@@ -128,16 +127,14 @@ struct PlantMode : public Mode {
 	const PlantType* selectedPlant = nullptr;
 	Scene scene;
 	Scene::Camera *camera = nullptr;
+	Scene::Drawable* selector = nullptr;
 
-	GroundTile** grid = nullptr;
 	glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
-	int plant_grid_x = 20;
-	int plant_grid_y = 20;
 
-	int energy = 20;
+	int energy = 30;
 
 	float camera_radius = 7.5f;
-	float camera_azimuth = glm::radians(35.0f);
+	float camera_azimuth = glm::radians(125.0f);
 	float camera_elevation = glm::radians(40.0f);
 
 	//-------- opengl stuff 

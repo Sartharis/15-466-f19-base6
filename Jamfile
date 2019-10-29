@@ -177,8 +177,8 @@ GAME_NAMES =
 	main
 	data_path
 	collide
-  FirstpassProgram
-  PostprocessingProgram
+	FirstpassProgram
+	PostprocessingProgram
 	Aura
 	;
 

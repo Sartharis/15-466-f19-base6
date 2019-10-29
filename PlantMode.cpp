@@ -689,7 +689,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	//draw magic book
 	if(is_magicbook_open){
-		draw.draw(*kitchen_empty, ul);
+		glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
+		draw.draw(*magic_book_sprite, ul);
 	}
 
 	//---- postprocessing pass ----
