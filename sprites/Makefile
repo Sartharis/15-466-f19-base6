@@ -8,4 +8,4 @@ else
 endif
 
 ../dist/solidarity.png ../dist/solidarity.atlas : sprites/	
-	./pack-sprites ../dist/solidarity sprites/*
+	./pack-sprites ../dist/solidarity sprites/*.png

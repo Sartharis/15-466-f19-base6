@@ -22,7 +22,7 @@ void main() {
 
   // fixed directional lighting
 	vec3 n = normalize(normal);
-	vec3 l = normalize(vec3(0.4, 0.3, 0.5));
+	vec3 l = normalize(vec3(-0.4, -0.3, 0.6));
 	vec4 albedo = texture(TEX, texCoord) * color;
   vec3 reflectance = albedo.rgb / 3.1415926535;
   

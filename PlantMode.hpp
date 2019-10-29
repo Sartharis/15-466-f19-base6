@@ -20,7 +20,7 @@
 /* Contains info on how a plant works and looks like*/
 struct PlantType
 {
-	PlantType( const Mesh* mesh_in,
+	PlantType( const std::vector<const Mesh*> meshes_in,
 				 Aura::Type aura_type_in,
 				 int cost_in = 5,
 				 bool is_harvestable_in = true,
@@ -28,16 +28,23 @@ struct PlantType
 			   float growth_time_in = 5.0f, 
 			   std::string name_in = "Default Name", 
 			   std::string description_in = "Default Description." )
-	 :mesh(mesh_in), 
+	 :meshes(meshes_in), 
 	  aura_type(aura_type_in),
 		growth_time(growth_time_in), 
 		cost(cost_in), 
 		is_harvestable(is_harvestable_in),
 		harvest_gain(harvest_gain_in),
 		name(name_in), 
-		description(description_in) {};
+		description(description_in) { assert( meshes.size() > 0 ); };
 
-	const Mesh* get_mesh() const { return mesh; };
+	const Mesh* get_mesh( float percent_grown ) const {
+		if( percent_grown == 1.0f ) return meshes[ meshes.size()-1 ];
+		else if( is_harvestable ) {
+			return meshes[ floor( std::max(0.0f, percent_grown) * (meshes.size()-1) ) ];
+		} else {
+			return meshes[ floor( std::max(0.0f, percent_grown) * (meshes.size()) ) ];
+		}
+	};
 	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
@@ -48,7 +55,7 @@ struct PlantType
 
 private:
 	// TODO: each plant type should have multiple meshes attached (always 3?)
-	const Mesh* mesh = nullptr;
+	const std::vector<const Mesh*> meshes = {};
 	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;
 	int cost = 5;
