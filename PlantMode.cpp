@@ -643,6 +643,12 @@ void PlantMode::on_click( int x, int y )
 						energy -= selectedPlant->get_cost();
 						fire_flower_seed_num -= 1;
 					}
+				}else if(selectedPlant->get_name()=="Cactus"&&cactus_seed_num>0){
+					if( collided_tile->try_add_plant( selectedPlant ) )
+					{
+						energy -= selectedPlant->get_cost();
+						cactus_seed_num -= 1;
+					}
 				}
 				
 			}
@@ -839,6 +845,8 @@ void PlantMode::update(float elapsed)
 			action_description += std::to_string(sapsucker_seed_num);
 		}else if(selectedPlant->get_name()=="Fire flower"){
 			action_description += std::to_string(fire_flower_seed_num);
+		}else if(selectedPlant->get_name()=="Cactus"){
+			action_description += std::to_string(cactus_seed_num);
 		}
 		action_description +=" cost: " +std::to_string(selectedPlant->get_cost());
 	}
@@ -989,7 +997,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 void PlantMode::open_book(){
 		std::vector< MenuMode::Item > items;
-		glm::vec2 at(-110.0f, view_max.y - 190.0f);
+		glm::vec2 at(-110.0f, view_max.y - 180.0f);
 		auto add_text = [&items,&at](std::string text) {
 			items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0xff), nullptr, at);
 			at.y -= 10.0f;
@@ -1029,11 +1037,18 @@ void PlantMode::open_book(){
 			}
 			Mode::current = shared_from_this();
 		});
+		add_choice("Cactus 8 energy", [this](MenuMode::Item const &){
+			if(energy >=8){
+				energy -= 8;
+				cactus_seed_num += 1;
+			}
+			Mode::current = shared_from_this();
+		});
 		add_choice("Close the book", [this](MenuMode::Item const &){
 			is_magicbook_open = false;
 			Mode::current = shared_from_this();
 		});
-		at.y = view_max.y - 170.0f; //gap before choices
+		at.y = view_max.y - 160.0f; //gap before choices
 		at.x += 10.0f;
 		add_text("Welcome to magic book");
 		std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);

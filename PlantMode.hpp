@@ -166,6 +166,7 @@ struct PlantMode : public Mode {
 	int fern_seed_num = 1;
 	int sapsucker_seed_num = 1;
 	int friend_fern_seed_num = 1;
+	int cactus_seed_num = 0;
 	//called to create menu for current scene:
 	void open_book();
 	glm::vec2 view_min = glm::vec2(0,0);
