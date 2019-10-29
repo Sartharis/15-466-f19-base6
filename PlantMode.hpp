@@ -40,9 +40,9 @@ struct PlantType
 	const Mesh* get_mesh( float percent_grown ) const {
 		if( percent_grown == 1.0f ) return meshes[ meshes.size()-1 ];
 		else if( is_harvestable ) {
-			return meshes[ floor( std::max(0.0f, percent_grown) * (meshes.size()-1) ) ];
+			return meshes[static_cast<int>( floor( glm::max(0.0f, percent_grown) * (meshes.size()-1) )) ];
 		} else {
-			return meshes[ floor( std::max(0.0f, percent_grown) * (meshes.size()) ) ];
+			return meshes[static_cast<int>( floor( glm::max(0.0f, percent_grown) * (meshes.size()) )) ];
 		}
 	};
 	Aura::Type get_aura_type() const { return aura_type; };

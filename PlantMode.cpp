@@ -285,7 +285,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 
 void GroundTile::update_plant_visuals( float percent_grown )
 {
-	/*
+	
 	//TEMP!!!!!!
 	if( plant_type == test_plant )
 	{
@@ -293,13 +293,13 @@ void GroundTile::update_plant_visuals( float percent_grown )
 	}
 	else if( plant_type == vampire_plant )
 	{
-		plant_drawable->transform->position.z = glm::mix( -0.9f, 0.0f, percent_grown );
+		plant_drawable->transform->position.z = glm::mix( -0.2f, 0.0f, percent_grown );
 	}
 	else if( plant_type == friend_plant )
 	{
-		plant_drawable->transform->position.z = glm::mix( -0.7f, 0.0f, percent_grown );
+		plant_drawable->transform->position.z = glm::mix( -0.1f, 0.0f, percent_grown );
 	}
-	*/
+	
 	if( plant_type )
 	{
 		const Mesh* plant_mesh = plant_type->get_mesh( percent_grown );
@@ -377,7 +377,7 @@ PlantMode::PlantMode()
 		cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, Aura::none, 10, true, 20, 20.0f, "Cactus", "Grows faster under fire aura's influence but dislikes aqua aura." );
 		fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, false, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
-		selectedPlant = fireflower_plant;
+		selectedPlant = test_plant;
 
 	}
 
@@ -619,6 +619,11 @@ void PlantMode::on_click( int x, int y )
 			}
 			else if(selectedPlant && energy >= selectedPlant->get_cost())
 			{
+				if( collided_tile->try_add_plant( selectedPlant ) )
+				{
+					energy -= selectedPlant->get_cost();
+				}
+				/*
 				if(selectedPlant->get_name()=="Fern" && fern_seed_num>0){
 					if( collided_tile->try_add_plant( selectedPlant ) )
 					{
@@ -649,7 +654,7 @@ void PlantMode::on_click( int x, int y )
 						energy -= selectedPlant->get_cost();
 						cactus_seed_num -= 1;
 					}
-				}
+				}*/
 				
 			}
 		}
@@ -775,6 +780,11 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 void PlantMode::update(float elapsed) 
 {
 	//camera_azimuth += 0.5f * elapsed;
+
+	if( energy < 5 )
+	{
+		energy++;
+	}
 
 	// Update Camera Position
 	{
@@ -979,7 +989,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
 		// draw hint text
-		draw.draw_text("Press Space to open magic book",glm::vec2( -0.7f, 0.85f ), 0.006f);
+		//draw.draw_text("Press Space to open magic book",glm::vec2( -0.7f, 0.85f ), 0.006f);
 	
 	}
    
