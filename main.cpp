@@ -58,8 +58,8 @@ int main(int argc, char **argv) {
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 		960, 600, //TODO: modify window size if you'd like
 		SDL_WINDOW_OPENGL
-		// | SDL_WINDOW_RESIZABLE //uncomment to allow resizing
-		// | SDL_WINDOW_ALLOW_HIGHDPI //uncomment for full resolution on high-DPI screens
+		 | SDL_WINDOW_RESIZABLE //uncomment to allow resizing
+		 | SDL_WINDOW_ALLOW_HIGHDPI //uncomment for full resolution on high-DPI screens
 	);
 
 	//prevent exceedingly tiny windows when resizing:
@@ -134,6 +134,10 @@ int main(int argc, char **argv) {
 				//handle resizing:
 				if (evt.type == SDL_WINDOWEVENT && evt.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
 					on_resize();
+					if( Mode::current )
+					{
+						Mode::current->on_resize( drawable_size );
+					}
 				}
 				//handle input:
 				if (Mode::current && Mode::current->handle_event(evt, window_size)) {

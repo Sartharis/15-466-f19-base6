@@ -68,6 +68,8 @@ Mesh const* fireflower_3_mesh = nullptr;
 Sprite const *magic_book_sprite = nullptr;
 
 
+
+
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
@@ -285,23 +287,9 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform )
 
 void GroundTile::update_plant_visuals( float percent_grown )
 {
-	
-	//TEMP!!!!!!
-	if( plant_type == test_plant )
-	{
-		plant_drawable->transform->position.z = glm::mix( -0.4f, 0.0f, percent_grown );
-	}
-	else if( plant_type == vampire_plant )
-	{
-		plant_drawable->transform->position.z = glm::mix( -0.2f, 0.0f, percent_grown );
-	}
-	else if( plant_type == friend_plant )
-	{
-		plant_drawable->transform->position.z = glm::mix( -0.1f, 0.0f, percent_grown );
-	}
-	
 	if( plant_type )
 	{
+		plant_drawable->transform->scale = glm::mix( glm::vec3( 0.75f, 0.75f, 0.5f ), glm::vec3( 1.0f, 1.0f, 1.5f ), plant_type->get_stage_percent( percent_grown ) );
 		const Mesh* plant_mesh = plant_type->get_mesh( percent_grown );
 		plant_drawable->pipeline.start = plant_mesh->start;
 		plant_drawable->pipeline.count = plant_mesh->count;
@@ -379,6 +367,15 @@ PlantMode::PlantMode()
 
 		selectedPlant = test_plant;
 
+	}
+
+	//DEBUG - ADD ALL SEEDS
+	{
+		inventory.change_seeds_num( test_plant, 5 );
+		inventory.change_seeds_num( friend_plant, 5 );
+		inventory.change_seeds_num( vampire_plant, 5 );
+		inventory.change_seeds_num( cactus_plant, 5 );
+		inventory.change_seeds_num( fireflower_plant, 5 );
 	}
 
 	// Make the tile grid
@@ -482,107 +479,7 @@ PlantMode::PlantMode()
 		camera->fovy = glm::radians(45.0f);
 	}
 
-	{ // init the opengl stuff
-		// ------ generate framebuffer for firstpass
-		glGenFramebuffers(1, &firstpass_fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
-		// and its two color output layers
-		glGenTextures(2, firstpass_color_attachments);
-		for (GLuint i=0; i<2; i++) {
-			glBindTexture(GL_TEXTURE_2D, firstpass_color_attachments[i]);
-			glTexImage2D(
-				// ended up disabling high resolution draw so the program runs at a reasonable framerate...
-				GL_TEXTURE_2D, 0, GL_RGBA, 
-				(GLint)(screen_size.x/postprocessing_program->pixel_size), 
-				(GLint)(screen_size.y/postprocessing_program->pixel_size), 
-				0, GL_RGBA, GL_FLOAT, NULL    
-			);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0+i, GL_TEXTURE_2D, firstpass_color_attachments[i], 0    
-			);
-		}
-		// setup associated depth buffer
-		glGenRenderbuffers(1, &firstpass_depth_attachment);
-		glBindRenderbuffer(GL_RENDERBUFFER, firstpass_depth_attachment);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment);
-
-		glDrawBuffers(2, color_attachments);
-		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// ------ set up fbo for aura
-		glGenFramebuffers(1, &aura_fbo);
-		glBindFramebuffer(GL_FRAMEBUFFER, aura_fbo);
-		// and its color output
-		glGenTextures(1, &aura_color_attachment);
-		glBindTexture(GL_TEXTURE_2D, aura_color_attachment);
-		glTexImage2D(
-			GL_TEXTURE_2D, 0, GL_RGBA, 
-			(GLint)(screen_size.x/postprocessing_program->pixel_size), 
-			(GLint)(screen_size.y/postprocessing_program->pixel_size), 
-			0, GL_RGBA, GL_FLOAT, NULL    
-		);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glFramebufferTexture2D(
-			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aura_color_attachment, 0    
-		);
-		// make it share depth buffer with firstpass
-		glBindRenderbuffer(GL_RENDERBUFFER, firstpass_depth_attachment);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		// check status, unbind things
-		assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		// ------ set up 2nd pass pipeline
-		glGenVertexArrays(1, &trivial_vao);
-		glBindVertexArray(trivial_vao);
-
-		glGenBuffers(1, &trivial_vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, trivial_vbo);
-		glBufferData(
-			GL_ARRAY_BUFFER, 
-			trivial_vector.size() * sizeof(float),
-			trivial_vector.data(),
-			GL_STATIC_DRAW);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-		GL_ERRORS();
-
-		// ------ ping pong framebuffers for gaussian blur (use this for aura effect later)
-		glGenFramebuffers(2, pingpong_fbos);
-		glGenTextures(2, pingpong_color_attachments);
-		for (unsigned int i = 0; i < 2; i++) {
-			glBindFramebuffer(GL_FRAMEBUFFER, pingpong_fbos[i]);
-			glBindTexture(GL_TEXTURE_2D, pingpong_color_attachments[i]);
-			glTexImage2D(
-				GL_TEXTURE_2D, 0, GL_RGBA, 
-				(GLint)(screen_size.x/postprocessing_program->pixel_size), 
-				(GLint)(screen_size.y/postprocessing_program->pixel_size), 
-				0, GL_RGBA, GL_FLOAT, NULL
-			); // w&h of drawable size
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glFramebufferTexture2D(
-				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_color_attachments[i], 0
-			);
-		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
+	
 
 }
 
@@ -617,45 +514,12 @@ void PlantMode::on_click( int x, int y )
 			{
 				collided_tile->change_tile_type(ground_tile);
 			}
-			else if(selectedPlant && energy >= selectedPlant->get_cost())
+			else if(selectedPlant && inventory.get_seeds_num( selectedPlant ) > 0)
 			{
 				if( collided_tile->try_add_plant( selectedPlant ) )
 				{
-					energy -= selectedPlant->get_cost();
+					inventory.change_seeds_num( selectedPlant, -1 );
 				}
-				/*
-				if(selectedPlant->get_name()=="Fern" && fern_seed_num>0){
-					if( collided_tile->try_add_plant( selectedPlant ) )
-					{
-						energy -= selectedPlant->get_cost();
-						fern_seed_num -= 1;
-					}
-				}else if(selectedPlant->get_name()=="Friend Fern"&&friend_fern_seed_num>0){
-					if( collided_tile->try_add_plant( selectedPlant ) )
-					{
-						energy -= selectedPlant->get_cost();
-						friend_fern_seed_num -= 1;
-					}
-				}else if(selectedPlant->get_name()=="Sapsucker"&&sapsucker_seed_num>0){
-					if( collided_tile->try_add_plant( selectedPlant ) )
-					{
-						energy -= selectedPlant->get_cost();
-						sapsucker_seed_num -= 1;
-					}
-				}else if(selectedPlant->get_name()=="Fire flower"&&fire_flower_seed_num>0){
-					if( collided_tile->try_add_plant( selectedPlant ) )
-					{
-						energy -= selectedPlant->get_cost();
-						fire_flower_seed_num -= 1;
-					}
-				}else if(selectedPlant->get_name()=="Cactus"&&cactus_seed_num>0){
-					if( collided_tile->try_add_plant( selectedPlant ) )
-					{
-						energy -= selectedPlant->get_cost();
-						cactus_seed_num -= 1;
-					}
-				}*/
-				
 			}
 		}
 	}
@@ -801,12 +665,6 @@ void PlantMode::update(float elapsed)
 			) ) ) );
 	}
 
-	// // Update magic book
-	// if(is_magicbook_open){
-	// 	open_book();
-	// }
-
-
 	// update tiles
 	{
 		// initial update for grids themselves
@@ -846,19 +704,7 @@ void PlantMode::update(float elapsed)
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
 	{    
-		action_description = "Seed ";
-		if(selectedPlant->get_name()=="Fern"){
-			action_description += std::to_string(fern_seed_num);
-		}else if(selectedPlant->get_name()=="Friend Fern"){
-			action_description += std::to_string(friend_fern_seed_num);
-		}else if(selectedPlant->get_name()=="Sapsucker"){
-			action_description += std::to_string(sapsucker_seed_num);
-		}else if(selectedPlant->get_name()=="Fire flower"){
-			action_description += std::to_string(fire_flower_seed_num);
-		}else if(selectedPlant->get_name()=="Cactus"){
-			action_description += std::to_string(cactus_seed_num);
-		}
-		action_description +=" cost: " +std::to_string(selectedPlant->get_cost());
+		action_description = "Plant ";
 	}
 	else
 	{
@@ -896,13 +742,13 @@ void PlantMode::update(float elapsed)
 
 void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	//Draw scene:
-	camera->aspect = drawable_size.x / float(drawable_size.y);
+	camera->aspect = float( drawable_size.x) / float(drawable_size.y);
 
 	//---- first pass ----
 	glBindFramebuffer(GL_FRAMEBUFFER, firstpass_fbo);
 	glViewport(0, 0, 
-		(GLsizei)(screen_size.x / postprocessing_program->pixel_size),
-		(GLsizei)(screen_size.y / postprocessing_program->pixel_size));
+		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
+		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
@@ -949,13 +795,13 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	//-- combine all results
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, (GLsizei)screen_size.x, (GLsizei)screen_size.y);
+	glViewport(0, 0, (GLsizei)drawable_size.x, (GLsizei)drawable_size.y);
 	// set uniform so the shader performs desired task
 	glUniform1i(postprocessing_program->TASK_int, 3);
 	// set uniform for texture offset
 	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
-		postprocessing_program->pixel_size / screen_size.x, 
-		postprocessing_program->pixel_size / screen_size.y);
+		postprocessing_program->pixel_size / drawable_size.x,
+		postprocessing_program->pixel_size / drawable_size.y);
 	// bind inputs
 	glUniform1i(postprocessing_program->TEX0_tex, 0);
 	glUniform1i(postprocessing_program->TEX1_tex, 1);
@@ -981,28 +827,174 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	{ //draw all the text
-		DrawSprites draw( *font_atlas, glm::vec2( -1.0f, -1.0f ), glm::vec2( 1.0f, 1.0f ), drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(selectedPlant->get_cost()) +") :", glm::vec2( -1.5f, 0.85f ), 0.006f);
-		draw.draw_text( selectedPlant->get_description(), glm::vec2( -1.5f, 0.75f ), 0.004f );
-		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( 0.7f, 0.85f ), 0.006f );
-		draw.draw_text( action_description, glm::vec2( 0.7f, 0.75f ), 0.006f );
-		draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
+		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 40.0f ), 3.0f);
+		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 75.0f ), 2.0f );
+		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
+
+		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
+		glm::vec4 sel_clip = world_to_clip * selector->transform->make_local_to_world() * glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f );
+		if( sel_clip.w > 0.0f )
+		{
+			glm::vec3 sel_clip_xyz = glm::vec3( sel_clip );
+			glm::vec3 sel_clip_pos = sel_clip_xyz / sel_clip.w;
+			glm::vec2 sel_clip_pos_xy = glm::vec2( sel_clip_pos );
+			glm::vec2 window_pos = glm::vec2(( ( sel_clip_pos_xy.x + 1.0f ) / 2.0f ) * drawable_size.x, ( ( sel_clip_pos_xy.y + 1.0f ) / 2.0f ) * drawable_size.y );
+			glm::vec2 extent_min, extent_max;
+			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), 2.0f, &extent_min, &extent_max );
+			std::cout << sel_clip_pos.z;
+			draw.draw_text( action_description, window_pos - (extent_max /2.0f) + glm::vec2(10.0f, 160.0f) + glm::vec2(0.0f,-150.0f) * sel_clip_pos.z, 2.0f / sel_clip_pos.z );
+		}
+		
+
+		
+		//draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
 		// draw hint text
-		//draw.draw_text("Press Space to open magic book",glm::vec2( -0.7f, 0.85f ), 0.006f);
+		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 2.0f );
 	
 	}
    
 
-    if(is_magicbook_open && Mode::current.get() == this){
+    if(is_magicbook_open && Mode::current.get() == this)
+	{
 		open_book();
-		// DrawSprites draw(*magicbook_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
-		// glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
-		// draw.draw(*magic_book_sprite,ul);
 	}
 
 
 
+}
+
+void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
+{
+	{ // init the opengl stuff
+		// ------ generate framebuffer for firstpass
+		glGenFramebuffers( 1, &firstpass_fbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, firstpass_fbo );
+		// and its two color output layers
+		glGenTextures( 2, firstpass_color_attachments );
+		for( GLuint i = 0; i < 2; i++ ) {
+			glBindTexture( GL_TEXTURE_2D, firstpass_color_attachments[i] );
+			glTexImage2D(
+				// ended up disabling high resolution draw so the program runs at a reasonable framerate...
+				GL_TEXTURE_2D, 0, GL_RGBA,
+				(GLint)( new_drawable_size.x / postprocessing_program->pixel_size ),
+				(GLint)( new_drawable_size.y / postprocessing_program->pixel_size ),
+				0, GL_RGBA, GL_FLOAT, NULL
+			);
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, firstpass_color_attachments[i], 0
+			);
+		}
+		// setup associated depth buffer
+		glGenRenderbuffers( 1, &firstpass_depth_attachment );
+		glBindRenderbuffer( GL_RENDERBUFFER, firstpass_depth_attachment );
+		glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)new_drawable_size.x, (GLsizei)new_drawable_size.y );
+		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment );
+
+		glDrawBuffers( 2, color_attachments );
+		assert( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE );
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+		// ------ set up fbo for aura
+		glGenFramebuffers( 1, &aura_fbo );
+		glBindFramebuffer( GL_FRAMEBUFFER, aura_fbo );
+		// and its color output
+		glGenTextures( 1, &aura_color_attachment );
+		glBindTexture( GL_TEXTURE_2D, aura_color_attachment );
+		glTexImage2D(
+			GL_TEXTURE_2D, 0, GL_RGBA,
+			(GLint)( new_drawable_size.x / postprocessing_program->pixel_size ),
+			(GLint)( new_drawable_size.y / postprocessing_program->pixel_size ),
+			0, GL_RGBA, GL_FLOAT, NULL
+		);
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, aura_color_attachment, 0
+		);
+		// make it share depth buffer with firstpass
+		glBindRenderbuffer( GL_RENDERBUFFER, firstpass_depth_attachment );
+		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment );
+		glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+		// check status, unbind things
+		assert( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE );
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+		// ------ set up 2nd pass pipeline
+		glGenVertexArrays( 1, &trivial_vao );
+		glBindVertexArray( trivial_vao );
+
+		glGenBuffers( 1, &trivial_vbo );
+		glBindBuffer( GL_ARRAY_BUFFER, trivial_vbo );
+		glBufferData(
+			GL_ARRAY_BUFFER,
+			trivial_vector.size() * sizeof( float ),
+			trivial_vector.data(),
+			GL_STATIC_DRAW );
+
+		glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( float ), (void*)0 );
+		glEnableVertexAttribArray( 0 );
+
+		glBindBuffer( GL_ARRAY_BUFFER, 0 );
+		glBindVertexArray( 0 );
+		GL_ERRORS();
+
+		// ------ ping pong framebuffers for gaussian blur (use this for aura effect later)
+		glGenFramebuffers( 2, pingpong_fbos );
+		glGenTextures( 2, pingpong_color_attachments );
+		for( unsigned int i = 0; i < 2; i++ ) {
+			glBindFramebuffer( GL_FRAMEBUFFER, pingpong_fbos[i] );
+			glBindTexture( GL_TEXTURE_2D, pingpong_color_attachments[i] );
+			glTexImage2D(
+				GL_TEXTURE_2D, 0, GL_RGBA,
+				(GLint)( new_drawable_size.x / postprocessing_program->pixel_size ),
+				(GLint)( new_drawable_size.y / postprocessing_program->pixel_size ),
+				0, GL_RGBA, GL_FLOAT, NULL
+			); // w&h of drawable size
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+			glFramebufferTexture2D(
+				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpong_color_attachments[i], 0
+			);
+		}
+		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	}
+}
+
+int Inventory::get_seeds_num(const PlantType* plant ) 
+{
+	std::unordered_map<PlantType const*, int>::iterator it = flower_to_seeds.find( plant );
+	if( it != flower_to_seeds.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		flower_to_seeds.insert( std::make_pair( plant, 0 ) );
+		return 0;
+	}
+}
+
+void Inventory::change_seeds_num(const PlantType* plant, int seed_change )
+{
+	std::unordered_map<PlantType const*, int>::iterator it = flower_to_seeds.find( plant );
+	if( it != flower_to_seeds.end() )
+	{
+		it->second += seed_change;
+	}
+	else
+	{
+		flower_to_seeds.insert( std::make_pair( plant, seed_change ) );
+	}
 }
 
 void PlantMode::open_book(){
@@ -1018,42 +1010,29 @@ void PlantMode::open_book(){
 			items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
 			at.y -= 15.0f;
 		};
-		add_choice("Fern 2 energy", [this](MenuMode::Item const &){
-			if(energy>=2){
-				energy -= 2;
-				fern_seed_num +=1;
-			}
-			
-			Mode::current = shared_from_this();
-		});
-		add_choice("Friend Fern 5 energy", [this](MenuMode::Item const &){
-			if(energy>=5){
-				energy -= 5;
-				friend_fern_seed_num += 1;
-			}
-			Mode::current = shared_from_this();
-		});
-		add_choice("Sapsucker 10 energy", [this](MenuMode::Item const &){
-			if(energy >=10){
-				energy -= 10;
-				sapsucker_seed_num += 1;
-			}
-			Mode::current = shared_from_this();
-		});
-		add_choice("Fire Flower 10 energy", [this](MenuMode::Item const &){
-			if(energy >=10){
-				energy -= 10;
-				fire_flower_seed_num += 1;
-			}
-			Mode::current = shared_from_this();
-		});
-		add_choice("Cactus 8 energy", [this](MenuMode::Item const &){
-			if(energy >=8){
-				energy -= 8;
-				cactus_seed_num += 1;
-			}
-			Mode::current = shared_from_this();
-		});
+
+		auto add_buy_choice = [&items, &at, this]( const PlantType* plant ) {
+
+			std::string text = plant->get_name() + " " + std::to_string( plant->get_cost() ) + " energy";
+			std::function< void( MenuMode::Item const& ) > const& fn =
+				[this, plant]( MenuMode::Item const& ){
+				if( energy >= plant->get_cost() ){
+					energy -= plant->get_cost();
+					inventory.change_seeds_num( plant, 1 );
+				}
+			};
+
+			items.emplace_back( text, nullptr, 0.8f, glm::u8vec4( 0x00, 0x00, 0x00, 0x88 ), fn, at + glm::vec2( 16.0f, 0.0f ) );
+			items.back().selected_tint = glm::u8vec4( 0x00, 0x00, 0x00, 0xff );
+			at.y -= 15.0f;
+		};
+
+		add_buy_choice( test_plant );
+		add_buy_choice( friend_plant );
+		add_buy_choice( cactus_plant );
+		add_buy_choice( vampire_plant );
+		add_buy_choice( fireflower_plant );
+
 		add_choice("Close the book", [this](MenuMode::Item const &){
 			is_magicbook_open = false;
 			Mode::current = shared_from_this();

@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <list>
+#include <unordered_map>
 #include <iostream>
 
 
@@ -38,13 +39,15 @@ struct PlantType
 		description(description_in) { assert( meshes.size() > 0 ); };
 
 	const Mesh* get_mesh( float percent_grown ) const {
-		if( percent_grown == 1.0f ) return meshes[ meshes.size()-1 ];
-		else if( is_harvestable ) {
-			return meshes[static_cast<int>( floor( glm::max(0.0f, percent_grown) * (meshes.size()-1) )) ];
-		} else {
-			return meshes[static_cast<int>( floor( glm::max(0.0f, percent_grown) * (meshes.size()) )) ];
-		}
+		return meshes[get_growth_stage( percent_grown )];
 	};
+	float get_stage_percent( float percent_grown ) const { 
+		float float_index = ( glm::max( 0.0f, percent_grown ) * ( meshes.size() - 1 )); 
+		return percent_grown >= 1.0f ? 1.0f : float_index - floor( float_index );
+	};
+	int get_growth_stage( float percent_grown ) const { return percent_grown >= 1.0f ?
+										int(meshes.size()) - 1 : 
+										int(floor( glm::max( 0.0f, percent_grown ) * ( meshes.size() - 1 ) )); }
 	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
@@ -96,6 +99,7 @@ struct GroundTile
 	Scene::Drawable* plant_drawable = nullptr;
 
 	// Tile data. TODO: other properties like fertility?
+	float plant_health = 1.0f;
 	int grid_x = 0;
 	int grid_y = 0;
 	float fire_aura_effect = 0.0f; // in range 0 - 1
@@ -116,45 +120,14 @@ struct GroundTile
 
 };
 
+struct Inventory
+{
+	int get_seeds_num( const PlantType* plant );
+	void change_seeds_num(const PlantType* plant, int seed_change );
 
-// 	PlantType( const Mesh* mesh_in,
-// 				 Aura::Type aura_type_in,
-// 				 int cost_in = 5,
-// 				 bool is_harvestable_in = true,
-// 			   int harvest_gain_in = 7,
-// 			   float growth_time_in = 5.0f, 
-// 			   std::string name_in = "Default Name", 
-// 			   std::string description_in = "Default Description." )
-// 	 :mesh(mesh_in), 
-// 	  aura_type(aura_type_in),
-// 		growth_time(growth_time_in), 
-// 		cost(cost_in), 
-// 		is_harvestable(is_harvestable_in),
-// 		harvest_gain(harvest_gain_in),
-// 		name(name_in), 
-// 		description(description_in) {};
-
-// 	const Mesh* get_mesh() const { return mesh; };
-// 	Aura::Type get_aura_type() const { return aura_type; };
-// 	float get_growth_time() const { return growth_time; };
-// 	int get_cost() const { return cost; };
-// 	bool get_harvestable() const { return is_harvestable; }
-// 	int get_harvest_gain() const { return harvest_gain; };
-// 	std::string get_name() const { return name; };
-// 	std::string get_description() const { return description; };
-
-// private:
-// 	// TODO: each plant type should have multiple meshes attached (always 3?)
-// 	const Mesh* mesh = nullptr;
-// 	Aura::Type aura_type = Aura::none;
-// 	float growth_time = 5.0f;
-// 	int cost = 5;
-// 	bool is_harvestable = true;
-// 	int harvest_gain = 7;
-// 	std::string name = "Default Name";
-// 	std::string description = "Default Description.";
-// };
-
+private:
+	std::unordered_map<PlantType const*, int> flower_to_seeds;
+};
 
 // The 'PlantMode':
 struct PlantMode : public Mode {
@@ -179,6 +152,8 @@ struct PlantMode : public Mode {
 	virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
+	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
+	
 
 	//scene:
 	std::string action_description = "";
@@ -187,6 +162,8 @@ struct PlantMode : public Mode {
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
+	Inventory inventory;
+	
 
 	glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
 
