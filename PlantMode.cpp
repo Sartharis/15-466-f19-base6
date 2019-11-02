@@ -842,7 +842,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec2 window_pos = glm::vec2(( ( sel_clip_pos_xy.x + 1.0f ) / 2.0f ) * drawable_size.x, ( ( sel_clip_pos_xy.y + 1.0f ) / 2.0f ) * drawable_size.y );
 			glm::vec2 extent_min, extent_max;
 			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), 2.0f, &extent_min, &extent_max );
-			std::cout << sel_clip_pos.z;
 			draw.draw_text( action_description, window_pos - (extent_max /2.0f) + glm::vec2(10.0f, 160.0f) + glm::vec2(0.0f,-150.0f) * sel_clip_pos.z, 2.0f / sel_clip_pos.z );
 		}
 		
