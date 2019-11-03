@@ -40,7 +40,8 @@ void Button::draw_sprite(DrawSprites& draw_sprites) {
 void Button::draw_text(DrawSprites& draw_text) {
 	glm::vec2 drawable_size = draw_text.drawable_size;
 	// draw text
-	if (hover_behavior == Button::show_text && hovered && text.length() > 0) {
+	if ( !sprite
+			|| (hover_behavior == Button::show_text && hovered && text.length() > 0) ) {
 		glm::vec2 text_anchor = get_position() + get_text_anchor();
 		glm::vec2 text_draw_anchor = glm::vec2( text_anchor.x, drawable_size.y - text_anchor.y );
 		draw_text.draw_text( text, text_draw_anchor );

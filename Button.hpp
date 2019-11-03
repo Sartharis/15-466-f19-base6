@@ -6,9 +6,14 @@
 #include <iostream>
 
 /* A button, which can have a sprite and a string associated with it
+ * If it has a sprite, draws the sprite.
+ * Otherwise, draws the text.
  */
 struct Button {
 
+	/* show_text: additionally draw the text if the button has a sprite and is currently hovered. Nothing happens if it doesn't have a sprite (just draw the text as usual)
+	 * none: nothing happens on hover
+	 */
 	enum HoverBehavior { show_text, none };
 
 	Button (
@@ -45,7 +50,7 @@ struct Button {
 	void draw_text(DrawSprites& draw_text);
 
 private:
-	// whether button is hidden
+	// hover state
 	bool hovered = false;
 	HoverBehavior hover_behavior = Button::none;
 	// shape & location

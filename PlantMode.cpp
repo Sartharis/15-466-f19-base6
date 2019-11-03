@@ -161,6 +161,19 @@ PlantMode::PlantMode()
 			[]() {
 				std::cout << "clicked on watering can." << std::endl;
 			} );
+
+		// a button with no sprite attached
+		buttons.emplace_back (
+			glm::vec2(180, 530), // position
+			glm::vec2(80, 20), // size
+			nullptr, // sprite
+			glm::vec2(0, 0), // sprite anchor
+			Button::none, // hover behavior
+			"no sprite", // text
+			glm::vec2(0, 16), // text anchor
+			[]() {
+				std::cout << "this button has no sprite." << std::endl;
+			} );
 	}
 
 
