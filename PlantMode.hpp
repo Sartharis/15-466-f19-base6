@@ -8,6 +8,7 @@
 #include "Sprite.hpp"
 #include "Aura.hpp"
 #include "Order.hpp"
+#include "Button.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
@@ -67,6 +68,9 @@ struct PlantMode : public Mode {
 	float camera_radius = 7.5f;
 	float camera_azimuth = glm::radians(125.0f);
 	float camera_elevation = glm::radians(40.0f);
+
+	//UI:
+	std::vector<Button> buttons = {};
 
 	//-------- opengl stuff 
 

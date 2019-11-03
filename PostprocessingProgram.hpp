@@ -25,7 +25,7 @@ struct PostprocessingProgram {
   GLuint TEX_OFFSET_vec2 = -1U;
 
   // other params
-  float pixel_size = 1.0f;
+  float pixel_size = 2.0f;
 
 };
 

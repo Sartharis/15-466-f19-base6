@@ -182,6 +182,7 @@ GAME_NAMES =
 	PostprocessingProgram
 	Aura
 	Plant
+	Button
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff

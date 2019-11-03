@@ -31,6 +31,7 @@ int plant_grid_y = 20;
 
 Mesh const* selector_mesh = nullptr;
 Sprite const *magic_book_sprite = nullptr;
+Sprite const* glove_sprite = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
@@ -38,7 +39,12 @@ Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 
 Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
-	magic_book_sprite =  &kret->lookup("magicbookBackground");
+	std::cout << "----2D sprites loaded:" << std::endl;
+	for( auto p : kret->sprites ) {
+		std::cout << p.first << std::endl;
+	}
+	magic_book_sprite = &kret->lookup("magicbookBackground");
+	glove_sprite = &kret->lookup("glove");
 	return kret;
 });
 
@@ -89,10 +95,7 @@ PlantMode::PlantMode()
 		selector_info.count = selector_mesh->count;
 		selector->pipeline = selector_info;
 	}
-
-
-
-
+	
 	// Create a lil center island
 	{
 		for( int32_t x = 7; x < 13; ++x )
@@ -127,6 +130,21 @@ PlantMode::PlantMode()
 		camera->fovy = glm::radians(45.0f);
 	}
 
+	{ //DEBUG: init UI
+
+		// glove button
+		buttons.emplace_back (
+			glm::vec2(50, 500), // position
+			glm::vec2(64, 64), // size
+			glove_sprite, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			"sample text", // text
+			glm::vec2(0, 0), // text anchor
+			[]() {
+				std::cout << "clicked on glove." << std::endl;
+			} );
+	}
+
 
 }
 
@@ -140,6 +158,13 @@ PlantMode::~PlantMode() {
 
 void PlantMode::on_click( int x, int y )
 {
+	//---- first detect click on UI. If UI handled the click, return.
+	for( int i = 0; i < buttons.size(); i++ )
+	{
+		if( buttons[i].try_click( glm::vec2(x, y) ) ) return;
+	}
+
+	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
 
 	if( collided_tile )
@@ -474,7 +499,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	current_order->draw(drawable_size);
+	// current_order->draw(drawable_size);
 
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -495,13 +520,18 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			draw.draw_text( action_description, window_pos - (extent_max /2.0f) + glm::vec2(10.0f, 160.0f) + glm::vec2(0.0f,-150.0f) * sel_clip_pos.z, 2.0f / sel_clip_pos.z );
 		}
 		
-
-		
 		//draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
 		// draw hint text
 		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 2.0f );
-	
+	}
+
+	{ //draw the buttons
+		DrawSprites draw_sprites( *magicbook_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		DrawSprites draw_text( *font_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		for (int i=0; i<buttons.size(); i++) {
+			buttons[i].draw( draw_sprites, draw_text );
+		}
 	}
    
 
