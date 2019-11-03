@@ -473,9 +473,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_DEPTH_TEST );
 
-	//test order
-	current_order = order1;
-	order->draw();
+	//test draw order
+	current_order->draw(drawable_size);
 
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );

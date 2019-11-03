@@ -1,5 +1,5 @@
+#pragma once
 #include "Plant.hpp"
-#include "PlantMode.hpp"
 
 /* Contains info on the order*/
 struct OrderType
@@ -21,9 +21,10 @@ struct OrderType
     int get_bonus_cash() const { return bonus_cash; };
     PlantType const* get_bonus_plant() const {return bonus_plant;};
 
+	void draw(glm::uvec2 const &drawable_size) const;
+	glm::vec2 view_min = glm::vec2(0,0);
+	glm::vec2 view_max = glm::vec2(50, 44);
 
-
-    
     private:
         std::string title = "Default Order Title";
         std::string description = "Default Order Description";
@@ -32,17 +33,5 @@ struct OrderType
         PlantType const* bonus_plant = test_plant;
 };
 
-extern PlantType const* test_plant;
-extern PlantType const* friend_plant;
-extern PlantType const* vampire_plant;
-extern PlantType const* carrot_plant;
-extern PlantType const* cactus_plant;
-extern PlantType const* fireflower_plant;
-
-OrderType const* order1;
-OrderType const* order2;
-extern OrderType const* current_order;
-
-void draw();
-glm::vec2 view_min = glm::vec2(0,0);
-glm::vec2 view_max = glm::vec2(50, 44);
+extern OrderType const* order1;
+extern OrderType const* order2;

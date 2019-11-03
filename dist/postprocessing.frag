@@ -61,9 +61,9 @@ void main() {
     // combine albedo & shadow
     fragColor = (shadow.a > 0 ? shadow : firstpass) + aura;
     // edge detection
-    float difX = length(firstpass - texture(TEX1, TexCoords + vec2(TEX_OFFSET.x, 0)));
-    float difY = length(firstpass - texture(TEX1, TexCoords + vec2(0, TEX_OFFSET.y)));
-    if (difX > 0.05 || difY > 0.05) fragColor = fragColor;// vec4(77/255, 46/255, 29/255, 1);// -= vec4(0.2, 0.15, 0.1, 0);
+    float difX = length(firstpass - texture(TEX0, TexCoords + vec2(TEX_OFFSET.x, 0)));
+    float difY = length(firstpass - texture(TEX0, TexCoords + vec2(0, TEX_OFFSET.y)));
+    if (difX > 0.05 || difY > 0.05) fragColor -= vec4(0.2, 0.15, 0.1, 0);
   } else if (TASK == 4) { // debug use
     vec4 tex = texture(TEX0, TexCoords);
     fragColor = tex;
