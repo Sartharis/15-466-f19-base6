@@ -167,6 +167,7 @@ GAME_NAMES =
 	CopyToScreenProgram
 	BoneAnimation
 	PlantMode
+	Order
 	Sound
 	load_wav
 	load_opus

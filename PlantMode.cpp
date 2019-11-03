@@ -37,8 +37,8 @@ Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 } );
 
 Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *kret = new SpriteAtlas(data_path("magic_book"));
-	magic_book_sprite =  &kret->lookup("magicbook-bg");
+	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
+	magic_book_sprite =  &kret->lookup("magicbookBackground");
 	return kret;
 });
 
@@ -473,6 +473,10 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_DEPTH_TEST );
 
+	//test order
+	current_order = order1;
+	order->draw();
+
 	{ //draw all the text
 		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 40.0f ), 3.0f);
@@ -506,6 +510,9 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	{
 		open_book();
 	}
+
+	//test order
+
 
 }
 

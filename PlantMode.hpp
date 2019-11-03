@@ -7,6 +7,7 @@
 #include "Scene.hpp"
 #include "Sprite.hpp"
 #include "Aura.hpp"
+#include "Order.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
@@ -16,6 +17,7 @@
 #include <unordered_map>
 #include <iostream>
 #include "Plant.hpp"
+#include "PlantMode.hpp"
 
 struct Inventory
 {
@@ -42,6 +44,8 @@ struct PlantMode : public Mode {
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(259, 225);
 	Scene::Drawable* magic_book = nullptr;
+	OrderType const* current_order;
+	Order* order;
 
     
 	void on_click( int x, int y );
