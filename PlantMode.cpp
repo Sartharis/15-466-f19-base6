@@ -30,8 +30,10 @@ int plant_grid_x = 20;
 int plant_grid_y = 20;
 
 Mesh const* selector_mesh = nullptr;
-Sprite const *magic_book_sprite = nullptr;
+Sprite const* magic_book_sprite = nullptr;
 Sprite const* glove_sprite = nullptr;
+Sprite const* watering_can_sprite = nullptr;
+Sprite const* cursor_sprite = nullptr;
 
 Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
@@ -45,6 +47,8 @@ Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * 
 	}
 	magic_book_sprite = &kret->lookup("magicbookBackground");
 	glove_sprite = &kret->lookup("glove");
+	watering_can_sprite = &kret->lookup("wateringCan");
+	cursor_sprite = &kret->lookup("bag"); //TEMP
 	return kret;
 });
 
@@ -134,14 +138,28 @@ PlantMode::PlantMode()
 
 		// glove button
 		buttons.emplace_back (
-			glm::vec2(50, 500), // position
+			glm::vec2(20, 500), // position
 			glm::vec2(64, 64), // size
 			glove_sprite, // sprite
 			glm::vec2(32, 32), // sprite anchor
-			"sample text", // text
+			Button::show_text, // hover behavior
+			"glove", // text
 			glm::vec2(0, 0), // text anchor
 			[]() {
 				std::cout << "clicked on glove." << std::endl;
+			} );
+
+		// watering can button
+		buttons.emplace_back (
+			glm::vec2(100, 500), // position
+			glm::vec2(64, 64), // size
+			watering_can_sprite, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			Button::show_text, // hover behavior
+			"watering can", // text
+			glm::vec2(0, 0), // text anchor
+			[]() {
+				std::cout << "clicked on watering can." << std::endl;
 			} );
 	}
 
@@ -357,10 +375,15 @@ void PlantMode::update(float elapsed)
 		}
 	}
 
-	// Query for hovered tile
 	int x, y;
-	const Uint32 state = SDL_GetMouseState( &x, &y );
-	(void)state;
+	SDL_GetMouseState( &x, &y );
+
+	// update buttons' hovered state
+	for( int i = 0; i < buttons.size(); i++) {
+		buttons[i].update_hover( glm::vec2(x, y) );
+	}
+	
+	// Query for hovered tile 
 	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
 	if( hovered_tile && hovered_tile->plant_type)
 	{
@@ -526,12 +549,24 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 2.0f );
 	}
 
-	{ //draw the buttons
+	{ //draw UI
+
+		// button sprites
 		DrawSprites draw_sprites( *magicbook_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		for (int i=0; i<buttons.size(); i++) {
+			buttons[i].draw_sprite( draw_sprites );
+		}
+
+		// button text
 		DrawSprites draw_text( *font_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		for (int i=0; i<buttons.size(); i++) {
-			buttons[i].draw( draw_sprites, draw_text );
+			buttons[i].draw_text( draw_text );
 		}
+
+		// cursor
+		int mouse_x, mouse_y;
+		SDL_GetMouseState(&mouse_x, &mouse_y);
+		draw_sprites.draw( *cursor_sprite, glm::vec2(mouse_x, drawable_size.y - mouse_y) );
 	}
    
 

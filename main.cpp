@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 	srand((unsigned int)(time(0)));
 
 	//Hide mouse cursor (note: showing can be useful for debugging):
-	//SDL_ShowCursor(SDL_DISABLE);
+	SDL_ShowCursor(SDL_DISABLE);
 
 	//------------ load resources --------------
 	call_load_functions();
