@@ -74,11 +74,11 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	sea_tile = new GroundTileType( false, sea_tile_mesh );
 	ground_tile = new GroundTileType( true, ground_tile_mesh );
 	obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
-	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, Aura::none, 5, true, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
-	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, Aura::none, 10, true, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
-	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, Aura::none, 20, true, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
-	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, Aura::none, 10, true, 20, 20.0f, "Cactus", "Grows faster under fire aura's influence but dislikes aqua aura." );
-	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, true, 0, 10.0f, "Fire flower", "Gives off fire aura." );
+	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, Aura::none, 5, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
+	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, Aura::none, 10, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
+	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, Aura::none, 20, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
+	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, Aura::none, 10, 20, 20.0f, "Cactus", "Grows faster under fire aura's influence but dislikes aqua aura." );
+	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, 0, 10.0f, "Fire flower", "Gives off fire aura." );
 
 	plant_mesh_buffer = ret;
 
@@ -266,26 +266,10 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		if( current_grow_time < -1.0f ) try_remove_plant();
 		if( current_grow_time > target_time ) current_grow_time = target_time;
 		update_plant_visuals( current_grow_time / target_time );
-		// non-harvestable plants are automatically removed (?)
-		if( current_grow_time >= target_time && !plant_type->get_harvestable() ) try_remove_plant();
 	}
 
-	// update aura state after plant update is done
-	if( plant_type && ( plant_type->get_aura_type() != Aura::none ) ) {
-		if( aura && ( plant_type->get_aura_type() == aura->type ) )
-		{ // the tile already has the plant's aura
-			aura->update( elapsed, camera_transform );
-		}
-		else
-		{ // the tile doesn't has the plant's aura: either it has something else, or doesn't have any
-			try_remove_aura();
-			aura = new Aura( tile_drawable->transform->position, plant_type->get_aura_type() );
-		}
-	}
-	else try_remove_aura();
-
-	// apply aura effect on neighbors (by putting into pending update)
-	if( aura )
+	// apply aura effect onto neighbors (by putting into pending update)
+	if( plant_type && ( plant_type->get_aura_type() != Aura::none ) )
 	{
 		auto try_apply_aura = [elapsed]( GroundTile& target, Aura::Type aura_type ) {
 			if( target.tile_type->get_can_plant() ) {
@@ -302,25 +286,28 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				}
 			}
 		};
-		for( int x = -1; x <= 1; x += 2 )
-		{
-			if( grid_x + x >= 0 && grid_x + x < grid.size_x )
-			{
+		// get a list of neighbors
+		std::vector< GroundTile* > neighbors = {};
+		for( int x = -1; x <= 1; x += 2 ) {
+			if( grid_x + x >= 0 && grid_x + x < grid.size_x ) {
 				GroundTile& tile = grid.tiles[grid_x + x][grid_y];
-				try_apply_aura( tile, aura->type );
+				neighbors.push_back( &tile );
 			}
 		}
-		for( int y = -1; y <= 1; y += 2 )
-		{
-			if( grid_y + y >= 0 && grid_y + y < grid.size_y )
-			{
+		for( int y = -1; y <= 1; y += 2 ) {
+			if( grid_y + y >= 0 && grid_y + y < grid.size_y ) {
 				GroundTile& tile = grid.tiles[grid_x][grid_y + y];
-				try_apply_aura( tile, aura->type );
+				neighbors.push_back( &tile );
 			}
+		}
+		// apply effect
+		for( auto tile_ptr : neighbors ) {
+			assert( tile_ptr );
+			try_apply_aura( *tile_ptr, plant_type->get_aura_type() );
 		}
 	}
 
-	// aura effects from neighboring tiles decrease over time
+	// received aura effects decrease over time
 	fire_aura_effect = std::max( 0.0f, fire_aura_effect - 0.1f * elapsed );
 	aqua_aura_effect = std::max( 0.0f, aqua_aura_effect - 0.1f * elapsed );
 }
@@ -329,7 +316,7 @@ void GroundTile::update_plant_visuals( float percent_grown )
 {
 	if( plant_type )
 	{
-		plant_drawable->transform->scale = glm::mix( glm::vec3( 0.75f, 0.75f, 0.5f ), glm::vec3( 1.0f, 1.0f, 1.5f ), plant_type->get_stage_percent( percent_grown ) );
+		plant_drawable->transform->scale = glm::mix( glm::vec3( 0.75f, 0.75f, 0.35f ), glm::vec3( 1.0f, 1.0f, 1.0f ), plant_type->get_stage_percent( percent_grown ) );
 		const Mesh* plant_mesh = plant_type->get_mesh( percent_grown );
 		plant_drawable->pipeline.start = plant_mesh->start;
 		plant_drawable->pipeline.count = plant_mesh->count;
@@ -338,10 +325,38 @@ void GroundTile::update_plant_visuals( float percent_grown )
 
 void GroundTile::apply_pending_update()
 {
+	// move update from pending_update
 	fire_aura_effect = std::min( 1.0f, fire_aura_effect + pending_update.fire_aura_effect );
 	aqua_aura_effect = std::min( 1.0f, aqua_aura_effect + pending_update.aqua_aura_effect );
 	pending_update.fire_aura_effect = 0.0f;
 	pending_update.aqua_aura_effect = 0.0f;
+}
+
+void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_transform )
+{ // TODO: always have aura created but only update when there is effect?
+	// create corresponding aura if not already exist
+	if( fire_aura_effect > 0 && (!fire_aura) ) {
+		fire_aura = new Aura( tile_drawable->transform->position, Aura::fire );
+	}
+	if( aqua_aura_effect > 0 && (!aqua_aura) ) {
+		aqua_aura = new Aura( tile_drawable->transform->position, Aura::fire );
+	}
+	// or delete if no longer has aura effect	
+	if( fire_aura_effect == 0 && fire_aura ) {
+		delete fire_aura;
+		fire_aura = nullptr;
+	}
+	if( aqua_aura_effect == 0 && aqua_aura ) {
+		delete aqua_aura;
+		aqua_aura = nullptr;
+	}
+	// update aura accordingly
+	if( fire_aura ) fire_aura->update( 
+			int(floor(fire_aura_effect * fire_aura->max_strength)), // strength
+			elapsed, camera_transform );
+	if( aqua_aura ) aqua_aura->update( 
+			int(floor(aqua_aura_effect * aqua_aura->max_strength)), // strength
+			elapsed, camera_transform );
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -373,23 +388,8 @@ bool GroundTile::try_remove_plant()
 	return false;
 }
 
-bool GroundTile::try_remove_aura()
-{
-	// set the aura pointer to null. 
-	// However if the tile has a plant that gives aura, will add one in next iteration anyway
-	if( aura )
-	{
-		delete aura;
-		aura = nullptr;
-		return true;
-	}
-	return false;
-}
-
 bool GroundTile::is_tile_harvestable()
 {
-	return plant_type
-		&& plant_type->get_harvestable()
-		&& current_grow_time >= plant_type->get_growth_time();
+	return plant_type && current_grow_time >= plant_type->get_growth_time();
 }
 

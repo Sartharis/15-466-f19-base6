@@ -5,6 +5,10 @@
 
 #include <vector>
 #include <list>
+#include <iostream>
+
+// forward declaration
+struct DrawAura;
 
 // manages aura dots for a tile location (TODO: manage aura for all tiles? Or make it AuraType instead?)
 struct Aura { 
@@ -33,7 +37,7 @@ struct Aura {
 					color = glm::u8vec4(50, 135, 255, 255);
 					break;
 				default:
-					assert("non-exhaustive match of aura type??");
+					std::cout << "WARNING: non-exhaustive match of aura type??" << std::endl;
 					break;
 			}
 		}
@@ -43,19 +47,32 @@ struct Aura {
 	};
 
 	Aura(glm::vec3 _center, Type _type);
-	void update(float elapsed, Scene::Transform* cam);
-	void draw(glm::mat4 world_to_clip);
+	void update(int _strength, float elapsed, Scene::Transform* cam);
+	void draw(DrawAura &draw_aura);
 	
 	// states
 	Type type;
-	int num_dots = 16; // maximum strength
-	int strength = 10;
+	int max_strength = 5; // num dots
+	int strength = 0;
 	glm::vec3 center;
 
 	// internals
 	std::vector<Dot> dots;
-	std::vector<Vertex> dots_vbo;
+	Scene::Transform* cam_transform = nullptr;
+	// std::vector<Vertex> dots_vbo;
 
 	// opengl-related stuff
 	GLuint vao, vbo, white_tex;
+};
+
+struct DrawAura {
+
+	DrawAura( glm::mat4 _world_to_clip ) : world_to_clip(_world_to_clip) {}
+	~DrawAura(); // actual drawing
+
+	// internals
+	std::vector<Aura::Vertex> vertices = {};
+	glm::mat4 world_to_clip;
+	// GLuint vao, vbo, white_tex;
+
 };

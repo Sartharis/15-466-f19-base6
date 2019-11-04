@@ -39,6 +39,7 @@ Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
 	return new SpriteAtlas( data_path( "trade-font" ) );
 } );
 
+// TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
 	std::cout << "----2D sprites loaded:" << std::endl;
@@ -48,7 +49,7 @@ Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * 
 	magic_book_sprite = &kret->lookup("magicbookBackground");
 	glove_sprite = &kret->lookup("glove");
 	watering_can_sprite = &kret->lookup("wateringCan");
-	cursor_sprite = &kret->lookup("bag"); //TEMP
+	cursor_sprite = &kret->lookup("cursor"); 
 	return kret;
 });
 
@@ -182,7 +183,9 @@ PlantMode::PlantMode()
 PlantMode::~PlantMode() {
 	for (int i=0; i<grid.size_x; i++) {
 		for (int j=0; j<grid.size_y; j++) {
-			grid.tiles[i][j].try_remove_aura();
+			GroundTile& tile = grid.tiles[i][j];
+			if( tile.fire_aura ) delete tile.fire_aura;
+			if( tile.aqua_aura ) delete tile.aqua_aura;
 		}
 	}
 }
@@ -348,11 +351,6 @@ void PlantMode::update(float elapsed)
 {
 	//camera_azimuth += 0.5f * elapsed;
 
-	if( energy < 5 )
-	{
-		energy++;
-	}
-
 	// Update Camera Position
 	{
 		float ce = std::cos( camera_elevation );
@@ -378,12 +376,20 @@ void PlantMode::update(float elapsed)
 				grid.tiles[x][y].update( elapsed, camera->transform, grid );
 			}
 		}
-		// apply pending update
+		// apply pending update from neighboring tiles
 		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
 				grid.tiles[x][y].apply_pending_update();
+			}
+		}
+		// other visuals
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid.tiles[x][y].update_aura_visuals( elapsed, camera->transform );
 			}
 		}
 	}
@@ -470,9 +476,13 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
-	for (int i=0; i<grid.size_x; i++) {
-		for (int j=0; j<grid.size_y; j++) {
-			if (grid.tiles[i][j].aura) grid.tiles[i][j].aura->draw(world_to_clip);
+	{ // actual drawing: create draw_aura instance and append the vertices
+		DrawAura draw_aura( world_to_clip );
+		for (int i=0; i<grid.size_x; i++) {
+			for (int j=0; j<grid.size_y; j++) {
+				if (grid.tiles[i][j].fire_aura) grid.tiles[i][j].fire_aura->draw( draw_aura );
+				if (grid.tiles[i][j].aqua_aura) grid.tiles[i][j].aqua_aura->draw( draw_aura );
+			}
 		}
 	}
 
