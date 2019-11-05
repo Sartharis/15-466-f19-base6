@@ -26,8 +26,8 @@
 // Sprite const *kitchen_empty = nullptr;
 
 TileGrid grid;
-int plant_grid_x = 20;
-int plant_grid_y = 20;
+int plant_grid_x = 10;
+int plant_grid_y = 10;
 
 Mesh const* selector_mesh = nullptr;
 Sprite const* magic_book_sprite = nullptr;
@@ -101,21 +101,34 @@ PlantMode::PlantMode()
 		selector->pipeline = selector_info;
 	}
 	
+	std::string island =
+		"ooxxxxxooo"
+		"oxxxxxxxxo"
+		"xxxxxxxxxo"
+		"oxxxxxxxxx"
+		"xxxxCCxxxx"
+		"xxxCCCCxxx"
+		"xxxxCCxxxo"
+		"oxxxxxxooo"
+		"ooxxxxxxxo"
+		"oooooxxxoo";
+
 	// Create a lil center island
 	{
-		for( int32_t x = 7; x < 13; ++x )
+		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
-			for( int32_t y = 7; y < 13; ++y )
+			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				grid.tiles[x][y].change_tile_type( obstacle_tile );
-			}
-		}
-
-		for( int32_t x = 8; x < 12; ++x )
-		{
-			for( int32_t y = 8; y < 12; ++y )
-			{
-				grid.tiles[x][y].change_tile_type( ground_tile );
+				const GroundTileType* type = sea_tile;
+				if( island[x + y * plant_grid_x] == 'x' )
+				{
+					type = obstacle_tile;
+				}
+				else if ( island[x + y * plant_grid_x] == 'C' )
+				{
+					type = ground_tile;
+				}
+				grid.tiles[x][y].change_tile_type( type);
 			}
 		}
 	}
@@ -205,7 +218,11 @@ void PlantMode::on_click( int x, int y )
 	{
 		if( collided_tile->plant_type )
 		{
-			if( collided_tile->is_tile_harvestable() )
+			if( collided_tile->is_plant_dead())
+			{
+				collided_tile->try_remove_plant();
+			}
+			else if( collided_tile->is_tile_harvestable() )
 			{
 				int gain = collided_tile->plant_type->get_harvest_gain();
 				if( collided_tile->try_remove_plant() )
@@ -406,7 +423,11 @@ void PlantMode::update(float elapsed)
 	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
 	if( hovered_tile && hovered_tile->plant_type)
 	{
-		if( hovered_tile->is_tile_harvestable() )
+		if( hovered_tile->is_plant_dead() )
+		{
+			action_description = "Remove ";
+		}
+		else if( hovered_tile->is_tile_harvestable() )
 		{
 			action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
 		}
@@ -414,11 +435,14 @@ void PlantMode::update(float elapsed)
 		{
 			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
 		}
-
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
 	{    
 		action_description = "Plant ";
+	}
+	else if ( hovered_tile && hovered_tile->tile_type == obstacle_tile  )
+	{
+		action_description = "Dig";
 	}
 	else
 	{
@@ -463,7 +487,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glViewport(0, 0, 
 		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
 		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
 	glEnable(GL_DEPTH_TEST);

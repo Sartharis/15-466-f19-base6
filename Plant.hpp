@@ -81,6 +81,7 @@ struct GroundTile
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
 	bool is_tile_harvestable();
+	bool is_plant_dead();
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -89,6 +90,7 @@ struct GroundTile
 	Scene::Drawable* plant_drawable = nullptr;
 
 	// Tile data. TODO: other properties like fertility?
+	const float plant_health_restore_rate = 1.0f / 5.0f;
 	float plant_health = 1.0f;
 	int grid_x = 0;
 	int grid_y = 0;
