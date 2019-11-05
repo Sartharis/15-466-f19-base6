@@ -3,6 +3,7 @@
 uniform mat4 OBJECT_TO_CLIP;
 uniform mat4x3 OBJECT_TO_LIGHT;
 uniform mat3 NORMAL_TO_LIGHT;
+uniform float HEALTH;
 // uniform vec4 CUSTOM_COL;
 in vec4 Position;
 in vec3 Normal;
@@ -22,6 +23,6 @@ void main() {
 	position = OBJECT_TO_LIGHT * Position;
 	normal = NORMAL_TO_LIGHT * Normal;
 	// color = is_magenta(CUSTOM_COL) ? Color : CUSTOM_COL;
-  color = Color;
+  color = Color * HEALTH;
 	texCoord = TexCoord;
 }

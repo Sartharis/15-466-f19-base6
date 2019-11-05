@@ -89,7 +89,7 @@ struct GroundTile
 	Scene::Drawable* plant_drawable = nullptr;
 
 	// Tile data. TODO: other properties like fertility?
-	float plant_health = 1.0f;
+	float plant_health = 0.3f;
 	int grid_x = 0;
 	int grid_y = 0;
 	float fire_aura_effect = 0.0f; // in range 0 - 1

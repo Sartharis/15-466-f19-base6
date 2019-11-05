@@ -71,18 +71,14 @@ void main() {
     fragColor = (shadow.a > 0 ? shadow : firstpass) + aura;
 
     //---- edge detection
-
 		// is edge if current px is threshold amt darker than at least one of its neighbors
-		float threshold = 0.1;
+		float threshold = 0.04;
 		bool is_edge = up_b - firstpass_b > threshold // up brightness larger than firstpass brightness
 			|| down_b - firstpass_b > threshold
 			|| left_b - firstpass_b > threshold
 			|| right_b - firstpass_b > threshold;
 		if (is_edge) fragColor -= vec4(0.2, 0.15, 0.1, 0);
 
-    // float difX = length(firstpass - texture(TEX0, TexCoords + vec2(TEX_OFFSET.x, 0)));
-    // float difY = length(firstpass - texture(TEX0, TexCoords + vec2(0, TEX_OFFSET.y)));
-    // if (difX > 0.05 || difY > 0.05) fragColor -= vec4(0.2, 0.15, 0.1, 0);
   } else if (TASK == 4) { // debug use
     vec4 tex = texture(TEX0, TexCoords);
     fragColor = tex;

@@ -117,6 +117,11 @@ TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y 
 		default_info.vao = *plant_meshes_for_firstpass_program;
 		default_info.start = 0;
 		default_info.count = 0;
+		// set default health uniform (1.0f)
+		GLint HEALTH_float_loc = firstpass_program->HEALTH_float;
+		default_info.set_uniforms = [HEALTH_float_loc](){
+			glUniform1f(HEALTH_float_loc, 1.0f);
+		};
 
 		glm::vec3 tile_center_pos = glm::vec3( ( (float)plant_grid_x - 1 ) * plant_grid_tile_size.x / 2.0f, ( (float)plant_grid_y - 1 ) * plant_grid_tile_size.y / 2.0f, 0.0f );
 
@@ -320,6 +325,12 @@ void GroundTile::update_plant_visuals( float percent_grown )
 		const Mesh* plant_mesh = plant_type->get_mesh( percent_grown );
 		plant_drawable->pipeline.start = plant_mesh->start;
 		plant_drawable->pipeline.count = plant_mesh->count;
+		// set health uniform
+		GLint HEALTH_float_loc = firstpass_program->HEALTH_float;
+		float _plant_health = plant_health;
+		plant_drawable->pipeline.set_uniforms = [HEALTH_float_loc, _plant_health](){
+			glUniform1f(HEALTH_float_loc, _plant_health);
+		};
 	}
 }
 
