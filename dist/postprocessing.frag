@@ -61,22 +61,30 @@ void main() {
   } else if (TASK == 3) { // toon shade + pixelate + maybe outline + combine w aura
     vec4 firstpass = texture(TEX0, TexCoords);
 		float firstpass_b = luminance(firstpass);
-		float up_b = luminance(texture(TEX0, TexCoords + vec2(0, -TEX_OFFSET.y)));
-		float down_b = luminance(texture(TEX0, TexCoords + vec2(0, TEX_OFFSET.y)));
-		float left_b = luminance(texture(TEX0, TexCoords + vec2(-TEX_OFFSET.x, 0)));
-		float right_b = luminance(texture(TEX0, TexCoords + vec2(TEX_OFFSET.x, 0)));
+		vec4 up = texture(TEX0, TexCoords + vec2(0, -TEX_OFFSET.y));
+		float up_b = luminance(up);
+		vec4 down = texture(TEX0, TexCoords + vec2(0, TEX_OFFSET.y));
+		float down_b = luminance(down);
+		vec4 left = texture(TEX0, TexCoords + vec2(-TEX_OFFSET.x, 0));
+		float left_b = luminance(left);
+		vec4 right = texture(TEX0, TexCoords + vec2(TEX_OFFSET.x, 0));
+		float right_b = luminance(right);
     vec4 shadow = texture(TEX1, TexCoords);
 		vec4 aura = texture(TEX2, TexCoords);
     // combine albedo & shadow
     fragColor = (shadow.a > 0 ? shadow : firstpass) + aura;
 
     //---- edge detection
-		// is edge if current px is threshold amt darker than at least one of its neighbors
-		float threshold = 0.01;
-		bool is_edge = up_b - firstpass_b > threshold // up brightness larger than firstpass brightness
-			|| down_b - firstpass_b > threshold
-			|| left_b - firstpass_b > threshold
-			|| right_b - firstpass_b > threshold;
+		float color_dif_threshold = 0.005;
+		float brightness_dif_threshold = 0.002;
+		bool is_edge = ( // is edge if:
+			// color different from any of its neighbors
+			length(firstpass-up) > color_dif_threshold || length(firstpass-down) > color_dif_threshold ||
+			length(firstpass-left) > color_dif_threshold || length(firstpass-right) > color_dif_threshold )
+			// AND: darker than at least one of its neighbors
+			&& ( up_b - firstpass_b > brightness_dif_threshold || left_b - firstpass_b > brightness_dif_threshold
+				|| down_b - firstpass_b > brightness_dif_threshold || right_b - firstpass_b > brightness_dif_threshold
+			);
 		if (is_edge) fragColor -= vec4(0.2, 0.15, 0.1, 0);
 
   } else if (TASK == 4) { // debug use
