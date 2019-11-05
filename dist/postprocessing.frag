@@ -72,7 +72,7 @@ void main() {
 
     //---- edge detection
 		// is edge if current px is threshold amt darker than at least one of its neighbors
-		float threshold = 0.04;
+		float threshold = 0.01;
 		bool is_edge = up_b - firstpass_b > threshold // up brightness larger than firstpass brightness
 			|| down_b - firstpass_b > threshold
 			|| left_b - firstpass_b > threshold

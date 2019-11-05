@@ -58,15 +58,15 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	}
 	sea_tile_mesh = &ret->lookup( "sea" );
 	ground_tile_mesh = &ret->lookup( "soil" );
-	dead_plant_mesh = &ret->lookup( "tree_trunk" );
-	test_plant_1_mesh = &ret->lookup( "tree_1" ); //TEMP
-	test_plant_2_mesh = &ret->lookup( "tree_2" ); //TEMP
-	friend_plant_1_mesh = &ret->lookup( "leaf1" ); //TEMP
-	friend_plant_2_mesh = &ret->lookup( "leaf2" ); //TEMP
-	friend_plant_3_mesh = &ret->lookup( "leaf3" ); //TEMP
-	vampire_plant_1_mesh = &ret->lookup( "carrot1" ); //TEMP
-	vampire_plant_2_mesh = &ret->lookup( "carrot2" ); //TEMP
-	vampire_plant_3_mesh = &ret->lookup( "carrot3" ); //TEMP
+	dead_plant_mesh = &ret->lookup( "deadplant" );
+	test_plant_1_mesh = &ret->lookup( "leaf1" ); 
+	test_plant_2_mesh = &ret->lookup( "leaf2" ); 
+	friend_plant_1_mesh = &ret->lookup( "carrot1" );
+	friend_plant_2_mesh = &ret->lookup( "carrot2" ); 
+	friend_plant_3_mesh = &ret->lookup( "carrot3" ); 
+	vampire_plant_1_mesh = &ret->lookup( "sapsucker1" ); 
+	vampire_plant_2_mesh = &ret->lookup( "sapsucker2" ); 
+	vampire_plant_3_mesh = &ret->lookup( "sapsucker3" );
 	obstacle_tile_mesh = &ret->lookup( "unoccupied" );
 	cactus_1_mesh = &ret->lookup( "cactus1" );
 	cactus_2_mesh = &ret->lookup( "cactus2" );
