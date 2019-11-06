@@ -33,7 +33,7 @@ void Button::draw_sprite(DrawSprites& draw_sprites) {
 	if (sprite) {
 		glm::vec2 sprite_anchor = get_position() + get_sprite_anchor();
 		glm::vec2 sprite_draw_anchor = glm::vec2( sprite_anchor.x, drawable_size.y - sprite_anchor.y );
-		draw_sprites.draw( *sprite, sprite_draw_anchor );
+		draw_sprites.draw( *sprite, sprite_draw_anchor, sprite_scale );
 	}
 }
 
@@ -44,6 +44,6 @@ void Button::draw_text(DrawSprites& draw_text) {
 			|| (hover_behavior == Button::show_text && hovered && text.length() > 0) ) {
 		glm::vec2 text_anchor = get_position() + get_text_anchor();
 		glm::vec2 text_draw_anchor = glm::vec2( text_anchor.x, drawable_size.y - text_anchor.y );
-		draw_text.draw_text( text, text_draw_anchor );
+		draw_text.draw_text( text, text_draw_anchor, text_scale );
 	}
 }

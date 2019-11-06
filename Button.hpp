@@ -22,17 +22,21 @@ struct Button {
 			glm::vec2 _size = glm::vec2(20, 20),			
 			const Sprite* _sprite = nullptr,
 			glm::vec2 _sprite_anchor = glm::vec2(0, 0),
+			float _sprite_scale = 1.0f,
 			HoverBehavior _hover_behavior = Button::none,
 			std::string _text = "",
 			glm::vec2 _text_anchor = glm::vec2(0, 0),
+			float _text_scale = 1.0f,
 			std::function<void()> const &_on_click = nullptr
 			) :	hover_behavior(_hover_behavior),
 					position(_position),
 					size(_size),
 					sprite(_sprite),
 					sprite_anchor(_sprite_anchor),
+					sprite_scale(_sprite_scale),
 					text(_text),
 					text_anchor(_text_anchor),
+					text_scale(_text_scale),
 					on_click(_on_click) {}
 
 	// getters
@@ -57,11 +61,14 @@ private:
 	// shape & location
 	glm::vec2 position;
 	glm::vec2 size;
-	// sprite & text
+	// sprite
 	const Sprite* sprite = nullptr;
 	glm::vec2 sprite_anchor = glm::vec2(0, 0);
+	float sprite_scale = 1.0f;
+	// text
 	std::string text = "";
 	glm::vec2 text_anchor = glm::vec2(0, 0);
+	float text_scale = 1.0f;
 	// on_click
 	std::function<void()> const on_click = nullptr;
 };

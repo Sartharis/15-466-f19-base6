@@ -2,6 +2,8 @@
 
 #include "ColorTextureProgram.hpp"
 #include "Load.hpp"
+#include "data_path.hpp"
+#include "json.hpp"
 
 #include "GL.hpp"
 #include "gl_errors.hpp"
@@ -12,6 +14,7 @@
 //for glm::to_string():
 #include <glm/gtx/string_cast.hpp>
 
+#include <fstream>
 #include <algorithm>
 
 //All DrawSprites instances share a vertex array object and vertex buffer, initialized at load time:
@@ -80,6 +83,53 @@ static Load< void > setup_buffers(LoadTagDefault, [](){
 	GL_ERRORS(); //PARANOIA: make sure nothing strange happened during setup
 });
 
+Font const* neucha_font = nullptr;
+static Load< void > load_font( LoadTagDefault, []() {
+	auto _atlas = new SpriteAtlas( data_path( "neucha-font" ) );
+	// maps for everything
+	Font::KerningMap _kerning_map;
+	Font::AdvanceMap _advance_map;
+
+	// read advance and kerning info from file
+  std::ifstream filestream( data_path( "neucha.kern" ) );
+  std::string file_content( 
+      (std::istreambuf_iterator<char>(filestream)), std::istreambuf_iterator<char>() );
+
+	// parse json
+	using json = nlohmann::json;
+	auto J = json::parse( file_content );
+
+	for( json::iterator it = J.begin(); it != J.end(); ++it ) {
+		// create the key & value for advance map and insert it
+		std::string char_a = it.key(); // key
+		int xadvance = it.value()[0]; // value
+		_advance_map.insert( std::make_pair(char_a, xadvance) );
+
+		auto kernings = it.value()[1]; // another json
+		// create the value of kerning map (which is another map)
+		std::unordered_map< std::string, int > b_2_kerning;
+		for( json::iterator k = kernings.begin(); k != kernings.end(); ++k) {
+			std::string char_b = k.key();
+			int kerning = std::stoi( std::string(k.value()) );
+			b_2_kerning.insert( std::make_pair(char_b, kerning) );
+		}
+		// insert into kerning map, again using char_a as key
+		_kerning_map.insert( std::make_pair(char_a, b_2_kerning) );
+	}
+
+	// have the two maps ready... create the font.
+	neucha_font = new Font( _atlas, _kerning_map, _advance_map );
+
+} );
+
+DrawSprites::DrawSprites(
+	Font const* _font,
+	glm::vec2 const &view_min_, glm::vec2 const &view_max_,
+	glm::uvec2 const &drawable_size_,
+	DrawSprites::AlignMode mode_
+	) : DrawSprites(*_font->atlas, view_min_, view_max_, drawable_size_, mode_) {
+	font = _font;
+}
 
 DrawSprites::DrawSprites(
 	SpriteAtlas const &atlas_,
@@ -188,12 +238,46 @@ void DrawSprites::draw(Sprite const &sprite, glm::vec2 const &center, float scal
 
 }
 
+float DrawSprites::get_xadvance(std::string const& char_a, std::string const* _char_b) { 	
+	//---- advance
+	auto xadvance_pair = font->advance_map.find(char_a);
+	assert(xadvance_pair != font->advance_map.end());
+	int xadvance = xadvance_pair->second;
+	if( !_char_b ) return (float)xadvance;
+
+	//---- kerning
+	std::string char_b = *_char_b;
+	// get kerning map for a
+	auto kernings_pair = font->kerning_map.find(char_a);
+	assert(kernings_pair != font->kerning_map.end());
+	auto kernings_4_a = kernings_pair->second; // kerning map
+	// get kerning
+	auto kerning_pair = kernings_4_a.find(char_b);
+	if( kerning_pair == kernings_4_a.end() ) return (float)xadvance;
+	else {
+		int kerning = kerning_pair->second;
+		return (float)(xadvance + kerning);
+	}
+}
+
 void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, glm::vec2 *anchor_out) {
+	assert( font );
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
-		Sprite const &chr = atlas.lookup(text.substr(pos,1));
+
+		float xadvance;
+		std::string char_a = std::to_string(int(text[pos]));
+		if (pos == text.size()-1) {
+			xadvance = get_xadvance( char_a, nullptr );
+		} else {
+			std::string char_b = std::to_string( int(text[pos+1]) );
+			xadvance = get_xadvance( char_a, &char_b );
+		}
+
+		Sprite const &chr = atlas.lookup(char_a);
 		draw(chr, moving_anchor, scale, tint);
-		moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
+		// moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
+		moving_anchor.x += xadvance * scale;
 	}
 
 	if (anchor_out) {
@@ -202,6 +286,8 @@ void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, fl
 }
 
 void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anchor, float scale, glm::vec2 *min_, glm::vec2 *max_) {
+	assert( font );
+
 	assert(min_);
 	auto &min = *min_;
 	assert(max_);
@@ -212,10 +298,21 @@ void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anc
 
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
-		Sprite const &chr = atlas.lookup(text.substr(pos,1));
+		
+		float xadvance;
+		std::string char_a = std::to_string(int(text[pos]));
+		if (pos == text.size()-1) {
+			xadvance = get_xadvance( char_a, nullptr );
+		} else {
+			std::string char_b = std::to_string( int(text[pos+1]) );
+			xadvance = get_xadvance( char_a, &char_b );
+		}
+
+		Sprite const &chr = atlas.lookup(std::to_string(int(text[pos])));
 		min = glm::min(min, moving_anchor + (chr.min_px - chr.anchor_px) * scale);
 		max = glm::max(max, moving_anchor + (chr.max_px - chr.anchor_px) * scale);
-		moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
+		// moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
+		moving_anchor.x += xadvance * scale;
 	}
 }
 

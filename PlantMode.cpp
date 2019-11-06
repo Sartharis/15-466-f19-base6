@@ -35,10 +35,6 @@ Sprite const* glove_sprite = nullptr;
 Sprite const* watering_can_sprite = nullptr;
 Sprite const* cursor_sprite = nullptr;
 
-Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
-	return new SpriteAtlas( data_path( "trade-font" ) );
-} );
-
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
@@ -156,9 +152,11 @@ PlantMode::PlantMode()
 			glm::vec2(64, 64), // size
 			glove_sprite, // sprite
 			glm::vec2(32, 32), // sprite anchor
+			1.0f, // sprite scale
 			Button::show_text, // hover behavior
 			"glove", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "clicked on glove." << std::endl;
 			} );
@@ -169,22 +167,26 @@ PlantMode::PlantMode()
 			glm::vec2(64, 64), // size
 			watering_can_sprite, // sprite
 			glm::vec2(32, 32), // sprite anchor
+			1.0f, // sprite scale
 			Button::show_text, // hover behavior
 			"watering can", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "clicked on watering can." << std::endl;
 			} );
 
 		// a button with no sprite attached
 		buttons.emplace_back (
-			glm::vec2(180, 530), // position
+			glm::vec2(180, 500), // position
 			glm::vec2(80, 20), // size
 			nullptr, // sprite
 			glm::vec2(0, 0), // sprite anchor
+			1.0f, // sprite scale
 			Button::none, // hover behavior
 			"no sprite", // text
-			glm::vec2(0, 16), // text anchor
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "this button has no sprite." << std::endl;
 			} );
@@ -572,10 +574,10 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	// current_order->draw(drawable_size);
 
 	{ //draw all the text
-		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 40.0f ), 3.0f);
-		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 75.0f ), 2.0f );
-		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
+		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
+		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
+		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
 		glm::vec4 sel_clip = world_to_clip * selector->transform->make_local_to_world() * glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -585,15 +587,17 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec3 sel_clip_pos = sel_clip_xyz / sel_clip.w;
 			glm::vec2 sel_clip_pos_xy = glm::vec2( sel_clip_pos );
 			glm::vec2 window_pos = glm::vec2(( ( sel_clip_pos_xy.x + 1.0f ) / 2.0f ) * drawable_size.x, ( ( sel_clip_pos_xy.y + 1.0f ) / 2.0f ) * drawable_size.y );
+			float scale = 0.6f;
 			glm::vec2 extent_min, extent_max;
-			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), 2.0f, &extent_min, &extent_max );
-			draw.draw_text( action_description, window_pos - (extent_max /2.0f) + glm::vec2(10.0f, 160.0f) + glm::vec2(0.0f,-150.0f) * sel_clip_pos.z, 2.0f / sel_clip_pos.z );
+			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), scale, &extent_min, &extent_max );
+			glm::vec2 textbox_size = extent_max - extent_min;
+			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(0.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
 		}
 		
 		//draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
 		// draw hint text
-		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 2.0f );
+		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 0.6f );
 	}
 
 	{ //draw UI
@@ -605,7 +609,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		}
 
 		// button text
-		DrawSprites draw_text( *font_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		for (int i=0; i<buttons.size(); i++) {
 			buttons[i].draw_text( draw_text );
 		}
@@ -617,7 +621,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	}
    
 
-    if(is_magicbook_open && Mode::current.get() == this)
+	if(is_magicbook_open && Mode::current.get() == this)
 	{
 		open_book();
 	}
@@ -803,7 +807,7 @@ void PlantMode::open_book(){
 		at.x += 10.0f;
 		add_text("Welcome to magic book");
 		std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
-		menu->atlas = font_atlas; // for test 
+		menu->atlas = neucha_font->atlas; // for test 
 		menu->view_min = view_min;
 		menu->view_max = view_max;
 		menu->background = shared_from_this();
