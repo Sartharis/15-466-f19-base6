@@ -26,8 +26,8 @@
 // Sprite const *kitchen_empty = nullptr;
 
 TileGrid grid;
-int plant_grid_x = 20;
-int plant_grid_y = 20;
+int plant_grid_x = 10;
+int plant_grid_y = 10;
 
 Mesh const* selector_mesh = nullptr;
 Sprite const* magic_book_sprite = nullptr;
@@ -35,10 +35,7 @@ Sprite const* glove_sprite = nullptr;
 Sprite const* watering_can_sprite = nullptr;
 Sprite const* cursor_sprite = nullptr;
 
-Load< SpriteAtlas > font_atlas( LoadTagDefault, []() -> SpriteAtlas const* {
-	return new SpriteAtlas( data_path( "trade-font" ) );
-} );
-
+// TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
 	std::cout << "----2D sprites loaded:" << std::endl;
@@ -48,7 +45,7 @@ Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * 
 	magic_book_sprite = &kret->lookup("magicbookBackground");
 	glove_sprite = &kret->lookup("glove");
 	watering_can_sprite = &kret->lookup("wateringCan");
-	cursor_sprite = &kret->lookup("bag"); //TEMP
+	cursor_sprite = &kret->lookup("cursor"); 
 	return kret;
 });
 
@@ -100,21 +97,34 @@ PlantMode::PlantMode()
 		selector->pipeline = selector_info;
 	}
 	
+	std::string island =
+		"ooxxxxxooo"
+		"oxxxxxxxxo"
+		"xxxxxxxxxo"
+		"oxxxxxxxxx"
+		"xxxxCCxxxx"
+		"xxxCCCCxxx"
+		"xxxxCCxxxo"
+		"oxxxxxxooo"
+		"ooxxxxxxxo"
+		"oooooxxxoo";
+
 	// Create a lil center island
 	{
-		for( int32_t x = 7; x < 13; ++x )
+		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
-			for( int32_t y = 7; y < 13; ++y )
+			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				grid.tiles[x][y].change_tile_type( obstacle_tile );
-			}
-		}
-
-		for( int32_t x = 8; x < 12; ++x )
-		{
-			for( int32_t y = 8; y < 12; ++y )
-			{
-				grid.tiles[x][y].change_tile_type( ground_tile );
+				const GroundTileType* type = sea_tile;
+				if( island[x + y * plant_grid_x] == 'x' )
+				{
+					type = obstacle_tile;
+				}
+				else if ( island[x + y * plant_grid_x] == 'C' )
+				{
+					type = ground_tile;
+				}
+				grid.tiles[x][y].change_tile_type( type);
 			}
 		}
 	}
@@ -142,9 +152,11 @@ PlantMode::PlantMode()
 			glm::vec2(64, 64), // size
 			glove_sprite, // sprite
 			glm::vec2(32, 32), // sprite anchor
+			1.0f, // sprite scale
 			Button::show_text, // hover behavior
 			"glove", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "clicked on glove." << std::endl;
 			} );
@@ -155,22 +167,26 @@ PlantMode::PlantMode()
 			glm::vec2(64, 64), // size
 			watering_can_sprite, // sprite
 			glm::vec2(32, 32), // sprite anchor
+			1.0f, // sprite scale
 			Button::show_text, // hover behavior
 			"watering can", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "clicked on watering can." << std::endl;
 			} );
 
 		// a button with no sprite attached
 		buttons.emplace_back (
-			glm::vec2(180, 530), // position
+			glm::vec2(180, 500), // position
 			glm::vec2(80, 20), // size
 			nullptr, // sprite
 			glm::vec2(0, 0), // sprite anchor
+			1.0f, // sprite scale
 			Button::none, // hover behavior
 			"no sprite", // text
-			glm::vec2(0, 16), // text anchor
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
 			[]() {
 				std::cout << "this button has no sprite." << std::endl;
 			} );
@@ -182,7 +198,9 @@ PlantMode::PlantMode()
 PlantMode::~PlantMode() {
 	for (int i=0; i<grid.size_x; i++) {
 		for (int j=0; j<grid.size_y; j++) {
-			grid.tiles[i][j].try_remove_aura();
+			GroundTile& tile = grid.tiles[i][j];
+			if( tile.fire_aura ) delete tile.fire_aura;
+			if( tile.aqua_aura ) delete tile.aqua_aura;
 		}
 	}
 }
@@ -202,7 +220,11 @@ void PlantMode::on_click( int x, int y )
 	{
 		if( collided_tile->plant_type )
 		{
-			if( collided_tile->is_tile_harvestable() )
+			if( collided_tile->is_plant_dead())
+			{
+				collided_tile->try_remove_plant();
+			}
+			else if( collided_tile->is_tile_harvestable() )
 			{
 				int gain = collided_tile->plant_type->get_harvest_gain();
 				if( collided_tile->try_remove_plant() )
@@ -348,11 +370,6 @@ void PlantMode::update(float elapsed)
 {
 	//camera_azimuth += 0.5f * elapsed;
 
-	if( energy < 5 )
-	{
-		energy++;
-	}
-
 	// Update Camera Position
 	{
 		float ce = std::cos( camera_elevation );
@@ -378,12 +395,20 @@ void PlantMode::update(float elapsed)
 				grid.tiles[x][y].update( elapsed, camera->transform, grid );
 			}
 		}
-		// apply pending update
+		// apply pending update from neighboring tiles
 		for( int32_t x = 0; x < plant_grid_x; ++x )
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
 				grid.tiles[x][y].apply_pending_update();
+			}
+		}
+		// other visuals
+		for( int32_t x = 0; x < plant_grid_x; ++x )
+		{
+			for( int32_t y = 0; y < plant_grid_y; ++y )
+			{
+				grid.tiles[x][y].update_aura_visuals( elapsed, camera->transform );
 			}
 		}
 	}
@@ -400,7 +425,11 @@ void PlantMode::update(float elapsed)
 	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
 	if( hovered_tile && hovered_tile->plant_type)
 	{
-		if( hovered_tile->is_tile_harvestable() )
+		if( hovered_tile->is_plant_dead() )
+		{
+			action_description = "Remove ";
+		}
+		else if( hovered_tile->is_tile_harvestable() )
 		{
 			action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
 		}
@@ -408,11 +437,14 @@ void PlantMode::update(float elapsed)
 		{
 			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
 		}
-
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
 	{    
 		action_description = "Plant ";
+	}
+	else if ( hovered_tile && hovered_tile->tile_type == obstacle_tile  )
+	{
+		action_description = "Dig";
 	}
 	else
 	{
@@ -457,7 +489,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glViewport(0, 0, 
 		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
 		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
 	glEnable(GL_DEPTH_TEST);
@@ -470,9 +502,13 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
-	for (int i=0; i<grid.size_x; i++) {
-		for (int j=0; j<grid.size_y; j++) {
-			if (grid.tiles[i][j].aura) grid.tiles[i][j].aura->draw(world_to_clip);
+	{ // actual drawing: create draw_aura instance and append the vertices
+		DrawAura draw_aura( world_to_clip );
+		for (int i=0; i<grid.size_x; i++) {
+			for (int j=0; j<grid.size_y; j++) {
+				if (grid.tiles[i][j].fire_aura) grid.tiles[i][j].fire_aura->draw( draw_aura );
+				if (grid.tiles[i][j].aqua_aura) grid.tiles[i][j].aqua_aura->draw( draw_aura );
+			}
 		}
 	}
 
@@ -538,10 +574,10 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	// current_order->draw(drawable_size);
 
 	{ //draw all the text
-		DrawSprites draw( *font_atlas, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 40.0f ), 3.0f);
-		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 75.0f ), 2.0f );
-		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
+		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
+		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
+		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
 		glm::vec4 sel_clip = world_to_clip * selector->transform->make_local_to_world() * glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -551,15 +587,17 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec3 sel_clip_pos = sel_clip_xyz / sel_clip.w;
 			glm::vec2 sel_clip_pos_xy = glm::vec2( sel_clip_pos );
 			glm::vec2 window_pos = glm::vec2(( ( sel_clip_pos_xy.x + 1.0f ) / 2.0f ) * drawable_size.x, ( ( sel_clip_pos_xy.y + 1.0f ) / 2.0f ) * drawable_size.y );
+			float scale = 0.6f;
 			glm::vec2 extent_min, extent_max;
-			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), 2.0f, &extent_min, &extent_max );
-			draw.draw_text( action_description, window_pos - (extent_max /2.0f) + glm::vec2(10.0f, 160.0f) + glm::vec2(0.0f,-150.0f) * sel_clip_pos.z, 2.0f / sel_clip_pos.z );
+			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), scale, &extent_min, &extent_max );
+			glm::vec2 textbox_size = extent_max - extent_min;
+			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(0.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
 		}
 		
 		//draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
 
 		// draw hint text
-		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 2.0f );
+		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 0.6f );
 	}
 
 	{ //draw UI
@@ -571,7 +609,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		}
 
 		// button text
-		DrawSprites draw_text( *font_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		for (int i=0; i<buttons.size(); i++) {
 			buttons[i].draw_text( draw_text );
 		}
@@ -583,7 +621,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	}
    
 
-    if(is_magicbook_open && Mode::current.get() == this)
+	if(is_magicbook_open && Mode::current.get() == this)
 	{
 		open_book();
 	}
@@ -769,7 +807,7 @@ void PlantMode::open_book(){
 		at.x += 10.0f;
 		add_text("Welcome to magic book");
 		std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
-		menu->atlas = font_atlas; // for test 
+		menu->atlas = neucha_font->atlas; // for test 
 		menu->view_min = view_min;
 		menu->view_max = view_max;
 		menu->background = shared_from_this();

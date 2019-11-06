@@ -13,7 +13,6 @@ struct PlantType
 	PlantType( const std::vector<const Mesh*> meshes_in,
 			   Aura::Type aura_type_in,
 			   int cost_in = 5,
-			   bool is_harvestable_in = true,
 			   int harvest_gain_in = 7,
 			   float growth_time_in = 5.0f,
 			   std::string name_in = "Default Name",
@@ -22,7 +21,6 @@ struct PlantType
 		aura_type( aura_type_in ),
 		growth_time( growth_time_in ),
 		cost( cost_in ),
-		is_harvestable( is_harvestable_in ),
 		harvest_gain( harvest_gain_in ),
 		name( name_in ),
 		description( description_in ) {
@@ -44,7 +42,6 @@ struct PlantType
 	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
-	bool get_harvestable() const { return is_harvestable; };
 	int get_harvest_gain() const { return harvest_gain; };
 	std::string get_name() const { return name; };
 	std::string get_description() const { return description; };
@@ -55,7 +52,6 @@ private:
 	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;
 	int cost = 5;
-	bool is_harvestable = true;
 	int harvest_gain = 7;
 	std::string name = "Default Name";
 	std::string description = "Default Description.";
@@ -81,10 +77,11 @@ struct GroundTile
 	void update( float elapsed, Scene::Transform* camera_transform, const TileGrid& grid );
 	void update_plant_visuals( float percent_grown );
 	void apply_pending_update();
+	void update_aura_visuals( float elapsed, Scene::Transform* camera_transform );
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
-	bool try_remove_aura();
 	bool is_tile_harvestable();
+	bool is_plant_dead();
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -93,6 +90,7 @@ struct GroundTile
 	Scene::Drawable* plant_drawable = nullptr;
 
 	// Tile data. TODO: other properties like fertility?
+	const float plant_health_restore_rate = 1.0f / 5.0f;
 	float plant_health = 1.0f;
 	int grid_x = 0;
 	int grid_y = 0;
@@ -109,7 +107,8 @@ struct GroundTile
 	float current_grow_time = 0.0f;
 
 	// Aura 
-	Aura* aura = nullptr;
+	Aura* fire_aura = nullptr;
+	Aura* aqua_aura = nullptr;
 
 };
 
