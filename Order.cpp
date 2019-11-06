@@ -42,11 +42,13 @@ void OrderType::draw(glm::uvec2 const &drawable_size) const {
 		glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
   	draw.draw(*orderbg_sprite, ul);
 	}//<-- gets drawn on deallocation
+	
 
 	{// draw text
-		DrawSprites draw(*font_atlas_tmp, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
-		draw.draw_text(get_title(), glm::vec2(view_min.x, 2.0f), 1.0f, glm::u8vec4(0xff,0xff,0xff,0xff));
-		draw.draw_text(get_description(), glm::vec2(view_min.x, 4.0f), 1.0f, glm::u8vec4(0xff,0xff,0xff,0xff));
+		DrawSprites draw(*font_atlas_tmp, text_min, text_max, drawable_size, DrawSprites::AlignPixelPerfect);
+		// draw.draw_text( "LALAL ", glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
+		draw.draw_text(get_title(), glm::vec2(view_min.x-80.0f, 210.0f), 0.7f, glm::u8vec4(0xff,0xff,0xff,0xff));
+		draw.draw_text(get_description(), glm::vec2(view_min.x-80, 180.0f), 0.6f, glm::u8vec4(0xff,0xff,0xff,0xff));
 	}//<-- gets drawn on deallocation
 }
 

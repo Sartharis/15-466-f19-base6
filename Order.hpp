@@ -23,7 +23,10 @@ struct OrderType
 
 	void draw(glm::uvec2 const &drawable_size) const;
 	glm::vec2 view_min = glm::vec2(0,0);
-	glm::vec2 view_max = glm::vec2(50, 44);
+	glm::vec2 view_max = glm::vec2(1000, 800);
+    glm::vec2 text_min = glm::vec2(0,0);
+	glm::vec2 text_max = glm::vec2(250, 220);
+
 
     private:
         std::string title = "Default Order Title";
