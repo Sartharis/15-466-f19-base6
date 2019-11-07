@@ -96,21 +96,24 @@ static Load< void > load_font( LoadTagDefault, []() {
       (std::istreambuf_iterator<char>(filestream)), std::istreambuf_iterator<char>() );
 
 	// parse json
-	using json = nlohmann::json;
-	auto J = json::parse( file_content );
+	using Json = nlohmann::json;
+	Json J = Json::parse( file_content );
 
-	for( json::iterator it = J.begin(); it != J.end(); ++it ) {
+	for( Json::iterator it = J.begin(); it != J.end(); ++it ) {
 		// create the key & value for advance map and insert it
 		std::string char_a = it.key(); // key
 		int xadvance = it.value()[0]; // value
 		_advance_map.insert( std::make_pair(char_a, xadvance) );
 
-		auto kernings = it.value()[1]; // another json
+		Json kernings = it.value()[1]; // another json
 		// create the value of kerning map (which is another map)
 		std::unordered_map< std::string, int > b_2_kerning;
-		for( json::iterator k = kernings.begin(); k != kernings.end(); ++k) {
+		for( Json::iterator k = kernings.begin(); k != kernings.end(); ++k) {
 			std::string char_b = k.key();
-			int kerning = std::stoi( std::string(k.value()) );
+			// int parsing, based on: http://www.cplusplus.com/reference/cstdio/sscanf/
+			int kerning;
+			std::string kerning_s = k.value().get<std::string>();
+			assert( sscanf(kerning_s.c_str(), "%d", &kerning)==1 );
 			b_2_kerning.insert( std::make_pair(char_b, kerning) );
 		}
 		// insert into kerning map, again using char_a as key
