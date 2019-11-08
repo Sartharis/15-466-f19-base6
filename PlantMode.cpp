@@ -98,16 +98,16 @@ PlantMode::PlantMode()
 	}
 	
 	std::string island =
-		"ooxxxxxooo"
-		"oxxxxxxxxo"
-		"xxxxxxxxxo"
-		"oxxxxxxxxx"
-		"xxxxCCxxxx"
-		"xxxCCCCxxx"
-		"xxxxCCxxxo"
-		"oxxxxxxooo"
-		"ooxxxxxxxo"
-		"oooooxxxoo";
+		"oodddddooo"
+		"oddxXXxddo"
+		"dxxxXxxxdo"
+		"odxxXxxxdd"
+		"dxxxCCxxxd"
+		"dxxCCCCxxd"
+		"dxxxCCxxdo"
+		"odxxxXxooo"
+		"ooxdxXXxdo"
+		"ooooodddoo";
 
 	// Create a lil center island
 	{
@@ -118,13 +118,21 @@ PlantMode::PlantMode()
 				const GroundTileType* type = sea_tile;
 				if( island[x + y * plant_grid_x] == 'x' )
 				{
-					type = obstacle_tile;
+					type = grass_short_tile;
+				}
+				else if( island[x + y * plant_grid_x] == 'X' )
+				{
+					type = grass_tall_tile;
+				}
+				else if( island[x + y * plant_grid_x] == 'd' )
+				{
+					type = dirt_tile;
 				}
 				else if ( island[x + y * plant_grid_x] == 'C' )
 				{
 					type = ground_tile;
 				}
-				grid.tiles[x][y].change_tile_type( type);
+				grid.tiles[x][y].change_tile_type( type );
 			}
 		}
 	}
@@ -218,12 +226,15 @@ void PlantMode::on_click( int x, int y )
 
 	if( collided_tile )
 	{
+		// Plant actions
 		if( collided_tile->plant_type )
 		{
+			// Removing dead plant
 			if( collided_tile->is_plant_dead())
 			{
 				collided_tile->try_remove_plant();
 			}
+			// Harvesting plant
 			else if( collided_tile->is_tile_harvestable() )
 			{
 				int gain = collided_tile->plant_type->get_harvest_gain();
@@ -233,12 +244,19 @@ void PlantMode::on_click( int x, int y )
 				}
 			}
 		}
+		// Ground actions
 		else
 		{
-			if( collided_tile->tile_type == obstacle_tile )
+			// Clearing the ground
+			if( collided_tile->can_be_cleared(grid) )
 			{
-				collided_tile->change_tile_type(ground_tile);
+				int cost = collided_tile->tile_type->get_clear_cost();
+				if( cost <= energy && collided_tile->try_clear_tile() )
+				{
+					energy -= cost;
+				}
 			}
+			// Planting a plant
 			else if(selectedPlant && inventory.get_seeds_num( selectedPlant ) > 0)
 			{
 				if( collided_tile->try_add_plant( selectedPlant ) )
@@ -291,7 +309,31 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 			glm::vec3 collision_at = glm::vec3( 0.0f );
 			glm::vec3 collision_out = glm::vec3( 0.0f );
 
+			glm::vec3 center = grid.tiles[x][y].tile_drawable->transform->position;
+			float scale = plant_grid_tile_size.x / 2.0f;
+
 			glm::mat4x3 collider_to_world = grid.tiles[x][y].tile_drawable->transform->make_local_to_world();
+			glm::vec3 a = collider_to_world * glm::vec4( glm::vec3(1.0f, 1.0f, 0.2f) * scale, 1.0f );
+			glm::vec3 b = collider_to_world * glm::vec4( glm::vec3( -1.0f, 1.0f, 0.2f ) * scale, 1.0f );
+			glm::vec3 c = collider_to_world * glm::vec4( glm::vec3( 1.0f, -1.0f, 0.2f ) * scale, 1.0f );
+			glm::vec3 d = collider_to_world * glm::vec4( glm::vec3( -1.0f, -1.0f, 0.2f ) * scale, 1.0f );
+
+			bool did_collide = collide_swept_sphere_vs_triangle(
+				sphere_sweep_from, sphere_sweep_to, sphere_radius,
+				a, b, c,
+				&collision_t, &collision_at, &collision_out )
+				|| collide_swept_sphere_vs_triangle(
+				sphere_sweep_from, sphere_sweep_to, sphere_radius,
+				b, d, c,
+				&collision_t, &collision_at, &collision_out);
+
+			if( did_collide )
+			{
+				collided_tile = &grid.tiles[x][y];
+			}
+
+			// OLD COLLISION CODE
+			/*glm::mat4x3 collider_to_world = grid.tiles[x][y].tile_drawable->transform->make_local_to_world();
 			const Mesh& collider_mesh = *( grid.tiles[x][y].tile_type->get_mesh() );
 
 			assert( collider_mesh.type == GL_TRIANGLES ); //only have code for TRIANGLES not other primitive types
@@ -312,7 +354,7 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 				{
 					collided_tile = &grid.tiles[x][y];
 				}
-			}
+			}*/
 		}
 	}
 	
@@ -370,17 +412,41 @@ void PlantMode::update(float elapsed)
 {
 	//camera_azimuth += 0.5f * elapsed;
 
+	const Uint8* state = SDL_GetKeyboardState( NULL );
+	glm::vec3 forward_camera_dir = camera->transform->rotation * glm::vec3( 0.0f, 0.0f, -1.0f );
+	glm::vec3 forward_dir = glm::normalize( glm::vec3( forward_camera_dir.x, forward_camera_dir.y, 0.0f ));
+
+	glm::vec3 side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
+	glm::vec3 side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
+
+	if( state[SDL_SCANCODE_A] )
+	{
+		camera_offset -= side_dir * camera_move_speed * elapsed;
+	}
+	if( state[SDL_SCANCODE_D] )
+	{
+		camera_offset += side_dir * camera_move_speed * elapsed;
+	}
+	if( state[SDL_SCANCODE_W] )
+	{
+		camera_offset += forward_dir * camera_move_speed * elapsed;
+	}
+	if( state[SDL_SCANCODE_S] )
+	{
+		camera_offset -= forward_dir * camera_move_speed * elapsed;
+	}
+
 	// Update Camera Position
 	{
 		float ce = std::cos( camera_elevation );
 		float se = std::sin( camera_elevation );
 		float ca = std::cos( camera_azimuth );
 		float sa = std::sin( camera_azimuth );
-		camera->transform->position = camera_radius * glm::vec3( ce * ca, ce * sa, se );
+		camera->transform->position = camera_offset + camera_radius * glm::vec3( ce * ca, ce * sa, se );
 		camera->transform->rotation =
 			glm::quat_cast( glm::transpose( glm::mat3( glm::lookAt(
-			camera->transform->position,
-			glm::vec3( 0.0f, 0.0f, 0.0f ),
+			camera->transform->position ,
+			camera_offset,
 			glm::vec3( 0.0f, 0.0f, 1.0f )
 			) ) ) );
 	}
@@ -435,16 +501,16 @@ void PlantMode::update(float elapsed)
 		}
 		else
 		{
-			action_description = "Growing "; //+ std::to_string(hovered_tile->current_grow_time / hovered_tile->plant_type->get_growth_time());
+			action_description = "Growing ";
 		}
 	}
 	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
 	{    
 		action_description = "Plant ";
 	}
-	else if ( hovered_tile && hovered_tile->tile_type == obstacle_tile  )
+	else if ( hovered_tile && hovered_tile->can_be_cleared(grid)  )
 	{
-		action_description = "Dig";
+		action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
 	}
 	else
 	{
@@ -454,7 +520,7 @@ void PlantMode::update(float elapsed)
 	//Selector positioning
 	if( hovered_tile )
 	{
-		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.01f );
+		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.03f );
 	}
 	else
 	{
@@ -481,6 +547,8 @@ void PlantMode::update(float elapsed)
 }
 
 void PlantMode::draw(glm::uvec2 const &drawable_size) {
+	
+	
 	//Draw scene:
 	camera->aspect = float( drawable_size.x) / float(drawable_size.y);
 

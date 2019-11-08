@@ -33,7 +33,7 @@ vec4 color_from_health(vec4 col) {
 	vec4 l = overlay * ( luminance(col) / luminance(overlay) );
 	vec4 l_clamped = vec4( min(1, l.r), min(1, l.g), min(1, l.b), min(1, l.a) );// TODO
 	// multiply to make darker
-	vec4 multiply = l_clamped * 0.7;
+	vec4 multiply = l_clamped * 0.3;
 	// full unhealthy color
 	vec4 unhealthy = multiply;
 

@@ -60,11 +60,13 @@ private:
 /* Contains info on how a tile works and looks like*/
 struct GroundTileType
 {
-	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in ) : can_plant( can_plant_in ), mesh( tile_mesh_in ){};
+	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in, int clear_cost_in ) : can_plant( can_plant_in ), mesh( tile_mesh_in ), clear_cost(clear_cost_in){};
+	int get_clear_cost() const{ return clear_cost; };
 	const Mesh* get_mesh() const{ return mesh; };
 	bool get_can_plant() const { return can_plant; };
 
 private:
+	int clear_cost = 40;
 	bool can_plant = true;
 	const Mesh* mesh = nullptr;
 };
@@ -82,6 +84,9 @@ struct GroundTile
 	bool try_remove_plant();
 	bool is_tile_harvestable();
 	bool is_plant_dead();
+	bool can_be_cleared(const TileGrid& grid) const;
+	bool try_clear_tile();
+	bool is_cleared() const;
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -118,6 +123,8 @@ struct TileGrid
 	GroundTile** tiles;
 	int size_x;
 	int size_y;
+
+	bool is_in_grid( int x, int y ) const;
 };
 
 extern const MeshBuffer* plant_mesh_buffer;
@@ -131,4 +138,6 @@ extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
 extern GroundTileType const* sea_tile;
 extern GroundTileType const* ground_tile;
-extern GroundTileType const* obstacle_tile;
+extern GroundTileType const* grass_short_tile;
+extern GroundTileType const* grass_tall_tile;
+extern GroundTileType const* dirt_tile;

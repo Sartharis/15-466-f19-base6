@@ -113,7 +113,7 @@ static Load< void > load_font( LoadTagDefault, []() {
 			// int parsing, based on: http://www.cplusplus.com/reference/cstdio/sscanf/
 			int kerning;
 			std::string kerning_s = k.value().get<std::string>();
-			assert( sscanf(kerning_s.c_str(), "%d", &kerning)==1 );
+			assert( sscanf_s(kerning_s.c_str(), "%d", &kerning)==1 );
 			b_2_kerning.insert( std::make_pair(char_b, kerning) );
 		}
 		// insert into kerning map, again using char_a as key

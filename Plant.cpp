@@ -20,12 +20,16 @@ PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
-GroundTileType const* obstacle_tile = nullptr;
+GroundTileType const* dirt_tile = nullptr;
+GroundTileType const* grass_short_tile = nullptr;
+GroundTileType const* grass_tall_tile = nullptr;
 
 // ground tiles
 Mesh const* sea_tile_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
-Mesh const* obstacle_tile_mesh = nullptr;
+Mesh const* dirt_tile_mesh = nullptr;
+Mesh const* grass_short_tile_mesh = nullptr;
+Mesh const* grass_tall_tile_mesh = nullptr;
 
 // Dead plant
 Mesh const* dead_plant_mesh = nullptr;
@@ -56,8 +60,21 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	for( auto p : ret->meshes ) {
 		std::cout << p.first << std::endl;
 	}
+
+	// TILE MESHES --------------------------------------------------
 	sea_tile_mesh = &ret->lookup( "sea" );
 	ground_tile_mesh = &ret->lookup( "soil" );
+	dirt_tile_mesh = &ret->lookup( "unoccupied" );
+	grass_short_tile_mesh = &ret->lookup( "shortgrass" );
+	grass_tall_tile_mesh = &ret->lookup( "tallgrass" );
+
+	sea_tile = new GroundTileType( false, sea_tile_mesh, -1 );
+	ground_tile = new GroundTileType( true, ground_tile_mesh, -1 );
+	dirt_tile = new GroundTileType( false, dirt_tile_mesh, 40 );
+	grass_short_tile = new GroundTileType( false, grass_short_tile_mesh, 50 );
+	grass_tall_tile = new GroundTileType( false, grass_tall_tile_mesh, 60 );
+
+	// PLANT MESHES -------------------------------------------------
 	dead_plant_mesh = &ret->lookup( "deadplant" );
 	test_plant_1_mesh = &ret->lookup( "leaf1" ); 
 	test_plant_2_mesh = &ret->lookup( "leaf2" ); 
@@ -67,7 +84,6 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	vampire_plant_1_mesh = &ret->lookup( "sapsucker1" ); 
 	vampire_plant_2_mesh = &ret->lookup( "sapsucker2" ); 
 	vampire_plant_3_mesh = &ret->lookup( "sapsucker3" );
-	obstacle_tile_mesh = &ret->lookup( "unoccupied" );
 	cactus_1_mesh = &ret->lookup( "cactus1" );
 	cactus_2_mesh = &ret->lookup( "cactus2" );
 	cactus_3_mesh = &ret->lookup( "cactus3" );
@@ -75,9 +91,6 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_2_mesh = &ret->lookup( "fireflower2" );
 	fireflower_3_mesh = &ret->lookup( "fireflower3" );
 
-	sea_tile = new GroundTileType( false, sea_tile_mesh );
-	ground_tile = new GroundTileType( true, ground_tile_mesh );
-	obstacle_tile = new GroundTileType( false, obstacle_tile_mesh );
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, Aura::none, 5, 10, 5.0f, "Fern", "Cheap plant. Grows anywhere." );
 	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, Aura::none, 10, 25, 15.0f, "Friend Fern", "Speeds up growth of neighbors. Needs a neighbor to grow." );
 	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, Aura::none, 20, 60, 20.0f, "Sapsucker", "Grows by stealing nutrients from other plants" );
@@ -253,7 +266,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( victims.size() > 0 )
 				{
-					victims[rand() % victims.size()]->plant_health -= elapsed * ( plant_health_restore_rate + 0.2f );
+					victims[rand() % victims.size()]->plant_health -= elapsed * ( 2*plant_health_restore_rate + 0.2f );
 					current_grow_time += elapsed;
 				}
 				else
@@ -417,3 +430,35 @@ bool GroundTile::is_plant_dead()
 	return plant_type && plant_health <= 0.0f;
 }
 
+bool GroundTile::can_be_cleared(const TileGrid& grid ) const
+{
+	bool has_cleared_neighbor = false;
+	for( int i = 0; i < 4; ++i )
+	{
+		int x_i = i < 2 ? 2*i - 1 : 0;
+		int y_i = i < 2 ? 0 : 2 * ( i - 2 ) - 1;
+		if( grid.is_in_grid( grid_x + x_i, grid_y + y_i ) && grid.tiles[grid_x + x_i][grid_y + y_i].is_cleared() )
+		{
+			has_cleared_neighbor = true;
+			break;
+		}
+	}
+
+	return has_cleared_neighbor && tile_type->get_clear_cost() > 0;
+}
+
+bool GroundTile::try_clear_tile()
+{
+	change_tile_type( ground_tile );
+	return true;
+}
+
+bool GroundTile::is_cleared() const
+{
+	return tile_type == ground_tile;
+}
+
+bool TileGrid::is_in_grid( int x, int y ) const
+{
+	return x >= 0 && y >= 0 && x < size_x && y < size_y;
+}
