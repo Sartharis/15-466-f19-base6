@@ -310,6 +310,7 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 			glm::vec3 collision_out = glm::vec3( 0.0f );
 
 			glm::vec3 center = grid.tiles[x][y].tile_drawable->transform->position;
+			(void)center;
 			float scale = plant_grid_tile_size.x / 2.0f;
 
 			glm::mat4x3 collider_to_world = grid.tiles[x][y].tile_drawable->transform->make_local_to_world();

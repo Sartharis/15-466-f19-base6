@@ -1,5 +1,6 @@
 *.DS_Store
 *.ccls-cache/
+*.psd
 objs/
 dist/README-SDL.txt
 dist/README-glm.txt
@@ -17,7 +18,6 @@ sprites/pack-sprites.exe
 sprites/pack-sprites.ilk
 sprites/pack-sprites.pdb
 sprites/trade-font/
-sprites/sprites/*.psd
 scenes/*.blend[0-9]
 scenes/show-meshes
 scenes/show-meshes.exe
@@ -29,5 +29,3 @@ scenes/show-scene.ilk
 scenes/show-scene.pdb
 scenes/SDL2.dll
 scenes/maya
-PlantMode.cpp
-PlantMode.hpp
