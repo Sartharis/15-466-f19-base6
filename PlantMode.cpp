@@ -222,11 +222,6 @@ PlantMode::PlantMode()
 			"Submit Order", // text
 			glm::vec2(0, 0), // text anchor
 			0.4f, // text scale
-		// 		auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
-		// 	items.emplace_back(text, nullptr, 0.8f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
-		// 	items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
-		// 	at.y -= 15.0f;
-		// };
 			[ this]() {
 				std::cout << "Submit Button Click!" << std::endl;
 				std::map< PlantType const*, int > require_plants =  current_order->get_require_plants();
