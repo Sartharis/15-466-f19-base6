@@ -33,6 +33,7 @@ Mesh const* selector_mesh = nullptr;
 Sprite const* magic_book_sprite = nullptr;
 Sprite const* glove_sprite = nullptr;
 Sprite const* watering_can_sprite = nullptr;
+Sprite const* magicbook_icon_sprite = nullptr;
 Sprite const* cursor_sprite = nullptr;
 
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
@@ -45,7 +46,8 @@ Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * 
 	magic_book_sprite = &kret->lookup("magicbookBackground");
 	glove_sprite = &kret->lookup("glove");
 	watering_can_sprite = &kret->lookup("wateringCan");
-	cursor_sprite = &kret->lookup("cursor"); 
+	magicbook_icon_sprite = &kret->lookup("magicbookIcon");
+	cursor_sprite = &kret->lookup("cursorNormal"); 
 	return kret;
 });
 
@@ -184,9 +186,24 @@ PlantMode::PlantMode()
 				std::cout << "clicked on watering can." << std::endl;
 			} );
 
-		// a button with no sprite attached
+		// magicbook button
 		buttons.emplace_back (
 			glm::vec2(180, 500), // position
+			glm::vec2(64, 64), // size
+			magicbook_icon_sprite, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			0.213f, // sprite scale
+			Button::show_text, // hover behavior
+			"magic book", // text
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
+			[]() {
+				std::cout << "clicked on magic book." << std::endl;
+			} );
+
+		// a button with no sprite attached
+		buttons.emplace_back (
+			glm::vec2(260, 500), // position
 			glm::vec2(80, 20), // size
 			nullptr, // sprite
 			glm::vec2(0, 0), // sprite anchor
