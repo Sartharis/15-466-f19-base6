@@ -65,6 +65,14 @@ struct PlantMode : public Mode {
 	Inventory inventory;
 	int energy = 30;
 
+	glm::vec3 forward_camera_dir = glm::vec3();
+	glm::vec3 forward_dir = glm::vec3();
+
+	glm::vec3 side_camera_dir = glm::vec3();
+	glm::vec3 side_dir = glm::vec3();
+
+	glm::vec3 camera_bounds_min = glm::vec3(-5.0f, -5.0f,-10000.0f);
+	glm::vec3 camera_bounds_max = glm::vec3( 5.0f, 5.0f, 10000.0f );
 	glm::vec3 camera_offset = glm::vec3();
 	float camera_move_speed = 2.0f;
 	float camera_radius = 7.5f;

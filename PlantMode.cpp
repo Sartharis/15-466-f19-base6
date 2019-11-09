@@ -79,6 +79,7 @@ PlantMode::PlantMode()
 		inventory.change_seeds_num( vampire_plant, 5 );
 		inventory.change_seeds_num( cactus_plant, 5 );
 		inventory.change_seeds_num( fireflower_plant, 5 );
+		inventory.change_seeds_num( corpseeater_plant, 5 );
 	}
 
 	{
@@ -99,15 +100,15 @@ PlantMode::PlantMode()
 	
 	std::string island =
 		"oodddddooo"
-		"oddxXXxddo"
-		"dxxxXxxxdo"
+		"oddxXxxddo"
+		"dxxXXXxxdo"
 		"odxxXxxxdd"
 		"dxxxCCxxxd"
-		"dxxCCCCxxd"
-		"dxxxCCxxdo"
-		"odxxxXxooo"
-		"ooxdxXXxdo"
-		"ooooodddoo";
+		"dxxxCCxxxd"
+		"dxxxxxxxdo"
+		"odxxXXxdoo"
+		"odxdxXXxdo"
+		"oododdddoo";
 
 	// Create a lil center island
 	{
@@ -140,17 +141,30 @@ PlantMode::PlantMode()
 	{ //make a camera:
 		scene.transforms.emplace_back();
 		Scene::Transform *transform = &scene.transforms.back();
-		transform->position = glm::vec3(0.0f, 0.0f, 0.0f);
-		transform->rotation = glm::quat_cast(glm::mat3(glm::lookAt(
+
+		float ce = std::cos( camera_elevation );
+		float se = std::sin( camera_elevation );
+		float ca = std::cos( camera_azimuth );
+		float sa = std::sin( camera_azimuth );
+		transform->position = camera_radius * glm::vec3( ce * ca, ce * sa, se );
+		transform->rotation =
+			glm::quat_cast( glm::transpose( glm::mat3( glm::lookAt(
 			transform->position,
-			glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f)
-		)));
+			glm::vec3( 0.0f, 0.0f, 0.0f ),
+			glm::vec3( 0.0f, 0.0f, 1.0f )
+			) ) ) );
+
 		scene.cameras.emplace_back(transform);
 		camera = &scene.cameras.back();
 		camera->near = 0.01f;
 		camera->fovy = glm::radians(45.0f);
 	}
+
+	forward_camera_dir = camera->transform->rotation * glm::vec3( 0.0f, 0.0f, -1.0f );
+	forward_dir = glm::normalize( glm::vec3( forward_camera_dir.x, forward_camera_dir.y, 0.0f ) );
+
+	side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
+	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
 	{ //DEBUG: init UI
 
@@ -391,6 +405,9 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_5:
 			selectedPlant = cactus_plant;
 			break;
+		case SDLK_6:
+			selectedPlant = corpseeater_plant;
+			break;
 		default:
 			break;
 		}
@@ -413,28 +430,26 @@ void PlantMode::update(float elapsed)
 	//camera_azimuth += 0.5f * elapsed;
 
 	const Uint8* state = SDL_GetKeyboardState( NULL );
-	glm::vec3 forward_camera_dir = camera->transform->rotation * glm::vec3( 0.0f, 0.0f, -1.0f );
-	glm::vec3 forward_dir = glm::normalize( glm::vec3( forward_camera_dir.x, forward_camera_dir.y, 0.0f ));
-
-	glm::vec3 side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
-	glm::vec3 side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
 	if( state[SDL_SCANCODE_A] )
 	{
-		camera_offset -= side_dir * camera_move_speed * elapsed;
+		camera_offset.x -= camera_move_speed * elapsed;
 	}
 	if( state[SDL_SCANCODE_D] )
 	{
-		camera_offset += side_dir * camera_move_speed * elapsed;
+		camera_offset.x += camera_move_speed * elapsed;
 	}
 	if( state[SDL_SCANCODE_W] )
 	{
-		camera_offset += forward_dir * camera_move_speed * elapsed;
+		camera_offset.y += camera_move_speed * elapsed;
 	}
 	if( state[SDL_SCANCODE_S] )
 	{
-		camera_offset -= forward_dir * camera_move_speed * elapsed;
+		camera_offset.y -= camera_move_speed * elapsed;
 	}
+
+	camera_offset = glm::clamp( camera_offset, camera_bounds_min, camera_bounds_max );
+	glm::vec3 real_camera_offset = forward_dir * camera_offset.y + side_dir * camera_offset.x;
 
 	// Update Camera Position
 	{
@@ -442,11 +457,11 @@ void PlantMode::update(float elapsed)
 		float se = std::sin( camera_elevation );
 		float ca = std::cos( camera_azimuth );
 		float sa = std::sin( camera_azimuth );
-		camera->transform->position = camera_offset + camera_radius * glm::vec3( ce * ca, ce * sa, se );
+		camera->transform->position = real_camera_offset + camera_radius * glm::vec3( ce * ca, ce * sa, se );
 		camera->transform->rotation =
 			glm::quat_cast( glm::transpose( glm::mat3( glm::lookAt(
 			camera->transform->position ,
-			camera_offset,
+			real_camera_offset,
 			glm::vec3( 0.0f, 0.0f, 1.0f )
 			) ) ) );
 	}
@@ -643,7 +658,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " (" + std::to_string(inventory.get_seeds_num(selectedPlant)) +") :", glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
+		draw.draw_text( selectedPlant->get_name() + " x" + std::to_string(inventory.get_seeds_num(selectedPlant)) +" :", glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
 		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 

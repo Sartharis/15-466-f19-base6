@@ -136,6 +136,7 @@ extern PlantType const* vampire_plant;
 extern PlantType const* carrot_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
+extern PlantType const* corpseeater_plant;
 extern GroundTileType const* sea_tile;
 extern GroundTileType const* ground_tile;
 extern GroundTileType const* grass_short_tile;
