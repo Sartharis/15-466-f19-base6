@@ -65,7 +65,14 @@ Load< GLuint > ui_meshes_for_firstpass_program( LoadTagDefault, [](){
 
 PlantMode::PlantMode() 
 {
-
+	{
+		harvest_plant_map[test_plant] = 0;
+		harvest_plant_map[fireflower_plant] = 0;
+		harvest_plant_map[friend_plant] = 0;
+		harvest_plant_map[cactus_plant] = 0;
+		harvest_plant_map[vampire_plant] = 0;
+		harvest_plant_map[carrot_plant] = 0;
+	}
 	grid = setup_grid_for_scene( scene, plant_grid_x, plant_grid_y );
 
 	{
@@ -152,6 +159,12 @@ PlantMode::PlantMode()
 		camera->fovy = glm::radians(45.0f);
 	}
 
+    // add all order into order vector
+	all_orders.push_back(order1);
+	all_orders.push_back(order2);
+	all_orders.push_back(order3);
+	all_orders.push_back(order4);
+
 	{ //DEBUG: init UI
 
 		// glove button
@@ -198,6 +211,73 @@ PlantMode::PlantMode()
 			[]() {
 				std::cout << "this button has no sprite." << std::endl;
 			} );
+
+	    buttons.emplace_back (
+			glm::vec2(380, 130), // position
+			glm::vec2(80, 20), // size
+			nullptr, // sprite
+			glm::vec2(0, 0), // sprite anchor
+			1.0f, // sprite scale
+			Button::none, // hover behavior
+			"Submit Order", // text
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
+		// 		auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
+		// 	items.emplace_back(text, nullptr, 0.8f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
+		// 	items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
+		// 	at.y -= 15.0f;
+		// };
+			[ this]() {
+				std::cout << "Submit Button Click!" << std::endl;
+				std::map< PlantType const*, int > require_plants =  current_order->get_require_plants();
+				bool orderFinished = true;
+				std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+				while(iter != require_plants.end()) {
+					PlantType const* require_type = iter->first;
+					int needed_num  = iter->second;
+					// std::cout << "Harvest num " << require_type->get_name()<<" "<<harvest_plant_map[require_type]<<std::endl;
+					if(harvest_plant_map[require_type]<needed_num){
+						orderFinished = false;
+						break;
+					}
+					iter++;	
+   				}
+				   std::cout << orderFinished << std::endl;
+				if(orderFinished == true){
+					iter = require_plants.begin();
+					while(iter != require_plants.end()) {
+						PlantType const* require_type = iter->first;
+						int needed_num  = iter->second;
+						harvest_plant_map[require_type] -= needed_num;
+						iter++;
+					}
+					energy += current_order->get_bonus_cash();
+					current_order_idx += 1;
+					if(current_order_idx >= all_orders.size()){
+						current_order_idx = 0;
+					}
+					current_order = all_orders[current_order_idx];
+				}				
+			} );
+
+	    buttons.emplace_back (
+			glm::vec2(540, 130), // position
+			glm::vec2(80, 20), // size
+			nullptr, // sprite
+			glm::vec2(0, 0), // sprite anchor
+			1.0f, // sprite scale
+			Button::none, // hover behavior
+			"Cancel Order", // text
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
+			[this]() {
+				current_order_idx += 1;
+				if(current_order_idx >= all_orders.size()){
+					current_order_idx = 0;
+				}
+				current_order = all_orders[current_order_idx];
+				std::cout << "Cancel Button Click!" << std::endl;
+			} );
 	}
 
 
@@ -211,6 +291,8 @@ PlantMode::~PlantMode() {
 			if( tile.aqua_aura ) delete tile.aqua_aura;
 		}
 	}
+	
+	
 }
 
 void PlantMode::on_click( int x, int y )
@@ -241,6 +323,7 @@ void PlantMode::on_click( int x, int y )
 				if( collided_tile->try_remove_plant() )
 				{
 					energy += gain;
+					harvest_plant_map[collided_tile->plant_type]+=1;
 				}
 			}
 		}
@@ -640,7 +723,27 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	// current_order->draw(drawable_size);
+	current_order->draw(drawable_size);
+	// draw order hint
+	{
+		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		std::map< PlantType const*, int > require_plants =  current_order->get_require_plants();
+		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+		float text_gap = 80.0f;
+		while(iter != require_plants.end()) {
+			const PlantType* require_type = iter->first;
+			// std:: string name = require_type->get_name();
+			int require_num  = iter->second;
+			int needed_num = 0;
+			if(harvest_plant_map[require_type]<require_num){
+				needed_num = require_num - harvest_plant_map[require_type];
+			}
+			
+			// draw.draw_text( "You Still Need: "+ std::to_string(needed_num)+" "+require_type->get_name(), glm::vec2( 400.0f, drawable_size.y - text_gap ), 0.4f);
+			iter++;	
+			text_gap += 10.0f;
+		}
+	}
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -695,7 +798,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		open_book();
 	}
 
-	//test order
+	
 
 
 }

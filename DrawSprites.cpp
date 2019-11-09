@@ -264,7 +264,7 @@ float DrawSprites::get_xadvance(std::string const& char_a, std::string const* _c
 }
 
 void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, glm::vec2 *anchor_out) {
-	assert( font );
+	// assert( font );
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
 
