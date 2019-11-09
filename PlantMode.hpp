@@ -44,7 +44,13 @@ struct PlantMode : public Mode {
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(259, 225);
 	Scene::Drawable* magic_book = nullptr;
+	std::vector< OrderType const* > all_orders;
+	int current_order_idx = 0;
 	OrderType const* current_order = order1;
+	
+	// init harvest_plant_map
+	// Harvest Plant Map
+	std::map< PlantType const*, int > harvest_plant_map;
     
 	void on_click( int x, int y );
 	GroundTile* get_tile_under_mouse( int x, int y);
@@ -58,6 +64,7 @@ struct PlantMode : public Mode {
 	std::string action_description = "";
 	std::string tile_status_summary = ""; // TEMP
 	const PlantType* selectedPlant = nullptr;
+	const PlantType* orderPlant = nullptr;
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
