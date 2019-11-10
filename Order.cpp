@@ -11,6 +11,14 @@
 #include <algorithm>
 #include <iostream>
 
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <fstream>
+#include <sstream>
+#include <map>
+#include <random>
+#include <unordered_map>
+
 Sprite const *orderbg_sprite = nullptr;
 OrderType const* order1 = nullptr;
 OrderType const* order2 = nullptr;
@@ -66,7 +74,7 @@ void OrderType::draw(glm::uvec2 const &drawable_size) const {
 		// draw.draw_text( "LALAL ", glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
 		draw.draw_text(get_title(), glm::vec2(view_min.x+90.0f, 256.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
 		draw.draw_text(get_description(), glm::vec2(view_min.x+75.0f, 245.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
-		
+		 draw.draw_text("Bonus energy: "+std::to_string(get_bonus_cash()),glm::vec2(view_min.x+75.0f, 235.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
 	}//<-- gets drawn on deallocation
 
 }
