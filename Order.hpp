@@ -1,5 +1,6 @@
 #pragma once
 #include "Plant.hpp"
+#include "Button.hpp"
 
 /* Contains info on the order*/
 struct OrderType
@@ -38,3 +39,5 @@ struct OrderType
 
 extern OrderType const* order1;
 extern OrderType const* order2;
+extern OrderType const* order3;
+extern OrderType const* order4;

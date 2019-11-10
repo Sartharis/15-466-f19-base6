@@ -60,7 +60,7 @@ private:
 /* Contains info on how a tile works and looks like*/
 struct GroundTileType
 {
-	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in, int clear_cost_in ) : can_plant( can_plant_in ), mesh( tile_mesh_in ), clear_cost(clear_cost_in){};
+	GroundTileType( bool can_plant_in, const Mesh* tile_mesh_in, int clear_cost_in ) : clear_cost(clear_cost_in), can_plant( can_plant_in ), mesh( tile_mesh_in ){};
 	int get_clear_cost() const{ return clear_cost; };
 	const Mesh* get_mesh() const{ return mesh; };
 	bool get_can_plant() const { return can_plant; };

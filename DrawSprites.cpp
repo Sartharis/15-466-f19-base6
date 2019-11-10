@@ -113,7 +113,7 @@ static Load< void > load_font( LoadTagDefault, []() {
 			// int parsing, based on: http://www.cplusplus.com/reference/cstdio/sscanf/
 			int kerning;
 			std::string kerning_s = k.value().get<std::string>();
-			assert( sscanf_s(kerning_s.c_str(), "%d", &kerning)==1 );
+			assert( sscanf(kerning_s.c_str(), "%d", &kerning)==1 );
 			b_2_kerning.insert( std::make_pair(char_b, kerning) );
 		}
 		// insert into kerning map, again using char_a as key
@@ -264,7 +264,7 @@ float DrawSprites::get_xadvance(std::string const& char_a, std::string const* _c
 }
 
 void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, glm::vec2 *anchor_out) {
-	assert( font );
+	// assert( font );
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
 
