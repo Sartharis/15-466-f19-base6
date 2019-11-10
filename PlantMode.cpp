@@ -23,8 +23,6 @@
 #include <random>
 #include <unordered_map>
 
-// Sprite const *kitchen_empty = nullptr;
-
 TileGrid grid;
 int plant_grid_x = 10;
 int plant_grid_y = 10;
@@ -243,6 +241,7 @@ PlantMode::PlantMode()
 				std::cout << "this button has no sprite." << std::endl;
 			} );
 
+		/*
 	    buttons.emplace_back (
 			glm::vec2(380, 130), // position
 			glm::vec2(80, 20), // size
@@ -304,9 +303,8 @@ PlantMode::PlantMode()
 				current_order = all_orders[current_order_idx];
 				std::cout << "Cancel Button Click!" << std::endl;
 			} );
+	*/
 	}
-
-
 }
 
 PlantMode::~PlantMode() {
@@ -441,30 +439,6 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 			{
 				collided_tile = &grid.tiles[x][y];
 			}
-
-			// OLD COLLISION CODE
-			/*glm::mat4x3 collider_to_world = grid.tiles[x][y].tile_drawable->transform->make_local_to_world();
-			const Mesh& collider_mesh = *( grid.tiles[x][y].tile_type->get_mesh() );
-
-			assert( collider_mesh.type == GL_TRIANGLES ); //only have code for TRIANGLES not other primitive types
-			for( GLuint v = 0; v + 2 < collider_mesh.count; v += 3 )
-			{
-
-				//get vertex positions from associated positions buffer:
-				glm::vec3 a = collider_to_world * glm::vec4( plant_mesh_buffer->positions[collider_mesh.start + v + 0], 1.0f );
-				glm::vec3 b = collider_to_world * glm::vec4( plant_mesh_buffer->positions[collider_mesh.start + v + 1], 1.0f );
-				glm::vec3 c = collider_to_world * glm::vec4( plant_mesh_buffer->positions[collider_mesh.start + v + 2], 1.0f );
-				//check triangle:
-				bool did_collide = collide_swept_sphere_vs_triangle(
-					sphere_sweep_from, sphere_sweep_to, sphere_radius,
-					a, b, c,
-					&collision_t, &collision_at, &collision_out );
-
-				if( did_collide )
-				{
-					collided_tile = &grid.tiles[x][y];
-				}
-			}*/
 		}
 	}
 	
@@ -523,8 +497,6 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	//camera_azimuth += 0.5f * elapsed;
-
 	const Uint8* state = SDL_GetKeyboardState( NULL );
 
 	if( state[SDL_SCANCODE_A] )
@@ -637,24 +609,6 @@ void PlantMode::update(float elapsed)
 	{
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 	}
-
-	//Description for aura effect
-	if( hovered_tile && hovered_tile->tile_type->get_can_plant() ) 
-	{
-		auto f2s = [](float f) { // from: https://stackoverflow.com/questions/16605967/set-precision-of-stdto-string-when-converting-floating-point-values
-			std::ostringstream out;
-			out.precision(2);
-			out << std::fixed << f;
-			return out.str();
-		};
-		std::string fire = f2s( hovered_tile->fire_aura_effect );
-		std::string aqua = f2s( hovered_tile->aqua_aura_effect );
-		tile_status_summary = "Fire: " + fire + ", Aqua: " + aqua;
-	}
-	else
-	{
-		tile_status_summary = "";
-	}
 }
 
 void PlantMode::draw(glm::uvec2 const &drawable_size) {
@@ -750,7 +704,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	current_order->draw(drawable_size);
+	//current_order->draw(drawable_size);
+
 	// draw order hint
 	{
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -793,8 +748,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(0.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
 		}
 		
-		//draw.draw_text( tile_status_summary, glm::vec2( 0.7f, 0.65f), 0.006f );
-
 		// draw hint text
 		draw.draw_text("Press Space to open magic book", glm::vec2( drawable_size.x/2.0f, 50.0f ), 0.6f );
 	}

@@ -62,7 +62,6 @@ struct PlantMode : public Mode {
 
 	//scene:
 	std::string action_description = "";
-	std::string tile_status_summary = ""; // TEMP
 	const PlantType* selectedPlant = nullptr;
 	const PlantType* orderPlant = nullptr;
 	Scene scene;
