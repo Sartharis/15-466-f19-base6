@@ -23,9 +23,12 @@ struct Inventory
 {
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
+	int get_harvest_num( const PlantType* plant );
+	void change_harvest_num(const PlantType* plant, int harvest_change );
 
 private:
-	std::unordered_map<PlantType const*, int> flower_to_seeds;
+	std::unordered_map<PlantType const*, int> plant_to_seeds;
+	std::unordered_map<PlantType const*, int> plant_to_harvest;
 };
 
 // The 'PlantMode':
@@ -34,16 +37,10 @@ struct PlantMode : public Mode {
 	virtual ~PlantMode();
 
 	bool is_magicbook_open = false;
-	int fire_flower_seed_num = 1;
-	int fern_seed_num = 1;
-	int sapsucker_seed_num = 1;
-	int friend_fern_seed_num = 1;
-	int cactus_seed_num = 0;
 	//called to create menu for current scene:
 	void open_book();
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(259, 225);
-	Scene::Drawable* magic_book = nullptr;
 	std::vector< OrderType const* > all_orders;
 	int current_order_idx = 0;
 	OrderType const* current_order = order1;
@@ -90,17 +87,24 @@ struct PlantMode : public Mode {
 	//UI states:
 	struct {
 		bool hidden = false;
+		std::vector< Button* > all_buttons = {};
+
 		// tools
-		std::vector<Button> tools = {};
+		std::vector< Button* > tools = {};
+
 		// storage (seed, harvest)
 		struct {
 			bool hidden = true;
-			enum { seeds, harvest } tab = seeds;
+			glm::vec2 br_offset = glm::vec2(-565, -306);
+			Button* icon_btn = nullptr;
+			std::vector< Button* > tabs = {};
+			int current_tab = 0; // 0: seeds, 1: harvest
 		} storage;
+
 		// magicbook
 		struct {
 			bool hidden = true;
-			std::vector<Button> items;
+			std::vector< Button > items = {};
 		} magicbook;
 	} UI;
 

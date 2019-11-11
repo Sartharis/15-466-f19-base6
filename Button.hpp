@@ -19,7 +19,7 @@ struct Button {
 	enum ScreenAnchor{ tl, tr, bl, br };
 
 	Button (
-			glm::vec2 screen_size,
+			glm::vec2 screen_size = glm::vec2(960, 600),
 			ScreenAnchor _screen_anchor = tl,
 			glm::vec2 _rel_position = glm::vec2(0, 0),
 			glm::vec2 _size = glm::vec2(20, 20),			
@@ -30,8 +30,10 @@ struct Button {
 			std::string _text = "",
 			glm::vec2 _text_anchor = glm::vec2(0, 0),
 			float _text_scale = 1.0f,
-			std::function<void()> const &_on_click = nullptr
-			) :	hover_behavior(_hover_behavior),
+			std::function<void()> const &_on_click = nullptr,
+			bool _hidden = false
+			) :	hidden(_hidden),
+					hover_behavior(_hover_behavior),
 					rel_position(_rel_position),
 					size(_size),
 					screen_anchor(_screen_anchor),
@@ -51,6 +53,8 @@ struct Button {
 	glm::vec2 get_sprite_anchor() const { return sprite_anchor; }
 	std::string get_text() const { return text; }
 	glm::vec2 get_text_anchor() const { return text_anchor; }
+
+	bool hidden = false;
 
 	// functions
 	void update_hover(glm::vec2 mouse_pos);

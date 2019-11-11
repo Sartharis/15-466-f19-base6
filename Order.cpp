@@ -28,7 +28,7 @@ OrderType const* order4 = nullptr;
 Load< SpriteAtlas > order_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *kret = new SpriteAtlas(data_path("orders"));
 	orderbg_sprite = &kret->lookup("orderBg");
-    std::map< PlantType const*, int > require_plants_in1;
+	std::map< PlantType const*, int > require_plants_in1;
 	require_plants_in1[test_plant] = 4;
 	std::map< PlantType const*, int > require_plants_in2;
 	require_plants_in2[cactus_plant] = 2;
@@ -37,7 +37,7 @@ Load< SpriteAtlas > order_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	// require_plants_in3[test_plant] = 5;
 	std::map< PlantType const*, int > require_plants_in4;
 	require_plants_in4[vampire_plant] = 1;
-    // order1 = new OrderType("Welcome to solidarity, here is your first order", "Hi, I am your negibour Jacy. Recently I am refurbishing my house. Could you please help me find the follwing items?",require_plants_in1,300,nullptr);
+	// order1 = new OrderType("Welcome to solidarity, here is your first order", "Hi, I am your negibour Jacy. Recently I am refurbishing my house. Could you please help me find the follwing items?",require_plants_in1,300,nullptr);
 	// order2 = new OrderType("Welcome to solidarity, here is your first order", "Hi, I am your negibour Jacy. Recently I am refurbishing my house. Could you please help me find the follwing items?",require_plants_in1,300,nullptr);
 	order1 = new OrderType("Here is your order", "Please Sell me four ferns",require_plants_in1,300,nullptr);
 	order2 = new OrderType("Here is your order", "Please Help me find two cactus",require_plants_in2,350,nullptr);
@@ -74,7 +74,7 @@ void OrderType::draw(glm::uvec2 const &drawable_size) const {
 		// draw.draw_text( "LALAL ", glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 40.0f ), 2.0f );
 		draw.draw_text(get_title(), glm::vec2(view_min.x+90.0f, 256.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
 		draw.draw_text(get_description(), glm::vec2(view_min.x+75.0f, 245.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
-		 draw.draw_text("Bonus energy: "+std::to_string(get_bonus_cash()),glm::vec2(view_min.x+75.0f, 235.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
+		draw.draw_text("Bonus energy: "+std::to_string(get_bonus_cash()),glm::vec2(view_min.x+75.0f, 235.0f), 0.2f, glm::u8vec4(0xff,0xff,0xff,0xff));
 	}//<-- gets drawn on deallocation
 
 }

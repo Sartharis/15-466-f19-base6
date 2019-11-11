@@ -3,7 +3,7 @@
 
 bool Button::try_click(glm::vec2 mouse_pos) {
 	// early return if no on_click function attached
-	if (on_click == nullptr) return false;
+	if (hidden || on_click == nullptr) return false;
 
 	if (mouse_pos.x >= position.x
 			&& mouse_pos.x < position.x + size.x
@@ -45,6 +45,7 @@ void Button::update_hover(glm::vec2 mouse_pos) {
 }
 
 void Button::draw_sprite(DrawSprites& draw_sprites) {
+	if( hidden ) return;
 	glm::vec2 drawable_size = draw_sprites.drawable_size;
 	// draw sprite
 	if (sprite) {
@@ -55,6 +56,7 @@ void Button::draw_sprite(DrawSprites& draw_sprites) {
 }
 
 void Button::draw_text(DrawSprites& draw_text) {
+	if( hidden ) return;
 	glm::vec2 drawable_size = draw_text.drawable_size;
 	// draw text
 	if ( !sprite
