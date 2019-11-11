@@ -3,7 +3,8 @@
 uniform mat4 OBJECT_TO_CLIP;
 uniform mat4x3 OBJECT_TO_LIGHT;
 uniform mat3 NORMAL_TO_LIGHT;
-uniform float HEALTH;
+// uniform float HEALTH;
+uniform vec3 PROPERTIES;
 in vec4 Position;
 in vec3 Normal;
 in vec4 Color;
@@ -26,7 +27,9 @@ vec4 over(vec4 elem, vec4 canvas) {
   return vec4(cr, cg, cb, ca);
 }
 
-vec4 color_from_health(vec4 col) {
+vec4 color_from_health(vec4 col, float health) {
+	if (health == 1.0f) return col;
+
 	// overlay with tint color
 	vec4 overlay = over(vec4(0.6078, 0.3255, 0, 0.75), col);
 	// preserve luminance
@@ -38,13 +41,28 @@ vec4 color_from_health(vec4 col) {
 	vec4 unhealthy = multiply;
 
 	// lerp to get result
-	return mix(unhealthy, col, HEALTH);
+	return mix(unhealthy, col, health);
+}
+
+vec4 soil_color(vec4 col, float moisture, float fertility) {
+	if (moisture == 0.0f && fertility == 0.0f) return col;
+	vec4 wet_fertile_col = vec4(51.0f/255.0f, 39.0f/255.0f, 28.0f/255.0f, 1.0f);
+	vec4 dry_barren_col = vec4(151.0f/255.0f, 137.0f/255.0f, 115.0f/255.0f, 1.0f);
+	vec4 wet_barren_col = vec4(99.0f/255.0f, 92.0f/255.0f, 82.0f/255.0f, 1.0f);
+	vec4 all_wet = mix(wet_barren_col, wet_fertile_col, fertility);
+	vec4 all_dry = mix(dry_barren_col, col, fertility);
+	return mix(all_dry, all_wet, moisture);
 }
 
 void main() {
+	float health = PROPERTIES.x;
+	float moisture = PROPERTIES.y;
+	float fertility = PROPERTIES.z;
+
 	gl_Position = OBJECT_TO_CLIP * Position;
 	position = OBJECT_TO_LIGHT * Position;
 	normal = NORMAL_TO_LIGHT * Normal;
-  color = color_from_health(Color);
+  color = color_from_health(Color, health);
+	color = soil_color(color, moisture, fertility);
 	texCoord = TexCoord;
 }

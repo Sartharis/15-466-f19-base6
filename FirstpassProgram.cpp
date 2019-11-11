@@ -64,8 +64,7 @@ FirstpassProgram::FirstpassProgram() {
 	OBJECT_TO_CLIP_mat4 = glGetUniformLocation(program, "OBJECT_TO_CLIP");
 	OBJECT_TO_LIGHT_mat4x3 = glGetUniformLocation(program, "OBJECT_TO_LIGHT");
 	NORMAL_TO_LIGHT_mat3 = glGetUniformLocation(program, "NORMAL_TO_LIGHT");
-  // CUSTOM_COL_vec4 = glGetUniformLocation(program, "CUSTOM_COL");
-	HEALTH_float = glGetUniformLocation(program, "HEALTH");
+	PROPERTIES_vec3 = glGetUniformLocation(program, "PROPERTIES");
 }
 
 FirstpassProgram::~FirstpassProgram() {

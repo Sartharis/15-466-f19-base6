@@ -59,7 +59,6 @@ struct PlantMode : public Mode {
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
 	
-
 	//scene:
 	std::string action_description = "";
 	const PlantType* selectedPlant = nullptr;
@@ -85,12 +84,35 @@ struct PlantMode : public Mode {
 	float camera_azimuth = glm::radians(125.0f);
 	float camera_elevation = glm::radians(40.0f);
 
-	//UI:
-	std::vector<Button> buttons = {};
+	//tool selection
+	enum{ glove, watering_can, fertilizer, shovel, seed, none } current_tool = none;
+
+	//UI states:
+	struct {
+		bool hidden = false;
+		// tools
+		std::vector<Button> tools = {};
+		// storage (seed, harvest)
+		struct {
+			bool hidden = true;
+			enum { seeds, harvest } tab = seeds;
+		} storage;
+		// magicbook
+		struct {
+			bool hidden = true;
+			std::vector<Button> items;
+		} magicbook;
+	} UI;
+
+	struct {
+		Sprite const* sprite = nullptr;
+		std::string text = ""; // TODO: text that floats around cursor?
+		float scale = 1.0f;
+		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
+	} cursor;
 
 	//-------- opengl stuff 
 
-	// TODO: if want to allow resize, have to find a better way to pass this
 	glm::vec2 screen_size = glm::vec2(960, 600); 
 	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
 

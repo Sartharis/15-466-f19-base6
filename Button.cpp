@@ -16,6 +16,23 @@ bool Button::try_click(glm::vec2 mouse_pos) {
 	}
 }
 
+void Button::update_position(glm::vec2 screen_size) {
+	switch (screen_anchor) {
+	case tl:
+		position = rel_position;
+		break;
+	case tr:
+		position = glm::vec2(screen_size.x, 0) + rel_position;
+		break;
+	case bl:
+		position = glm::vec2(0, screen_size.y) + rel_position;
+		break;
+	case br:
+		position = screen_size + rel_position;
+		break;
+	}
+}
+
 void Button::update_hover(glm::vec2 mouse_pos) {
 	if (mouse_pos.x >= position.x
 			&& mouse_pos.x < position.x + size.x

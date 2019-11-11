@@ -16,9 +16,12 @@ struct Button {
 	 * none: nothing happens on hover
 	 */
 	enum HoverBehavior { show_text, none };
+	enum ScreenAnchor{ tl, tr, bl, br };
 
 	Button (
-			glm::vec2 _position = glm::vec2(0, 0),
+			glm::vec2 screen_size,
+			ScreenAnchor _screen_anchor = tl,
+			glm::vec2 _rel_position = glm::vec2(0, 0),
 			glm::vec2 _size = glm::vec2(20, 20),			
 			const Sprite* _sprite = nullptr,
 			glm::vec2 _sprite_anchor = glm::vec2(0, 0),
@@ -29,19 +32,20 @@ struct Button {
 			float _text_scale = 1.0f,
 			std::function<void()> const &_on_click = nullptr
 			) :	hover_behavior(_hover_behavior),
-					position(_position),
+					rel_position(_rel_position),
 					size(_size),
+					screen_anchor(_screen_anchor),
 					sprite(_sprite),
 					sprite_anchor(_sprite_anchor),
 					sprite_scale(_sprite_scale),
 					text(_text),
 					text_anchor(_text_anchor),
 					text_scale(_text_scale),
-					on_click(_on_click) {}
+					on_click(_on_click) { update_position(screen_size); }
 
 	// getters
+	glm::vec2 get_position() const { return position; };
 	bool get_hovered() const { return hovered; }
-	glm::vec2 get_position() const { return position; }
 	glm::vec2 get_size() const { return size; }
 	const Sprite* get_sprite() const { return sprite; }
 	glm::vec2 get_sprite_anchor() const { return sprite_anchor; }
@@ -50,6 +54,7 @@ struct Button {
 
 	// functions
 	void update_hover(glm::vec2 mouse_pos);
+	void update_position(glm::vec2 new_screensize);
 	bool try_click(glm::vec2 mouse_pos); // if mouse_pos is on this button, call on_click() and return true.
 	void draw_sprite(DrawSprites& draw_sprites);
 	void draw_text(DrawSprites& draw_text);
@@ -58,17 +63,23 @@ private:
 	// hover state
 	bool hovered = false;
 	HoverBehavior hover_behavior = Button::none;
+
 	// shape & location
-	glm::vec2 position;
+	glm::vec2 rel_position;
+	glm::vec2 position = glm::vec2(0, 0);// updated on resize
 	glm::vec2 size;
+	ScreenAnchor screen_anchor;
+
 	// sprite
 	const Sprite* sprite = nullptr;
 	glm::vec2 sprite_anchor = glm::vec2(0, 0);
 	float sprite_scale = 1.0f;
+
 	// text
 	std::string text = "";
 	glm::vec2 text_anchor = glm::vec2(0, 0);
 	float text_scale = 1.0f;
+
 	// on_click
 	std::function<void()> const on_click = nullptr;
 };

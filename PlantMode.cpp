@@ -29,24 +29,42 @@ int plant_grid_y = 10;
 
 Mesh const* selector_mesh = nullptr;
 Sprite const* magic_book_sprite = nullptr;
-Sprite const* glove_sprite = nullptr;
-Sprite const* watering_can_sprite = nullptr;
 Sprite const* magicbook_icon_sprite = nullptr;
-Sprite const* cursor_sprite = nullptr;
+
+struct {
+	struct {
+		Sprite const* background = nullptr;
+		Sprite const* watering_can = nullptr;
+		Sprite const* glove = nullptr;
+		Sprite const* shovel = nullptr;
+		Sprite const* fertilizer = nullptr;
+	} tools;
+	struct {
+		Sprite const* regular = nullptr;
+		Sprite const* hand = nullptr;
+	} cursor;
+} sprites;
 
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
-Load< SpriteAtlas > magicbook_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *kret = new SpriteAtlas(data_path("solidarity"));
+Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
+	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	std::cout << "----2D sprites loaded:" << std::endl;
-	for( auto p : kret->sprites ) {
+	for( auto p : ret->sprites ) {
 		std::cout << p.first << std::endl;
 	}
-	magic_book_sprite = &kret->lookup("magicbookBackground");
-	glove_sprite = &kret->lookup("glove");
-	watering_can_sprite = &kret->lookup("wateringCan");
-	magicbook_icon_sprite = &kret->lookup("magicbookIcon");
-	cursor_sprite = &kret->lookup("cursorNormal"); 
-	return kret;
+	// tools
+	sprites.tools.background = &ret->lookup("toolsBackground");
+	sprites.tools.watering_can = &ret->lookup("wateringCan");
+	sprites.tools.glove = &ret->lookup("glove");
+	sprites.tools.shovel = &ret->lookup("shovel");
+	sprites.tools.fertilizer = &ret->lookup("fertilizer");
+	// cursor
+	sprites.cursor.regular = &ret->lookup("cursorNormal");
+	sprites.cursor.hand = &ret->lookup("cursorHand");
+	// TEMP
+	magic_book_sprite = &ret->lookup("magicbookBackground");
+	magicbook_icon_sprite = &ret->lookup("magicbookIcon");
+	return ret;
 });
 
 Load< MeshBuffer > ui_meshes( LoadTagDefault, [](){
@@ -181,66 +199,82 @@ PlantMode::PlantMode()
 
 	{ //DEBUG: init UI
 
-		// glove button
-		buttons.emplace_back (
-			glm::vec2(20, 500), // position
+		// glove
+		UI.tools.emplace_back (
+			screen_size, Button::bl, glm::vec2(60, -77), // position
 			glm::vec2(64, 64), // size
-			glove_sprite, // sprite
+			sprites.tools.glove, // sprite
 			glm::vec2(32, 32), // sprite anchor
-			1.0f, // sprite scale
+			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"glove", // text
 			glm::vec2(0, -20), // text anchor
 			0.4f, // text scale
-			[]() {
-				std::cout << "clicked on glove." << std::endl;
+			[this]() {
+				if( current_tool == glove ) current_tool = none;
+				else current_tool = glove;
 			} );
-
-		// watering can button
-		buttons.emplace_back (
-			glm::vec2(100, 500), // position
+		// watering can
+		UI.tools.emplace_back (
+			screen_size, Button::bl, glm::vec2(142, -72), // position
 			glm::vec2(64, 64), // size
-			watering_can_sprite, // sprite
+			sprites.tools.watering_can, // sprite
 			glm::vec2(32, 32), // sprite anchor
-			1.0f, // sprite scale
+			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"watering can", // text
 			glm::vec2(0, -20), // text anchor
 			0.4f, // text scale
-			[]() {
-				std::cout << "clicked on watering can." << std::endl;
+			[this]() {
+				if( current_tool == watering_can ) current_tool = none;
+				else current_tool = watering_can;
 			} );
-
-		// magicbook button
-		buttons.emplace_back (
-			glm::vec2(180, 500), // position
+		// fertilizer
+		UI.tools.emplace_back (
+			screen_size, Button::bl, glm::vec2(230, -82), // position
 			glm::vec2(64, 64), // size
-			magicbook_icon_sprite, // sprite
+			sprites.tools.fertilizer, // sprite
 			glm::vec2(32, 32), // sprite anchor
-			0.213f, // sprite scale
+			0.3f, // sprite scale
 			Button::show_text, // hover behavior
-			"magic book", // text
+			"fertilizer", // text
 			glm::vec2(0, -20), // text anchor
 			0.4f, // text scale
-			[]() {
-				std::cout << "clicked on magic book." << std::endl;
+			[this]() {
+				if( current_tool == fertilizer ) current_tool = none;
+				else current_tool = fertilizer;
 			} );
-
-		// a button with no sprite attached
-		buttons.emplace_back (
-			glm::vec2(260, 500), // position
-			glm::vec2(80, 20), // size
-			nullptr, // sprite
-			glm::vec2(0, 0), // sprite anchor
-			1.0f, // sprite scale
-			Button::none, // hover behavior
-			"no sprite", // text
-			glm::vec2(0, 0), // text anchor
+		// shovel
+		UI.tools.emplace_back (
+			screen_size, Button::bl, glm::vec2(315, -80), // position
+			glm::vec2(64, 64), // size
+			sprites.tools.shovel, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			0.3f, // sprite scale
+			Button::show_text, // hover behavior
+			"shovel", // text
+			glm::vec2(0, -20), // text anchor
 			0.4f, // text scale
-			[]() {
-				std::cout << "this button has no sprite." << std::endl;
+			[this]() {
+				if( current_tool == shovel ) current_tool = none;
+				else current_tool = shovel;
 			} );
 
+		// seed (TODO: TEMP!!)
+		UI.tools.emplace_back (
+			screen_size, Button::bl, glm::vec2(395, -80), // position
+			glm::vec2(64, 64), // size
+			sprites.tools.shovel, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			0.3f, // sprite scale
+			Button::show_text, // hover behavior
+			"seed", // text
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
+			[this]() {
+				if( current_tool == seed ) current_tool = none;
+				else current_tool = seed;
+			} );
 		/*
 	    buttons.emplace_back (
 			glm::vec2(380, 130), // position
@@ -315,63 +349,58 @@ PlantMode::~PlantMode() {
 			if( tile.aqua_aura ) delete tile.aqua_aura;
 		}
 	}
-	
-	
 }
 
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	for( int i = 0; i < buttons.size(); i++ )
+	for( int i = 0; i < UI.tools.size(); i++ )
 	{
-		if( buttons[i].try_click( glm::vec2(x, y) ) ) return;
+		if( UI.tools[i].try_click( glm::vec2(x, y) ) ) return;
 	}
 
 	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
 
-	if( collided_tile )
-	{
-		// Plant actions
-		if( collided_tile->plant_type )
-		{
-			// Removing dead plant
-			if( collided_tile->is_plant_dead())
-			{
-				collided_tile->try_remove_plant();
-			}
-			// Harvesting plant
-			else if( collided_tile->is_tile_harvestable() )
-			{
-				int gain = collided_tile->plant_type->get_harvest_gain();
-				if( collided_tile->try_remove_plant() )
-				{
-					energy += gain;
-					harvest_plant_map[collided_tile->plant_type]+=1;
+	if( collided_tile ) {
+
+		if( current_tool == glove ) {
+			if( collided_tile->plant_type ) {
+				// Removing dead plant
+				if( collided_tile->is_plant_dead() ) {
+					collided_tile->try_remove_plant();
+				}
+				// Harvesting plant
+				else if( collided_tile->is_tile_harvestable() ) {
+					int gain = collided_tile->plant_type->get_harvest_gain();
+					if( collided_tile->try_remove_plant() ) {
+						energy += gain;
+						harvest_plant_map[collided_tile->plant_type]+=1;
+					}
 				}
 			}
-		}
-		// Ground actions
-		else
-		{
-			// Clearing the ground
-			if( collided_tile->can_be_cleared(grid) )
-			{
+
+		} else if( current_tool == watering_can ) {
+
+		} else if( current_tool == fertilizer ) {
+
+		} else if( current_tool == shovel ) {
+			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
-				if( cost <= energy && collided_tile->try_clear_tile() )
-				{
+				if( cost <= energy && collided_tile->try_clear_tile() ) {
 					energy -= cost;
 				}
 			}
+
+		} else if( current_tool == seed ) {
 			// Planting a plant
-			else if(selectedPlant && inventory.get_seeds_num( selectedPlant ) > 0)
-			{
-				if( collided_tile->try_add_plant( selectedPlant ) )
-				{
+			if(selectedPlant && inventory.get_seeds_num( selectedPlant ) > 0) {
+				if( collided_tile->try_add_plant( selectedPlant ) ) {
 					inventory.change_seeds_num( selectedPlant, -1 );
 				}
 			}
 		}
+
 	}
 }
 
@@ -549,7 +578,7 @@ void PlantMode::update(float elapsed)
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				grid.tiles[x][y].apply_pending_update();
+				grid.tiles[x][y].apply_pending_update( elapsed );
 			}
 		}
 		// other visuals
@@ -564,41 +593,63 @@ void PlantMode::update(float elapsed)
 
 	int x, y;
 	SDL_GetMouseState( &x, &y );
-
-	// update buttons' hovered state
-	for( int i = 0; i < buttons.size(); i++) {
-		buttons[i].update_hover( glm::vec2(x, y) );
-	}
 	
-	// Query for hovered tile 
+	// Query for hovered tile
 	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
-	if( hovered_tile && hovered_tile->plant_type)
-	{
-		if( hovered_tile->is_plant_dead() )
-		{
-			action_description = "Remove ";
-		}
-		else if( hovered_tile->is_tile_harvestable() )
-		{
-			action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
-		}
-		else
-		{
-			action_description = "Growing ";
-		}
-	}
-	else if ( hovered_tile && selectedPlant && hovered_tile->tile_type->get_can_plant() )
-	{    
-		action_description = "Plant ";
-	}
-	else if ( hovered_tile && hovered_tile->can_be_cleared(grid)  )
-	{
-		action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
-	}
-	else
-	{
+	if( hovered_tile ) {
+		//---- update action description
 		action_description = "";
-	}
+
+		if( current_tool == glove ) {
+			if( hovered_tile->plant_type ) 
+			{
+				if( hovered_tile->is_plant_dead() )
+				{
+					action_description = "Remove ";
+				}
+				else if( hovered_tile->is_tile_harvestable() )
+				{
+					action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
+				}
+				else
+				{
+					action_description = "Growing ";
+				}
+			}
+
+		} else if( current_tool == watering_can ) {
+			if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
+				action_description = "Water ";
+			}
+
+		} else if( current_tool == fertilizer ) {
+			if( hovered_tile->fertility < 1.0f ) {
+				action_description = "Fertilize";
+			}
+
+		} else if( current_tool == shovel ) {
+			if( hovered_tile->can_be_cleared(grid) ) {
+				action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
+			}
+
+		} else if( current_tool == seed ) {
+			if( selectedPlant 
+					&& hovered_tile->tile_type->get_can_plant()
+					&& !hovered_tile->plant_type ) {
+				action_description = "Plant ";
+			}
+		}
+
+		//---- update tile properties (watering & fertilizing)
+		if( SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT) ) {// left btn down
+			if( current_tool == watering_can ) {
+				hovered_tile->moisture = std::min(1.0f, hovered_tile->moisture + elapsed);
+
+			} else if( current_tool == fertilizer ) {
+				hovered_tile->fertility = std::min(1.0f, hovered_tile->fertility + elapsed * 2.0f);
+			}
+		}
+	} 
 
 	//Selector positioning
 	if( hovered_tile )
@@ -608,6 +659,46 @@ void PlantMode::update(float elapsed)
 	else
 	{
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
+	}
+
+	{ // update UI and cursor
+		// update buttons' hovered state
+		for( int i = 0; i < UI.tools.size(); i++) {
+			UI.tools[i].update_hover( glm::vec2(x, y) );
+		}
+		// update cursor sprite depending on current tool
+		switch( current_tool ) {
+		case none:
+			cursor.sprite = sprites.cursor.regular;
+			cursor.scale = 1.0f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		case seed: //TODO
+			cursor.sprite = sprites.cursor.hand;
+			cursor.scale = 1.0f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		case glove:
+			cursor.sprite = sprites.tools.glove;
+			cursor.scale = 0.24f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		case watering_can:
+			cursor.sprite = sprites.tools.watering_can;
+			cursor.scale = 0.24f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		case fertilizer:
+			cursor.sprite = sprites.tools.fertilizer;
+			cursor.scale = 0.24f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		case shovel:
+			cursor.sprite = sprites.tools.shovel;
+			cursor.scale = 0.24f;
+			cursor.offset = glm::vec2(0, 0);
+			break;
+		}
 	}
 }
 
@@ -753,39 +844,44 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	{ //draw UI
+		{ //sprites
+			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 
-		// button sprites
-		DrawSprites draw_sprites( *magicbook_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		for (int i=0; i<buttons.size(); i++) {
-			buttons[i].draw_sprite( draw_sprites );
+			// tools background
+			draw_sprites.draw( *sprites.tools.background, glm::vec2(-100, 0), 0.3f );
+			// tools
+			for (int i=0; i<UI.tools.size(); i++) {
+				UI.tools[i].draw_sprite( draw_sprites );
+			}
 		}
-
-		// button text
-		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		for (int i=0; i<buttons.size(); i++) {
-			buttons[i].draw_text( draw_text );
+		{ //text
+			// tools
+			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			for (int i=0; i<UI.tools.size(); i++) {
+				UI.tools[i].draw_text( draw_text );
+			}
 		}
-
 		// cursor
+		DrawSprites draw_cursor( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		int mouse_x, mouse_y;
 		SDL_GetMouseState(&mouse_x, &mouse_y);
-		draw_sprites.draw( *cursor_sprite, glm::vec2(mouse_x, drawable_size.y - mouse_y) );
+		draw_cursor.draw( 
+				*cursor.sprite, 
+				glm::vec2(mouse_x + cursor.offset.x, drawable_size.y - mouse_y - cursor.offset.y),
+				cursor.scale);
 	}
    
-
 	if(is_magicbook_open && Mode::current.get() == this)
 	{
 		open_book();
 	}
-
-	
-
 
 }
 
 void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 {
 	{ // init the opengl stuff
+		screen_size = glm::vec2( new_drawable_size.x, new_drawable_size.y );
 		// ------ generate framebuffer for firstpass
 		glGenFramebuffers( 1, &firstpass_fbo );
 		glBindFramebuffer( GL_FRAMEBUFFER, firstpass_fbo );
@@ -885,6 +981,11 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			);
 		}
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+	}
+	{// re-position buttons
+		for( int i = 0; i < UI.tools.size(); i++ ) {
+			UI.tools[i].update_position( screen_size );
+		}
 	}
 }
 

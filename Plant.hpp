@@ -71,14 +71,13 @@ private:
 	const Mesh* mesh = nullptr;
 };
 
-
 /* Actual instance of a tile with a plant */
 struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
 	void update( float elapsed, Scene::Transform* camera_transform, const TileGrid& grid );
 	void update_plant_visuals( float percent_grown );
-	void apply_pending_update();
+	void apply_pending_update( float elapsed );
 	void update_aura_visuals( float elapsed, Scene::Transform* camera_transform );
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
@@ -94,11 +93,17 @@ struct GroundTile
 	Scene::Drawable* tile_drawable = nullptr;
 	Scene::Drawable* plant_drawable = nullptr;
 
-	// Tile data. TODO: other properties like fertility?
-	const float plant_health_restore_rate = 1.0f / 5.0f;
-	float plant_health = 1.0f;
+	// Tile data
 	int grid_x = 0;
 	int grid_y = 0;
+
+	const float plant_health_restore_rate = 1.0f / 5.0f;
+	float plant_health = 1.0f;
+	const float moisture_dry_rate = 0.02f;
+	float moisture = 1.0f;
+	const float fertility_consume_rate = 0.01f;
+	float fertility = 1.0f;
+
 	float fire_aura_effect = 0.0f; // in range 0 - 1
 	float aqua_aura_effect = 0.0f;
 	// each time a tile updates, its aura modifies nearby tiles' pending update struct

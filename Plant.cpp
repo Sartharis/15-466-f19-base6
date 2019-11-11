@@ -54,7 +54,7 @@ Mesh const* cactus_3_mesh = nullptr;
 Mesh const* fireflower_1_mesh = nullptr;
 Mesh const* fireflower_2_mesh = nullptr;
 Mesh const* fireflower_3_mesh = nullptr;
-// fireflower
+// corpse eater
 Mesh const* corpseeater_1_mesh = nullptr;
 Mesh const* corpseeater_2_mesh = nullptr;
 Mesh const* corpseeater_3_mesh = nullptr;
@@ -106,7 +106,6 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
 	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
 
-
 	plant_mesh_buffer = ret;
 
 	return ret;
@@ -118,11 +117,6 @@ Load< GLuint > plant_meshes_for_firstpass_program( LoadTagDefault, [](){
 
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y )
 {
-	
-	if(!sea_tile )
-	{
-		printf( "Wtfff" );
-	}
 
 	TileGrid grid;
 	// Make the tile grid
@@ -144,10 +138,10 @@ TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y 
 		default_info.vao = *plant_meshes_for_firstpass_program;
 		default_info.start = 0;
 		default_info.count = 0;
-		// set default health uniform (1.0f)
-		GLint HEALTH_float_loc = firstpass_program->HEALTH_float;
-		default_info.set_uniforms = [HEALTH_float_loc](){
-			glUniform1f(HEALTH_float_loc, 1.0f);
+		// set default uniforms
+		GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
+		default_info.set_uniforms = [PROPERTIES_vec3_loc](){
+			glUniform3f(PROPERTIES_vec3_loc, 1.0f, 0.0f, 0.0f);
 		};
 
 		glm::vec3 tile_center_pos = glm::vec3( ( (float)plant_grid_x - 1 ) * plant_grid_tile_size.x / 2.0f, ( (float)plant_grid_y - 1 ) * plant_grid_tile_size.y / 2.0f, 0.0f );
@@ -195,6 +189,12 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 		tile_type = tile_type_in;
 		tile_drawable->pipeline.start = tile_type->get_mesh()->start;
 		tile_drawable->pipeline.count = tile_type->get_mesh()->count;
+		if( tile_type->get_can_plant() ) {
+			GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
+			tile_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
+				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, fertility);
+			};
+		}
 	}
 	else
 	{
@@ -213,7 +213,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		{
 			if( plant_type == test_plant )
 			{
-				current_grow_time += grow_power;
+				current_grow_time += grow_power * std::sqrtf(moisture * fertility);
 			}
 			else if( plant_type == friend_plant )
 			{
@@ -249,7 +249,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( neighbor >= 2 )
 				{
-					current_grow_time += grow_power;
+					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -278,7 +278,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				if( victims.size() > 0 )
 				{
 					victims[rand() % victims.size()]->plant_health -= elapsed * ( 2*plant_health_restore_rate + 0.2f );
-					current_grow_time += grow_power;
+					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -306,7 +306,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( dead_plants > 0 )
 				{
-					current_grow_time += grow_power;
+					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -315,13 +315,13 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 			}
 			else if( plant_type == fireflower_plant )
 			{
-				current_grow_time += grow_power;
+				current_grow_time += grow_power * std::sqrtf(fertility);
 			}
 			else if( plant_type == cactus_plant )
 			{
 				if( fire_aura_effect > 0.1f && aqua_aura_effect <= 0.0f )
 				{
-					current_grow_time += grow_power * fire_aura_effect;
+					current_grow_time += grow_power * fire_aura_effect * std::sqrtf(fertility);
 				}
 				else
 				{
@@ -376,7 +376,9 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		}
 	}
 
-	// received aura effects decrease over time
+	// update tile state
+	moisture -= moisture_dry_rate * elapsed;
+	if( plant_type && !is_plant_dead() ) fertility -= fertility_consume_rate * elapsed;
 	fire_aura_effect = std::max( 0.0f, fire_aura_effect - 0.1f * elapsed );
 	aqua_aura_effect = std::max( 0.0f, aqua_aura_effect - 0.1f * elapsed );
 }
@@ -389,22 +391,31 @@ void GroundTile::update_plant_visuals( float percent_grown )
 		const Mesh* plant_mesh = is_plant_dead() ? dead_plant_mesh : plant_type->get_mesh( percent_grown );
 		plant_drawable->pipeline.start = plant_mesh->start;
 		plant_drawable->pipeline.count = plant_mesh->count;
-		// set health uniform
-		GLint HEALTH_float_loc = firstpass_program->HEALTH_float;
-		float _plant_health = plant_health;
-		plant_drawable->pipeline.set_uniforms = [HEALTH_float_loc, _plant_health](){
-			glUniform1f(HEALTH_float_loc, _plant_health);
+		// set health uniform. TODO: move this to somewhere that gets called less often
+		GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
+		plant_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
+			glUniform3f(PROPERTIES_vec3_loc, plant_health, 0.0f, 0.0f);
 		};
 	}
 }
 
-void GroundTile::apply_pending_update()
+void GroundTile::apply_pending_update(float elapsed)
 {
 	// move update from pending_update
 	fire_aura_effect = std::min( 1.0f, fire_aura_effect + pending_update.fire_aura_effect );
 	aqua_aura_effect = std::min( 1.0f, aqua_aura_effect + pending_update.aqua_aura_effect );
 	pending_update.fire_aura_effect = 0.0f;
 	pending_update.aqua_aura_effect = 0.0f;
+
+	//.. and continue updating what's left
+	moisture += aqua_aura_effect * elapsed * 0.25f;
+	moisture -= fire_aura_effect * elapsed * 0.25f;
+
+	moisture = std::max( 0.0f, moisture );
+	moisture = std::min( 1.0f, moisture );
+	fertility = std::max( 0.0f, fertility );
+	fertility = std::min( 1.0f, fertility );
+	
 }
 
 void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_transform )
