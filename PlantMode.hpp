@@ -5,8 +5,6 @@
 #include "BoneAnimation.hpp"
 #include "GL.hpp"
 #include "Scene.hpp"
-#include "Sprite.hpp"
-#include "Aura.hpp"
 #include "Order.hpp"
 #include "Button.hpp"
 
@@ -25,10 +23,23 @@ struct Inventory
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
 	void change_harvest_num(const PlantType* plant, int harvest_change );
+	Button* get_seed_btn( const PlantType* plant );
+	void set_seed_btn( const PlantType* plant, Button* btn ) { plant_to_seed_btn.insert( std::make_pair( plant, btn ) ); }
+	Button* get_harvest_btn( const PlantType* plant );
+	void set_harvest_btn( const PlantType* plant, Button* btn ) { plant_to_harvest_btn.insert( std::make_pair( plant, btn ) ); }
 
+	static bool comp_fn(std::pair<PlantType const*, int> p1, std::pair<PlantType const*, int> p2) {
+		return p1.second > p2.second;
+	} // use this to sort entries in descending order
+
+	//getters
+	std::unordered_map<PlantType const*, int> get_plant_to_seeds() { return plant_to_seeds; }
+	std::unordered_map<PlantType const*, int> get_plant_to_harvest() { return plant_to_harvest; }
 private:
 	std::unordered_map<PlantType const*, int> plant_to_seeds;
 	std::unordered_map<PlantType const*, int> plant_to_harvest;
+	std::unordered_map<PlantType const*, Button*> plant_to_seed_btn;
+	std::unordered_map<PlantType const*, Button*> plant_to_harvest_btn;
 };
 
 // The 'PlantMode':
@@ -65,7 +76,7 @@ struct PlantMode : public Mode {
 	Scene::Drawable* selector = nullptr;
 	
 	Inventory inventory;
-	int energy = 30;
+	int energy = 200;
 
 	glm::vec3 forward_camera_dir = glm::vec3();
 	glm::vec3 forward_dir = glm::vec3();
@@ -82,7 +93,7 @@ struct PlantMode : public Mode {
 	float camera_elevation = glm::radians(40.0f);
 
 	//tool selection
-	enum{ glove, watering_can, fertilizer, shovel, seed, none } current_tool = none;
+	Tool current_tool = none;
 
 	//UI states:
 	struct {
@@ -97,8 +108,17 @@ struct PlantMode : public Mode {
 			bool hidden = true;
 			glm::vec2 br_offset = glm::vec2(-565, -306);
 			Button* icon_btn = nullptr;
+			// tab
 			std::vector< Button* > tabs = {};
 			int current_tab = 0; // 0: seeds, 1: harvest
+			// seeds
+			std::vector< Button* > all_seeds = {};
+			std::vector< Button* > all_harvest = {};
+			glm::vec2 get_cell_position(int index) {
+				int row = index / 4;
+				int col = index % 4;
+				return br_offset + glm::vec2(42, 28) + glm::vec2(col * 93.5f, row * 89);
+			};
 		} storage;
 
 		// magicbook

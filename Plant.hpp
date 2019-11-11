@@ -1,16 +1,23 @@
 #pragma once
 
 #include "Aura.hpp"
+#include "Sprite.hpp"
+#include "Button.hpp"
+#include "Load.hpp"
 #include <vector>
 #include "Mesh.hpp"
 #include <glm/glm.hpp>
 
 struct TileGrid;
 
+enum Tool { glove, watering_can, fertilizer, shovel, seed, none };
+
 /* Contains info on how a plant works and looks like*/
 struct PlantType
 {
 	PlantType( const std::vector<const Mesh*> meshes_in,
+				 Sprite const* seed_sprite_in,
+				 Sprite const* harvest_sprite_in,
 			   Aura::Type aura_type_in,
 			   int cost_in = 5,
 			   int harvest_gain_in = 7,
@@ -18,6 +25,8 @@ struct PlantType
 			   std::string name_in = "Default Name",
 			   std::string description_in = "Default Description." )
 		:meshes( meshes_in ),
+		seed_sprite( seed_sprite_in ),
+		harvest_sprite( harvest_sprite_in ),
 		aura_type( aura_type_in ),
 		growth_time( growth_time_in ),
 		cost( cost_in ),
@@ -39,16 +48,22 @@ struct PlantType
 			int( meshes.size() ) - 1 :
 			int( floor( glm::max( 0.0f, percent_grown ) * ( meshes.size() - 1 ) ) );
 	}
+
 	Aura::Type get_aura_type() const { return aura_type; };
 	float get_growth_time() const { return growth_time; };
 	int get_cost() const { return cost; };
 	int get_harvest_gain() const { return harvest_gain; };
-	std::string get_name() const { return name; };
+	std::string get_name() const { return name; }
 	std::string get_description() const { return description; };
+	void make_buttons( 
+			glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+			Button** seed_btn, Button** harvest_btn ) const;
 
 private:
 	// TODO: each plant type should have multiple meshes attached (always 3?)
 	const std::vector<const Mesh*> meshes = {};
+	Sprite const* seed_sprite = nullptr;
+	Sprite const* harvest_sprite = nullptr;
 	Aura::Type aura_type = Aura::none;
 	float growth_time = 5.0f;
 	int cost = 5;
@@ -133,12 +148,12 @@ struct TileGrid
 };
 
 extern const MeshBuffer* plant_mesh_buffer;
+extern Load< SpriteAtlas > plants_atlas;
 extern glm::vec2 plant_grid_tile_size;
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y );
 extern PlantType const* test_plant;
 extern PlantType const* friend_plant;
 extern PlantType const* vampire_plant;
-extern PlantType const* carrot_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
 extern PlantType const* corpseeater_plant;

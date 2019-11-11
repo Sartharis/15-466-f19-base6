@@ -1,7 +1,6 @@
 #include "Plant.hpp"
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
-#include "Load.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
 #include "gl_errors.hpp"
@@ -15,7 +14,6 @@ glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
 PlantType const* test_plant = nullptr;
 PlantType const* friend_plant = nullptr;
 PlantType const* vampire_plant = nullptr;
-PlantType const* carrot_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
@@ -38,26 +36,59 @@ Mesh const* dead_plant_mesh = nullptr;
 // test plant (fern)
 Mesh const* test_plant_1_mesh = nullptr;
 Mesh const* test_plant_2_mesh = nullptr;
+Sprite const* fern_seed_sprite = nullptr;
+Sprite const* fern_harvest_sprite = nullptr;
 // friend plant
 Mesh const* friend_plant_1_mesh = nullptr;
 Mesh const* friend_plant_2_mesh = nullptr;
 Mesh const* friend_plant_3_mesh = nullptr;
+Sprite const* friend_plant_seed_sprite = nullptr;
+Sprite const* friend_plant_harvest_sprite = nullptr;
 // vampire plant
 Mesh const* vampire_plant_1_mesh = nullptr;
 Mesh const* vampire_plant_2_mesh = nullptr;
 Mesh const* vampire_plant_3_mesh = nullptr;
+Sprite const* vampire_plant_seed_sprite = nullptr;
+Sprite const* vampire_plant_harvest_sprite = nullptr;
 // cactus
 Mesh const* cactus_1_mesh = nullptr;
 Mesh const* cactus_2_mesh = nullptr;
 Mesh const* cactus_3_mesh = nullptr;
+Sprite const* cactus_seed_sprite = nullptr;
+Sprite const* cactus_harvest_sprite = nullptr;
 // fireflower
 Mesh const* fireflower_1_mesh = nullptr;
 Mesh const* fireflower_2_mesh = nullptr;
 Mesh const* fireflower_3_mesh = nullptr;
+Sprite const* fireflower_seed_sprite = nullptr;
+Sprite const* fireflower_harvest_sprite = nullptr;
 // corpse eater
 Mesh const* corpseeater_1_mesh = nullptr;
 Mesh const* corpseeater_2_mesh = nullptr;
 Mesh const* corpseeater_3_mesh = nullptr;
+Sprite const* corpseeater_seed_sprite = nullptr;
+Sprite const* corpseeater_harvest_sprite = nullptr;
+
+Load< SpriteAtlas > plants_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
+	SpriteAtlas const *ret = new SpriteAtlas(data_path("plants"));
+	std::cout << "----2D sprites loaded (plants):" << std::endl;
+	for( auto p : ret->sprites ) {
+		std::cout << p.first << std::endl;
+	}
+	fern_seed_sprite = &ret->lookup( "seed1" );
+	fern_harvest_sprite = &ret->lookup( "seed2" );
+	friend_plant_seed_sprite = &ret->lookup( "seed1" );
+	friend_plant_harvest_sprite = &ret->lookup( "seed2" );
+	vampire_plant_seed_sprite = &ret->lookup( "seed1" );
+	vampire_plant_harvest_sprite = &ret->lookup( "seed2" );
+	cactus_seed_sprite = &ret->lookup( "seed1" );
+	cactus_harvest_sprite = &ret->lookup( "seed2" );
+	fireflower_seed_sprite = &ret->lookup( "seed1" );
+	fireflower_harvest_sprite = &ret->lookup( "seed2" );
+	corpseeater_seed_sprite = &ret->lookup( "seed1" );
+	corpseeater_harvest_sprite = &ret->lookup( "seed2" );
+	return ret;
+});
 
 Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	auto ret = new MeshBuffer( data_path( "solidarity.pnct" ) );
@@ -99,12 +130,12 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	corpseeater_2_mesh = &ret->lookup( "leaf2" );
 	corpseeater_3_mesh = &ret->lookup( "leaf3" );
 
-	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
-	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, Aura::none, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
-	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, Aura::none, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
-	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura." );
-	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
-	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
+	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
+	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::none, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
+	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::none, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
+	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura." );
+	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
+	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
 
 	plant_mesh_buffer = ret;
 
@@ -516,4 +547,39 @@ bool GroundTile::is_cleared() const
 bool TileGrid::is_in_grid( int x, int y ) const
 {
 	return x >= 0 && y >= 0 && x < size_x && y < size_y;
+}
+
+void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool, Button** seed_btn, Button** harvest_btn ) const {
+	assert( selectedPlant );
+	assert( seed_btn );
+	assert( harvest_btn );
+	assert( seed_sprite );
+	assert( harvest_sprite );
+	*seed_btn = new Button (
+		screen_size, Button::tl, glm::vec2(100, 100), // position
+		glm::vec2(64, 64), // size
+		seed_sprite, // sprite
+		glm::vec2(32, 32), // sprite anchor
+		0.3f, // sprite scale
+		Button::show_text, // hover behavior
+		name, // text
+		glm::vec2(0, -20), // text anchor
+		0.4f, // text scale
+		[this, selectedPlant, current_tool]() {
+			*selectedPlant = this;
+			*current_tool = seed;
+		}, true);
+	
+	*harvest_btn = new Button (
+		screen_size, Button::tl, glm::vec2(100, 200), // position
+		glm::vec2(64, 64), // size
+		harvest_sprite, // sprite
+		glm::vec2(32, 32), // sprite anchor
+		0.3f, // sprite scale
+		Button::show_text, // hover behavior
+		name, // text
+		glm::vec2(0, -20), // text anchor
+		0.4f, // text scale
+		[]() { // empty for now
+		}, true);
 }

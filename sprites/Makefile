@@ -7,5 +7,7 @@ else
 	GIMP=/Applications/GIMP.app/Contents/MacOS/gimp
 endif
 
-../dist/solidarity.png ../dist/solidarity.atlas : solidarity/	
+all : solidarity/ plants/
 	./pack-sprites ../dist/solidarity solidarity/*.png
+	./pack-sprites ../dist/plants plants/*.png
+
