@@ -50,6 +50,11 @@ struct {
 		Sprite const* seeds_tab = nullptr;
 		Sprite const* harvest_tab = nullptr;
 	} storage;
+	struct {
+		Sprite const* icon = nullptr;
+		Sprite const* background = nullptr;
+		Sprite const* close = nullptr;
+	} magicbook;
 } sprites;
 
 Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
@@ -77,6 +82,10 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	sprites.storage.background = &ret->lookup("seedMenuBackground");
 	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
 	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
+	// magicbook
+	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
+	sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	sprites.magicbook.close = &ret->lookup("magicbookClose");
 	// TEMP
 	magic_book_sprite = &ret->lookup("magicbookBackground");
 	magicbook_icon_sprite = &ret->lookup("magicbookIcon");
@@ -365,7 +374,6 @@ PlantMode::PlantMode()
 		UI.storage.tabs.push_back( btn );
 		UI.all_buttons.push_back( btn );
 
-
 		//---- plant buttons
 		auto add_plant_button = [this](PlantType const* plant) {
 			Button* seed = nullptr;
@@ -387,6 +395,74 @@ PlantMode::PlantMode()
 		add_plant_button( fireflower_plant );
 		add_plant_button( corpseeater_plant );
 
+		// button that toggles magicbook
+		UI.magicbook.icon_btn = new Button (
+			screen_size, Button::br, glm::vec2(-110, -80), // position
+			glm::vec2(64, 64), // size
+			sprites.magicbook.icon, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			0.3f, // sprite scale
+			Button::show_text, // hover behavior
+			"magic book", // text
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
+			[this]() {
+				UI.magicbook.hidden = !UI.magicbook.hidden;				
+				UI.magicbook.close_btn->hidden = false;
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = !UI.magicbook.items[i]->hidden;
+				}
+			} );
+		UI.all_buttons.push_back( UI.magicbook.icon_btn );
+
+		// close button of magicbook
+		UI.magicbook.close_btn = new Button (
+			screen_size, Button::tl, UI.magicbook.tl_offset + glm::vec2(830, 30), // position
+			glm::vec2(32, 32), // size
+			sprites.magicbook.close, // sprite
+			glm::vec2(16, 16), // sprite anchor
+			0.3f, // sprite scale
+			Button::none, // hover behavior
+			"close", // text
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
+			[this]() {
+				UI.magicbook.hidden = true;
+				UI.magicbook.close_btn->hidden = true;
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = true;
+				}
+			}, true );
+		UI.all_buttons.push_back( UI.magicbook.close_btn );
+
+		// magicbook buy choices
+		auto add_buy_choice = [this]( PlantType const* plant ) {
+			std::string text = "Buy " + plant->get_name() + " seed: " + std::to_string( plant->get_cost() );
+			Button* btn = new Button (
+				screen_size, Button::tl, glm::vec2(0, 0), // position gets dynamically set in draw
+				glm::vec2(290, 32), // size
+				nullptr, // no sprite
+				glm::vec2(0, 0), // no sprite so sprite anchor doesn't matter
+				1.0f,
+				Button::darken_text, 
+				text, // will be set on draw
+				glm::vec2(6, 2.36), // text anchor
+				0.54f, // text scale
+				[this, plant]() {
+					if( energy >= plant->get_cost() ){
+						energy -= plant->get_cost();
+						inventory.change_seeds_num( plant, 1 );
+					}
+				}, true, glm::u8vec4(92, 76, 53, 255));
+			UI.magicbook.items.push_back( btn );
+			UI.all_buttons.push_back( btn );
+		};
+		add_buy_choice( test_plant );
+		add_buy_choice( friend_plant );
+		add_buy_choice( cactus_plant );
+		add_buy_choice( vampire_plant );
+		add_buy_choice( fireflower_plant );
+		add_buy_choice( corpseeater_plant );
 
 		btn = new Button(
 			screen_size, Button::tr, glm::vec2( -500.0f, 150.0f ), // position
@@ -489,19 +565,20 @@ void PlantMode::on_click( int x, int y )
 				}
 				// Harvesting plant
 				else if( collided_tile->is_tile_harvestable() ) {
-					int gain = collided_tile->plant_type->get_harvest_gain();
-					const PlantType* type = collided_tile->plant_type;
+					// int gain = collided_tile->plant_type->get_harvest_gain();
+					PlantType const* plant = collided_tile->plant_type;
 					if( collided_tile->try_remove_plant() ) {
-						energy += gain;
-						inventory.change_harvest_num( type, 1 );
+						// energy += gain;
+						assert( plant );
+						inventory.change_harvest_num( plant, 1 );
 					}
 				}
 			}
 
 		} else if( current_tool == watering_can ) {
-
+			// handled in update
 		} else if( current_tool == fertilizer ) {
-
+			// handled in update
 		} else if( current_tool == shovel ) {
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
@@ -613,12 +690,14 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			selectedPlant = fireflower_plant;
 			break;
+		/*
 		case SDLK_SPACE:
 			if(is_magicbook_open==false){
 				is_magicbook_open = true;
 			}else{
 				is_magicbook_open = false;
 			}
+		*/
 		case SDLK_5:
 			selectedPlant = cactus_plant;
 			break;
@@ -822,7 +901,6 @@ void PlantMode::update(float elapsed)
 
 void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	
-	
 	//Draw scene:
 	camera->aspect = float( drawable_size.x) / float(drawable_size.y);
 
@@ -937,10 +1015,34 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		}
 		
 		// draw hint text
-		draw.draw_text("Press Space to open magic book", glm::vec2( 10.0f, 150.0f ), 0.6f );
+		// draw.draw_text("Press Space to open magic book", glm::vec2( 10.0f, 150.0f ), 0.6f );
 	}
 
 	{ //draw UI
+		{//---- magicbook
+			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			UI.magicbook.icon_btn->draw_sprite( draw_sprites );
+			if( !UI.magicbook.hidden ) {
+				DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+				// background
+				draw_sprites.draw( *sprites.magicbook.background, 
+						glm::vec2(UI.magicbook.tl_offset.x, screen_size.y - UI.magicbook.tl_offset.y), 0.9f );
+				// close button
+				UI.magicbook.close_btn->draw_sprite( draw_sprites );
+				// items
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					glm::vec2 item_position = UI.magicbook.get_item_position(i);
+					UI.magicbook.items[i]->set_position(Button::tl, item_position, screen_size);
+					UI.magicbook.items[i]->hidden = false;
+					UI.magicbook.items[i]->draw_sprite( draw_text );
+				}
+			} else {
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = true;
+				}
+			}
+		}
+
 		{ //sprites
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			
@@ -969,32 +1071,70 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			// icon
 			UI.storage.icon_btn->draw_sprite( draw_sprites );
 		}
-		// plant-related (seed & harvest)
+		//---- plant-related (seed & harvest)
 		if( !UI.storage.hidden ){
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			DrawSprites draw_plants( *plants_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			// seeds
-			std::vector< std::pair<PlantType const*, int> > seeds_to_draw;
+
 			auto plant_to_seeds = inventory.get_plant_to_seeds();
+			auto plant_to_harvest = inventory.get_plant_to_harvest();
+
+			// list of all plant-seed pairs
+			std::vector< std::pair<PlantType const*, int> > seeds_to_draw = {};
 			for( auto p : plant_to_seeds ) {
 				Button* seed_btn = inventory.get_seed_btn( p.first );
 				seed_btn->hidden = true;
-				(void)seed_btn;
 				if( p.second > 0 ) seeds_to_draw.push_back( p );
 			}
-			std::sort( seeds_to_draw.begin(), seeds_to_draw.end(), Inventory::comp_fn );
-			for( int i=0; i<seeds_to_draw.size(); i++ ) {
-				PlantType const* plant = seeds_to_draw[i].first;
-				int num_seeds = seeds_to_draw[i].second;
-				Button* seed_btn = inventory.get_seed_btn( plant );
-				glm::vec2 cell_position = UI.storage.get_cell_position(i);
-				seed_btn->hidden = false;
-				seed_btn->set_position(Button::br, cell_position, screen_size);
-				seed_btn->draw_sprite( draw_plants );
-				// seed num text
-				glm::vec2 text_position = screen_size + cell_position;
-				draw_text.draw_text( std::to_string(num_seeds), 
-						glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.35f );
+			// list of all plant-harvest pairs
+			std::vector< std::pair<PlantType const*, int> > harvest_to_draw = {};
+			for( auto p : plant_to_harvest ) {
+				Button* harvest_btn = inventory.get_harvest_btn( p.first );
+				harvest_btn->hidden = true;
+				if( p.second > 0 ) harvest_to_draw.push_back( p );
+			}
+
+			if( UI.storage.current_tab == 0 ) { // seeds tab
+				// hide harvest btns
+				for( int i=0; i<harvest_to_draw.size(); i++ ) {
+					PlantType const* plant = harvest_to_draw[i].first;
+					inventory.get_harvest_btn( plant )->hidden = true;
+				}
+				// std::sort( seeds_to_draw.begin(), seeds_to_draw.end(), Inventory::comp_fn );
+				for( int i=0; i<seeds_to_draw.size(); i++ ) {
+					PlantType const* plant = seeds_to_draw[i].first;
+					int num_seeds = seeds_to_draw[i].second;
+					Button* seed_btn = inventory.get_seed_btn( plant );
+					glm::vec2 cell_position = UI.storage.get_cell_position(i);
+					seed_btn->hidden = false;
+					seed_btn->set_position(Button::br, cell_position, screen_size);
+					seed_btn->draw_sprite( draw_plants );
+					// seed num text
+					glm::vec2 text_position = screen_size + cell_position;
+					draw_text.draw_text( std::to_string(num_seeds), 
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+				}
+
+			} else if( UI.storage.current_tab == 1 ) {
+				// hide seed btns
+				for( int i=0; i<seeds_to_draw.size(); i++ ) {
+					PlantType const* plant = seeds_to_draw[i].first;
+					inventory.get_harvest_btn( plant )->hidden = true;
+				}
+				// std::sort( harvest_to_draw.begin(), harvest_to_draw.end(), Inventory::comp_fn );
+				for( int i=0; i<harvest_to_draw.size(); i++ ) {
+					PlantType const* plant = harvest_to_draw[i].first;
+					int num_harvest = harvest_to_draw[i].second;
+					Button* harvest_btn = inventory.get_harvest_btn( plant );
+					glm::vec2 cell_position = UI.storage.get_cell_position(i);
+					harvest_btn->hidden = false;
+					harvest_btn->set_position(Button::br, cell_position, screen_size);
+					harvest_btn->draw_sprite( draw_plants );
+					// harvest num text
+					glm::vec2 text_position = screen_size + cell_position;
+					draw_text.draw_text( std::to_string(num_harvest), 
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+				}
 			}
 		}
 
@@ -1010,7 +1150,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		SDL_GetMouseState(&mouse_x, &mouse_y);
 		draw_cursor.draw( 
 				*cursor.sprite, 
-				glm::vec2(mouse_x + cursor.offset.x, drawable_size.y - mouse_y - cursor.offset.y),
+				glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
 				cursor.scale);
 	}
    
@@ -1139,9 +1279,9 @@ int Inventory::get_seeds_num(const PlantType* plant )
 	{
 		return it->second;
 	}
-	else
+	else 
 	{
-		plant_to_seeds.insert( std::make_pair( plant, 0 ) );
+		if( plant ) plant_to_seeds.insert( std::make_pair( plant, 0 ) );
 		return 0;
 	}
 }
@@ -1155,7 +1295,7 @@ void Inventory::change_seeds_num(const PlantType* plant, int seed_change )
 	}
 	else
 	{
-		plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
+		if( plant )plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
 	}
 }
 
@@ -1164,7 +1304,7 @@ int Inventory::get_harvest_num( const PlantType* plant ) {
 	if( it != plant_to_harvest.end() ) {
 		return it->second;
 	} else {
-		plant_to_harvest.insert( std::make_pair( plant, 0 ) );
+		if( plant )plant_to_harvest.insert( std::make_pair( plant, 0 ) );
 		return 0;
 	}
 }
@@ -1174,7 +1314,7 @@ void Inventory::change_harvest_num( const PlantType* plant, int harvest_change )
 	if( it != plant_to_harvest.end() ) {
 		it->second += harvest_change;
 	} else {
-		plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
+		if( plant )plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
 	}
 }
 

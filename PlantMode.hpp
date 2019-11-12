@@ -18,7 +18,7 @@
 #include "Plant.hpp"
 
 struct Inventory
-{
+{ // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
@@ -124,7 +124,15 @@ struct PlantMode : public Mode {
 		// magicbook
 		struct {
 			bool hidden = true;
-			std::vector< Button > items = {};
+			glm::vec2 tl_offset = glm::vec2(150, 100);
+			Button* icon_btn = nullptr;
+			Button* close_btn = nullptr;
+			std::vector< Button* > items = {};
+			glm::vec2 get_item_position(int index) {
+				int page = index / 4;
+				int row = index % 4;
+				return tl_offset + glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
+			}
 		} magicbook;
 	} UI;
 
