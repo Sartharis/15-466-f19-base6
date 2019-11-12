@@ -237,14 +237,14 @@ PlantMode::PlantMode()
 
 		// glove
 		btn = new Button (
-			screen_size, Button::bl, glm::vec2(60, -77), // position
+			screen_size, Button::bl, glm::vec2(60, -84), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.glove, // sprite
 			glm::vec2(32, 32), // sprite anchor
 			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"glove", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(0, 48), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( current_tool == glove ) current_tool = none;
@@ -255,14 +255,14 @@ PlantMode::PlantMode()
 
 		// watering can
 		btn = new Button (
-			screen_size, Button::bl, glm::vec2(142, -72), // position
+			screen_size, Button::bl, glm::vec2(142, -79), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.watering_can, // sprite
 			glm::vec2(32, 32), // sprite anchor
 			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"watering can", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(-4, 44), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( current_tool == watering_can ) current_tool = none;
@@ -273,14 +273,14 @@ PlantMode::PlantMode()
 
 		// fertilizer
 		btn = new Button (
-			screen_size, Button::bl, glm::vec2(230, -82), // position
+			screen_size, Button::bl, glm::vec2(230, -94), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.fertilizer, // sprite
 			glm::vec2(32, 32), // sprite anchor
 			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"fertilizer", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(0, 65), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( current_tool == fertilizer ) current_tool = none;
@@ -291,14 +291,14 @@ PlantMode::PlantMode()
 
 		// shovel
 		btn = new Button (
-			screen_size, Button::bl, glm::vec2(315, -80), // position
+			screen_size, Button::bl, glm::vec2(315, -87), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.shovel, // sprite
 			glm::vec2(32, 32), // sprite anchor
 			0.3f, // sprite scale
 			Button::show_text, // hover behavior
 			"shovel", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(0, 46), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( current_tool == shovel ) current_tool = none;
@@ -337,7 +337,7 @@ PlantMode::PlantMode()
 			0.6f, // sprite scale
 			Button::show_text, // hover behavior
 			"seeds", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(5, 36), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( UI.storage.current_tab == 0 ) {
@@ -363,7 +363,7 @@ PlantMode::PlantMode()
 			0.5f, // sprite scale
 			Button::show_text, // hover behavior
 			"harvest", // text
-			glm::vec2(0, -20), // text anchor
+			glm::vec2(12, 44), // text anchor
 			0.4f, // text scale
 			[this]() {
 				if( UI.storage.current_tab == 1 ) {
@@ -443,7 +443,7 @@ PlantMode::PlantMode()
 
 		// magicbook buy choices
 		auto add_buy_choice = [this]( PlantType const* plant ) {
-			std::string text = "Buy " + plant->get_name() + " seed: " + std::to_string( plant->get_cost() );
+			std::string text = "Buy " + plant->get_name() + " seed - $" + std::to_string( plant->get_cost() );
 			Button* btn = new Button (
 				screen_size, Button::tl, glm::vec2(0, 0), // position gets dynamically set in draw
 				glm::vec2(290, 32), // size
@@ -814,7 +814,7 @@ void PlantMode::update(float elapsed)
 				}
 				else if( hovered_tile->is_tile_harvestable() )
 				{
-					action_description = "Harvest +" + std::to_string( hovered_tile->plant_type->get_harvest_gain());
+					action_description = "Harvest ";
 				}
 				else
 				{
@@ -1071,7 +1071,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			
 			//---- tools
 			// background
-			draw_sprites.draw( *sprites.tools.background, glm::vec2(-100, 0), 0.3f );
+			draw_sprites.draw( *sprites.tools.background, glm::vec2(-270, 0), 0.4f );
 			// tools
 			for (int i=0; i<UI.tools.size(); i++) {
 				UI.tools[i]->draw_sprite( draw_sprites );

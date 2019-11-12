@@ -77,7 +77,7 @@ void Button::draw_text(DrawSprites& draw_text) {
 	} else if( hover_behavior == Button::darken_text && text.length() > 0 ) {
 		glm::vec2 text_anchor = position + get_text_anchor();
 		glm::vec2 text_draw_anchor = glm::vec2( text_anchor.x, drawable_size.y - text_anchor.y );
-		float amt = 0.7f;
+		float amt = 0.55f;
 		glm::u8vec4 color = hovered ? glm::u8vec4( text_tint.r*amt, text_tint.g*amt, text_tint.b*amt, 255 ) : text_tint;
 		draw_text.draw_text( text, text_draw_anchor, text_scale, color );
 	}

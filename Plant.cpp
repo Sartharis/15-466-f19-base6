@@ -135,7 +135,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::suck, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
 	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura from fire flowers." );
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
-	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
+	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
 
 	plant_mesh_buffer = ret;
 
@@ -337,7 +337,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( dead_plants > 0 )
 				{
-					current_grow_time += grow_power + std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -593,7 +593,7 @@ void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedP
 		glm::vec2(0, -20), // text anchor
 		0.4f, // text scale
 		[this, selectedPlant, current_tool]() {
-			if( *selectedPlant == this ) {
+			if( *current_tool == seed && *selectedPlant == this ) {
 				*current_tool = none;
 			} else {
 				*selectedPlant = this;

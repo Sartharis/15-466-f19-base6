@@ -115,9 +115,9 @@ struct GroundTile
 
 	const float plant_health_restore_rate = 1.0f / 5.0f;
 	float plant_health = 1.0f;
-	const float moisture_dry_rate = 0.02f;
+	const float moisture_dry_rate = 0.01f;
 	float moisture = 1.0f;
-	const float fertility_consume_rate = 0.01f;
+	const float fertility_consume_rate = 0.005f;
 	float fertility = 1.0f;
 
 	float fire_aura_effect = 0.0f; // in range 0 - 1
