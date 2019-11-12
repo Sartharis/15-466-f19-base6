@@ -2,6 +2,8 @@
 #include "Plant.hpp"
 #include "Button.hpp"
 
+struct Inventory;
+
 /* Contains info on the order*/
 struct OrderType
 {
@@ -18,11 +20,11 @@ struct OrderType
 
 	std::string get_title() const { return title; };
 	std::string get_description() const { return description; };
-	std::map<PlantType const*, int> get_require_plants() const {return require_plants;};
+	std::map<PlantType const*, int> get_required_plants() const {return require_plants;};
 	int get_bonus_cash() const { return bonus_cash; };
 	PlantType const* get_bonus_plant() const {return bonus_plant;};
 
-	void draw(glm::uvec2 const &drawable_size) const;
+	void draw(glm::uvec2 const &drawable_size, Inventory& inventory ) const;
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(1000, 800);
 	glm::vec2 text_min = glm::vec2(0,0);

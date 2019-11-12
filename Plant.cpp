@@ -244,7 +244,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		{
 			if( plant_type == test_plant )
 			{
-				current_grow_time += grow_power * std::sqrtf(moisture * fertility);
+				current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
 			}
 			else if( plant_type == friend_plant )
 			{
@@ -280,7 +280,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( neighbor >= 2 )
 				{
-					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -309,7 +309,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				if( victims.size() > 0 )
 				{
 					victims[rand() % victims.size()]->plant_health -= elapsed * ( 2*plant_health_restore_rate + 0.2f );
-					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -337,7 +337,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( dead_plants > 0 )
 				{
-					current_grow_time += grow_power * std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + std::sqrtf(moisture * fertility);
 				}
 				else
 				{
@@ -346,13 +346,13 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 			}
 			else if( plant_type == fireflower_plant )
 			{
-				current_grow_time += grow_power * std::sqrtf(fertility);
+				current_grow_time += grow_power + elapsed * std::sqrtf(fertility);
 			}
 			else if( plant_type == cactus_plant )
 			{
 				if( fire_aura_effect > 0.1f && aqua_aura_effect <= 0.0f )
 				{
-					current_grow_time += grow_power * fire_aura_effect * std::sqrtf(fertility);
+					current_grow_time += grow_power * fire_aura_effect + elapsed * std::sqrtf(fertility);
 				}
 				else
 				{
