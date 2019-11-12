@@ -36,6 +36,7 @@ private:
 	std::map<PlantType const*, int> require_plants = {};
 	int bonus_cash = 100;
 	PlantType const* bonus_plant = test_plant;
+	glm::u8vec4 text_col = glm::u8vec4(92, 76, 53, 255);
 };
 
 extern OrderType const* order1;

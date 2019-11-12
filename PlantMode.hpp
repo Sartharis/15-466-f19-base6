@@ -78,7 +78,7 @@ struct PlantMode : public Mode {
 	Scene::Drawable* selector = nullptr;
 	
 	Inventory inventory;
-	int energy = 200;
+	int energy = 30;
 
 	glm::vec3 forward_camera_dir = glm::vec3();
 	glm::vec3 forward_dir = glm::vec3();
@@ -119,14 +119,14 @@ struct PlantMode : public Mode {
 			glm::vec2 get_cell_position(int index) {
 				int row = index / 4;
 				int col = index % 4;
-				return br_offset + glm::vec2(42, 28) + glm::vec2(col * 93.5f, row * 89);
+				return br_offset + glm::vec2(41, 26) + glm::vec2(col * 93.5f, row * 89);
 			};
 		} storage;
 
 		// magicbook
 		struct {
 			bool hidden = true;
-			glm::vec2 tl_offset = glm::vec2(150, 100);
+			glm::vec2 tl_offset = glm::vec2(80, 100);
 			Button* icon_btn = nullptr;
 			Button* close_btn = nullptr;
 			std::vector< Button* > items = {};
@@ -174,3 +174,6 @@ struct PlantMode : public Mode {
 
 	//--------
 };
+
+extern Load< SpriteAtlas > main_atlas;
+extern Sprite const* order_background_sprite;

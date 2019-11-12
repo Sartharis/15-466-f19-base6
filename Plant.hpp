@@ -55,6 +55,7 @@ struct PlantType
 	int get_harvest_gain() const { return harvest_gain; };
 	std::string get_name() const { return name; }
 	std::string get_description() const { return description; };
+	Sprite const* get_seed_sprite() const { return seed_sprite; };
 	void make_buttons( 
 			glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
 			Button** seed_btn, Button** harvest_btn ) const;

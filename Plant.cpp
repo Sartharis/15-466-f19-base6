@@ -75,18 +75,18 @@ Load< SpriteAtlas > plants_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	for( auto p : ret->sprites ) {
 		std::cout << p.first << std::endl;
 	}
-	fern_seed_sprite = &ret->lookup( "seed1" );
-	fern_harvest_sprite = &ret->lookup( "seed2" );
-	friend_plant_seed_sprite = &ret->lookup( "seed1" );
-	friend_plant_harvest_sprite = &ret->lookup( "seed2" );
-	vampire_plant_seed_sprite = &ret->lookup( "seed1" );
-	vampire_plant_harvest_sprite = &ret->lookup( "seed2" );
-	cactus_seed_sprite = &ret->lookup( "seed1" );
-	cactus_harvest_sprite = &ret->lookup( "seed2" );
-	fireflower_seed_sprite = &ret->lookup( "seed1" );
-	fireflower_harvest_sprite = &ret->lookup( "seed2" );
-	corpseeater_seed_sprite = &ret->lookup( "seed1" );
-	corpseeater_harvest_sprite = &ret->lookup( "seed2" );
+	fern_seed_sprite = &ret->lookup( "fernSeed" );
+	fern_harvest_sprite = &ret->lookup( "fern" );
+	friend_plant_seed_sprite = &ret->lookup( "carrotSeed" );
+	friend_plant_harvest_sprite = &ret->lookup( "carrot" );
+	vampire_plant_seed_sprite = &ret->lookup( "sapsuckerSeed" );
+	vampire_plant_harvest_sprite = &ret->lookup( "sapsucker" );
+	cactus_seed_sprite = &ret->lookup( "cactusSeed" );
+	cactus_harvest_sprite = &ret->lookup( "cactus" );
+	fireflower_seed_sprite = &ret->lookup( "fireflowerSeed" );
+	fireflower_harvest_sprite = &ret->lookup( "fireflower" );
+	corpseeater_seed_sprite = &ret->lookup( "corpseeaterSeed" );
+	corpseeater_harvest_sprite = &ret->lookup( "corpseeater" );
 	return ret;
 });
 
@@ -126,9 +126,9 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_1_mesh = &ret->lookup( "fireflower1" );
 	fireflower_2_mesh = &ret->lookup( "fireflower2" );
 	fireflower_3_mesh = &ret->lookup( "fireflower3" );
-	corpseeater_1_mesh = &ret->lookup( "leaf1" );
-	corpseeater_2_mesh = &ret->lookup( "leaf2" );
-	corpseeater_3_mesh = &ret->lookup( "leaf3" );
+	corpseeater_1_mesh = &ret->lookup( "corpseeater1" );
+	corpseeater_2_mesh = &ret->lookup( "corpseeater2" );
+	corpseeater_3_mesh = &ret->lookup( "corpseeater3" );
 
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
 	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::help, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
@@ -593,8 +593,12 @@ void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedP
 		glm::vec2(0, -20), // text anchor
 		0.4f, // text scale
 		[this, selectedPlant, current_tool]() {
-			*selectedPlant = this;
-			*current_tool = seed;
+			if( *selectedPlant == this ) {
+				*current_tool = none;
+			} else {
+				*selectedPlant = this;
+				*current_tool = seed;
+			}
 		}, true);
 	
 	*harvest_btn = new Button (
@@ -602,7 +606,7 @@ void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedP
 		glm::vec2(64, 64), // size
 		harvest_sprite, // sprite
 		glm::vec2(32, 32), // sprite anchor
-		0.3f, // sprite scale
+		0.4f, // sprite scale
 		Button::show_text, // hover behavior
 		name, // text
 		glm::vec2(0, -20), // text anchor

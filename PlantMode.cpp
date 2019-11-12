@@ -32,6 +32,8 @@ Mesh const* selector_mesh = nullptr;
 Sprite const* magic_book_sprite = nullptr;
 Sprite const* magicbook_icon_sprite = nullptr;
 
+Sprite const* order_background_sprite = nullptr;
+
 struct {
 	struct {
 		Sprite const* background = nullptr;
@@ -87,6 +89,7 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	sprites.magicbook.background = &ret->lookup("magicbookBackground");
 	sprites.magicbook.close = &ret->lookup("magicbookClose");
 	// TEMP
+	order_background_sprite = &ret->lookup("orderBackground");
 	magic_book_sprite = &ret->lookup("magicbookBackground");
 	magicbook_icon_sprite = &ret->lookup("magicbookIcon");
 	return ret;
@@ -468,7 +471,7 @@ PlantMode::PlantMode()
 		add_buy_choice( corpseeater_plant );
 
 		btn = new Button(
-			screen_size, Button::tr, glm::vec2( -400.0f, 150.0f ), // position
+			screen_size, Button::tr, glm::vec2( -360.0f, 150.0f ), // position
 			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
 			glm::vec2( 0, 0 ), // sprite anchor
@@ -507,7 +510,7 @@ PlantMode::PlantMode()
 					}
 					current_order = all_orders[current_order_idx];
 				}
-			}, false );
+			}, false, glm::u8vec4(92, 76, 53, 255));
 
 		UI.all_buttons.push_back( btn );
 
@@ -889,8 +892,8 @@ void PlantMode::update(float elapsed)
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case seed: //TODO
-			cursor.sprite = sprites.cursor.hand;
-			cursor.scale = 1.0f;
+			cursor.sprite = selectedPlant->get_seed_sprite();
+			cursor.scale = 0.3f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case glove:
@@ -1132,7 +1135,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 					// seed num text
 					glm::vec2 text_position = screen_size + cell_position;
 					draw_text.draw_text( std::to_string(num_seeds), 
-							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(2, -2), 0.4f );
 				}
 
 			} else if( UI.storage.current_tab == 1 ) {
@@ -1153,7 +1156,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 					// harvest num text
 					glm::vec2 text_position = screen_size + cell_position;
 					draw_text.draw_text( std::to_string(num_harvest), 
-							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(2, -2), 0.4f );
 				}
 			}
 		}
@@ -1165,7 +1168,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			}
 		}
 		// cursor
-		DrawSprites draw_cursor( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		SpriteAtlas const* atlas = (current_tool == seed) ? plants_atlas : main_atlas;
+		DrawSprites draw_cursor( *atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		int mouse_x, mouse_y;
 		SDL_GetMouseState(&mouse_x, &mouse_y);
 		draw_cursor.draw( 

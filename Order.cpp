@@ -20,7 +20,6 @@
 #include <random>
 #include <unordered_map>
 
-Sprite const *orderbg_sprite = nullptr;
 OrderType const* order1 = nullptr;
 OrderType const* order2 = nullptr;
 OrderType const* order3 = nullptr;
@@ -29,9 +28,7 @@ OrderType const* order5 = nullptr;
 OrderType const* order6 = nullptr;
 OrderType const* order7 = nullptr;
 
-Load< SpriteAtlas > order_atlas(LoadTagLate, []() -> SpriteAtlas const * {
-	SpriteAtlas const *kret = new SpriteAtlas(data_path("orders"));
-	orderbg_sprite = &kret->lookup("orderBg");
+Load< void > order_atlas(LoadTagLate, []() {
 	std::map< PlantType const*, int > require_plants_in1;
 	require_plants_in1.insert( std::pair<PlantType const*, int>( test_plant, 4 ) );
 
@@ -63,7 +60,6 @@ Load< SpriteAtlas > order_atlas(LoadTagLate, []() -> SpriteAtlas const * {
 	order5 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in5, 350, nullptr );
 	order6 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in6, 400, nullptr );
 	order7 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in7, 450, nullptr );
-	return kret;
 });
 
 // TODO: would ideally get rid of this along with the draw function (and write the draw code in PlantMode::draw directly)
@@ -80,16 +76,15 @@ void OrderType::draw(glm::uvec2 const &drawable_size, Inventory& inventory) cons
 	glDisable(GL_DEPTH_TEST);
 
 	{// draw sprite
-		DrawSprites draw(*order_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
-		glm::vec2 ul = glm::vec2(view_min.x+350.0f, view_max.y);
-		(void)ul;
-  		//draw.draw(*orderbg_sprite, ul);
+		DrawSprites draw(*main_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
+		glm::vec2 ul = glm::vec2(view_min.x+735.0f, view_max.y + 40);
+  	draw.draw(*order_background_sprite, ul, 0.45f);
 	}//<-- gets drawn on deallocation
 	
 
 	{// draw text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text("ORDER for $" + std::to_string( get_bonus_cash() ), glm::vec2( drawable_size.x  - 400.0f, drawable_size.y - 25.0f), 0.6f);
+		draw.draw_text("ORDER for $" + std::to_string( get_bonus_cash() ), glm::vec2( drawable_size.x  - 400.0f, drawable_size.y - 25.0f), 0.6f, text_col);
 		//draw.draw_text(get_description(), glm::vec2( drawable_size.x - 500.0f, drawable_size.y - 50.0f ), 0.6f );
 		
 
@@ -102,7 +97,7 @@ void OrderType::draw(glm::uvec2 const &drawable_size, Inventory& inventory) cons
 			{
 				int require_num = iter->second;
 				draw.draw_text( " - " + require_type->get_name() + ": " + std::to_string( inventory.get_harvest_num( require_type ) ) + "/" + std::to_string(require_num) , 
-								glm::vec2( drawable_size.x - 400.0f, drawable_size.y - 75.0f - text_gap ), 0.4f );
+								glm::vec2( drawable_size.x - 400.0f, drawable_size.y - 75.0f - text_gap ), 0.4f, text_col );
 
 			}
 
