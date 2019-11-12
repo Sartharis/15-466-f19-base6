@@ -68,6 +68,8 @@ struct PlantMode : public Mode {
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
 	
 	//scene:
+	std::string tool_name = "";
+	std::string tool_description = "";
 	std::string action_description = "";
 	const PlantType* selectedPlant = nullptr;
 	const PlantType* orderPlant = nullptr;

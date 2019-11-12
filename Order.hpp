@@ -42,3 +42,6 @@ extern OrderType const* order1;
 extern OrderType const* order2;
 extern OrderType const* order3;
 extern OrderType const* order4;
+extern OrderType const* order5;
+extern OrderType const* order6;
+extern OrderType const* order7;
