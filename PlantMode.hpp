@@ -54,7 +54,7 @@ struct PlantMode : public Mode {
 	glm::vec2 view_max = glm::vec2(259, 225);
 	std::vector< OrderType const* > all_orders;
 	int current_order_idx = 0;
-	OrderType const* current_order = order1;
+	OrderType const* current_order = nullptr;
 	
 	// init harvest_plant_map
 	// Harvest Plant Map

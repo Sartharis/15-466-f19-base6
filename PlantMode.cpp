@@ -11,6 +11,7 @@
 #include "collide.hpp"
 #include "DrawSprites.hpp"
 #include "MenuMode.hpp"
+#include "Sound.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -55,6 +56,10 @@ struct {
 		Sprite const* close = nullptr;
 	} magicbook;
 } sprites;
+
+Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "FarmTrackV1.wav" ) );
+} );
 
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
@@ -104,6 +109,10 @@ Load< GLuint > ui_meshes_for_firstpass_program( LoadTagDefault, [](){
 PlantMode::PlantMode() 
 {
 	grid = setup_grid_for_scene( scene, plant_grid_x, plant_grid_y );
+
+	Sound::loop(*background_music, 0.0f, 1.0f);
+
+	current_order = order1;
 
 	{
 		selectedPlant = test_plant;
@@ -455,59 +464,59 @@ PlantMode::PlantMode()
 		add_buy_choice( fireflower_plant );
 		add_buy_choice( corpseeater_plant );
 
-		/*
-	    buttons.emplace_back (
-			glm::vec2(380, 130), // position
-			glm::vec2(80, 20), // size
+		btn = new Button(
+			screen_size, Button::tr, glm::vec2( -500.0f, 150.0f ), // position
+			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
-			glm::vec2(0, 0), // sprite anchor
-			1.0f, // sprite scale
-			Button::none, // hover behavior
-			"Submit Order", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2( 0, 0 ), // sprite anchor
+			0.0f, // sprite scale
+			Button::show_text, // hover behavior
+			"COMPLETE", // text
+			glm::vec2( 0, 0 ), // text anchor
 			0.4f, // text scale
-			[ this]() {
+			[this]() {
 				std::cout << "Submit Button Click!" << std::endl;
-				std::map< PlantType const*, int > require_plants =  current_order->get_require_plants();
+				std::map< PlantType const*, int > require_plants = current_order->get_required_plants();
 				bool orderFinished = true;
 				std::map<PlantType const*, int>::iterator iter = require_plants.begin();
-				while(iter != require_plants.end()) {
+				while( iter != require_plants.end() ) {
 					PlantType const* require_type = iter->first;
-					int needed_num  = iter->second;
-					// std::cout << "Harvest num " << require_type->get_name()<<" "<<harvest_plant_map[require_type]<<std::endl;
-					if(harvest_plant_map[require_type]<needed_num){
+					int needed_num = iter->second;
+					if( inventory.get_harvest_num(require_type) < needed_num ){
 						orderFinished = false;
 						break;
 					}
-					iter++;	
-   				}
-				   std::cout << orderFinished << std::endl;
-				if(orderFinished == true){
+					iter++;
+				}
+				std::cout << orderFinished << std::endl;
+				if( orderFinished == true ){
 					iter = require_plants.begin();
-					while(iter != require_plants.end()) {
+					while( iter != require_plants.end() ) {
 						PlantType const* require_type = iter->first;
-						int needed_num  = iter->second;
-						harvest_plant_map[require_type] -= needed_num;
+						int needed_num = iter->second;
+						inventory.change_harvest_num(require_type, -needed_num);
 						iter++;
 					}
 					energy += current_order->get_bonus_cash();
 					current_order_idx += 1;
-					if(current_order_idx >= all_orders.size()){
+					if( current_order_idx >= all_orders.size() ){
 						current_order_idx = 0;
 					}
 					current_order = all_orders[current_order_idx];
-				}				
-			} );
+				}
+			}, false );
 
-	    buttons.emplace_back (
-			glm::vec2(540, 130), // position
-			glm::vec2(80, 20), // size
+		UI.all_buttons.push_back( btn );
+
+		btn = new Button(
+			screen_size, Button::tr, glm::vec2( -400.0f, 150.0f ), // position
+			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
-			glm::vec2(0, 0), // sprite anchor
-			1.0f, // sprite scale
-			Button::none, // hover behavior
-			"Cancel Order", // text
-			glm::vec2(0, 0), // text anchor
+			glm::vec2( 0, 0 ), // sprite anchor
+			0.0f, // sprite scale
+			Button::show_text, // hover behavior
+			"CANCEL", // text
+			glm::vec2( 0, 0 ), // text anchor
 			0.4f, // text scale
 			[this]() {
 				current_order_idx += 1;
@@ -517,7 +526,8 @@ PlantMode::PlantMode()
 				current_order = all_orders[current_order_idx];
 				std::cout << "Cancel Button Click!" << std::endl;
 			} );
-	*/
+		
+		UI.all_buttons.push_back( btn );
 	}
 }
 
@@ -983,28 +993,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	//current_order->draw(drawable_size);
-
-	// draw order hint
-	{
-		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		std::map< PlantType const*, int > require_plants =  current_order->get_require_plants();
-		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
-		float text_gap = 80.0f;
-		while(iter != require_plants.end()) {
-			const PlantType* require_type = iter->first;
-			// std:: string name = require_type->get_name();
-			int require_num  = iter->second;
-			int needed_num = 0;
-			if( inventory.get_harvest_num(require_type) < require_num ){
-				needed_num = require_num - inventory.get_harvest_num(require_type);
-			}
-			
-			// draw.draw_text( "You Still Need: "+ std::to_string(needed_num)+" "+require_type->get_name(), glm::vec2( 400.0f, drawable_size.y - text_gap ), 0.4f);
-			iter++;	
-			text_gap += 10.0f;
-		}
-	}
+	current_order->draw(drawable_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
