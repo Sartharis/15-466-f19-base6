@@ -49,6 +49,11 @@ struct {
 		Sprite const* seeds_tab = nullptr;
 		Sprite const* harvest_tab = nullptr;
 	} storage;
+	struct {
+		Sprite const* icon = nullptr;
+		Sprite const* background = nullptr;
+		Sprite const* close = nullptr;
+	} magicbook;
 } sprites;
 
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
@@ -72,6 +77,10 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	sprites.storage.background = &ret->lookup("seedMenuBackground");
 	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
 	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
+	// magicbook
+	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
+	sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	sprites.magicbook.close = &ret->lookup("magicbookClose");
 	// TEMP
 	magic_book_sprite = &ret->lookup("magicbookBackground");
 	magicbook_icon_sprite = &ret->lookup("magicbookIcon");
@@ -356,7 +365,6 @@ PlantMode::PlantMode()
 		UI.storage.tabs.push_back( btn );
 		UI.all_buttons.push_back( btn );
 
-
 		//---- plant buttons
 		auto add_plant_button = [this](PlantType const* plant) {
 			Button* seed = nullptr;
@@ -377,6 +385,75 @@ PlantMode::PlantMode()
 		add_plant_button( cactus_plant );
 		add_plant_button( fireflower_plant );
 		add_plant_button( corpseeater_plant );
+
+		// button that toggles magicbook
+		UI.magicbook.icon_btn = new Button (
+			screen_size, Button::br, glm::vec2(-110, -80), // position
+			glm::vec2(64, 64), // size
+			sprites.magicbook.icon, // sprite
+			glm::vec2(32, 32), // sprite anchor
+			0.3f, // sprite scale
+			Button::show_text, // hover behavior
+			"magic book", // text
+			glm::vec2(0, -20), // text anchor
+			0.4f, // text scale
+			[this]() {
+				UI.magicbook.hidden = !UI.magicbook.hidden;				
+				UI.magicbook.close_btn->hidden = false;
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = !UI.magicbook.items[i]->hidden;
+				}
+			} );
+		UI.all_buttons.push_back( UI.magicbook.icon_btn );
+
+		// close button of magicbook
+		UI.magicbook.close_btn = new Button (
+			screen_size, Button::tl, UI.magicbook.tl_offset + glm::vec2(830, 30), // position
+			glm::vec2(32, 32), // size
+			sprites.magicbook.close, // sprite
+			glm::vec2(16, 16), // sprite anchor
+			0.3f, // sprite scale
+			Button::none, // hover behavior
+			"close", // text
+			glm::vec2(0, 0), // text anchor
+			0.4f, // text scale
+			[this]() {
+				UI.magicbook.hidden = true;
+				UI.magicbook.close_btn->hidden = true;
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = true;
+				}
+			}, true );
+		UI.all_buttons.push_back( UI.magicbook.close_btn );
+
+		// magicbook buy choices
+		auto add_buy_choice = [this]( PlantType const* plant ) {
+			std::string text = "Buy " + plant->get_name() + " seed: " + std::to_string( plant->get_cost() );
+			Button* btn = new Button (
+				screen_size, Button::tl, glm::vec2(0, 0), // position gets dynamically set in draw
+				glm::vec2(290, 32), // size
+				nullptr, // no sprite
+				glm::vec2(0, 0), // no sprite so sprite anchor doesn't matter
+				1.0f,
+				Button::darken_text, 
+				text, // will be set on draw
+				glm::vec2(6, 2.36), // text anchor
+				0.54f, // text scale
+				[this, plant]() {
+					if( energy >= plant->get_cost() ){
+						energy -= plant->get_cost();
+						inventory.change_seeds_num( plant, 1 );
+					}
+				}, true, glm::u8vec4(92, 76, 53, 255));
+			UI.magicbook.items.push_back( btn );
+			UI.all_buttons.push_back( btn );
+		};
+		add_buy_choice( test_plant );
+		add_buy_choice( friend_plant );
+		add_buy_choice( cactus_plant );
+		add_buy_choice( vampire_plant );
+		add_buy_choice( fireflower_plant );
+		add_buy_choice( corpseeater_plant );
 
 		/*
 	    buttons.emplace_back (
@@ -603,12 +680,14 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			selectedPlant = fireflower_plant;
 			break;
+		/*
 		case SDLK_SPACE:
 			if(is_magicbook_open==false){
 				is_magicbook_open = true;
 			}else{
 				is_magicbook_open = false;
 			}
+		*/
 		case SDLK_5:
 			selectedPlant = cactus_plant;
 			break;
@@ -947,10 +1026,34 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		}
 		
 		// draw hint text
-		draw.draw_text("Press Space to open magic book", glm::vec2( 10.0f, 150.0f ), 0.6f );
+		// draw.draw_text("Press Space to open magic book", glm::vec2( 10.0f, 150.0f ), 0.6f );
 	}
 
 	{ //draw UI
+		{//---- magicbook
+			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			UI.magicbook.icon_btn->draw_sprite( draw_sprites );
+			if( !UI.magicbook.hidden ) {
+				DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+				// background
+				draw_sprites.draw( *sprites.magicbook.background, 
+						glm::vec2(UI.magicbook.tl_offset.x, screen_size.y - UI.magicbook.tl_offset.y), 0.9f );
+				// close button
+				UI.magicbook.close_btn->draw_sprite( draw_sprites );
+				// items
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					glm::vec2 item_position = UI.magicbook.get_item_position(i);
+					UI.magicbook.items[i]->set_position(Button::tl, item_position, screen_size);
+					UI.magicbook.items[i]->hidden = false;
+					UI.magicbook.items[i]->draw_sprite( draw_text );
+				}
+			} else {
+				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
+					UI.magicbook.items[i]->hidden = true;
+				}
+			}
+		}
+
 		{ //sprites
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			
@@ -979,7 +1082,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			// icon
 			UI.storage.icon_btn->draw_sprite( draw_sprites );
 		}
-		// plant-related (seed & harvest)
+		//---- plant-related (seed & harvest)
 		if( !UI.storage.hidden ){
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			DrawSprites draw_plants( *plants_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -1058,7 +1161,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		SDL_GetMouseState(&mouse_x, &mouse_y);
 		draw_cursor.draw( 
 				*cursor.sprite, 
-				glm::vec2(mouse_x + cursor.offset.x, drawable_size.y - mouse_y - cursor.offset.y),
+				glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
 				cursor.scale);
 	}
    

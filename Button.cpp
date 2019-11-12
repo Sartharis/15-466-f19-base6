@@ -66,13 +66,19 @@ void Button::draw_sprite(DrawSprites& draw_sprites) {
 }
 
 void Button::draw_text(DrawSprites& draw_text) {
-	if( hidden ) return;
+	if( hidden || hover_behavior == Button::none ) return;
 	glm::vec2 drawable_size = draw_text.drawable_size;
 	// draw text
-	if ( !sprite
-			|| (hover_behavior == Button::show_text && hovered && text.length() > 0) ) {
+	if ( hover_behavior == Button::show_text && hovered && text.length() > 0 ) {
 		glm::vec2 text_anchor = position + get_text_anchor();
 		glm::vec2 text_draw_anchor = glm::vec2( text_anchor.x, drawable_size.y - text_anchor.y );
-		draw_text.draw_text( text, text_draw_anchor, text_scale );
+		draw_text.draw_text( text, text_draw_anchor, text_scale, text_tint );
+
+	} else if( hover_behavior == Button::darken_text && text.length() > 0 ) {
+		glm::vec2 text_anchor = position + get_text_anchor();
+		glm::vec2 text_draw_anchor = glm::vec2( text_anchor.x, drawable_size.y - text_anchor.y );
+		float amt = 0.7f;
+		glm::u8vec4 color = hovered ? glm::u8vec4( text_tint.r*amt, text_tint.g*amt, text_tint.b*amt, 255 ) : text_tint;
+		draw_text.draw_text( text, text_draw_anchor, text_scale, color );
 	}
 }

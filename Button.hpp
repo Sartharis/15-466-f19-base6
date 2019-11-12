@@ -15,7 +15,7 @@ struct Button {
 	/* show_text: additionally draw the text if the button has a sprite and is currently hovered. Nothing happens if it doesn't have a sprite (just draw the text as usual)
 	 * none: nothing happens on hover
 	 */
-	enum HoverBehavior { show_text, none };
+	enum HoverBehavior { show_text, darken_text, none };
 	enum ScreenAnchor{ tl, tr, bl, br };
 
 	Button (
@@ -31,7 +31,8 @@ struct Button {
 			glm::vec2 _text_anchor = glm::vec2(0, 0),
 			float _text_scale = 1.0f,
 			std::function<void()> const &_on_click = nullptr,
-			bool _hidden = false
+			bool _hidden = false,
+			glm::u8vec4 _text_tint = glm::u8vec4(255, 255, 255, 255)
 			) :	hidden(_hidden),
 					hover_behavior(_hover_behavior),
 					rel_position(_rel_position),
@@ -43,6 +44,7 @@ struct Button {
 					text(_text),
 					text_anchor(_text_anchor),
 					text_scale(_text_scale),
+					text_tint(_text_tint),
 					on_click(_on_click) { update_position(screen_size); }
 
 	// getters
@@ -84,6 +86,7 @@ private:
 	std::string text = "";
 	glm::vec2 text_anchor = glm::vec2(0, 0);
 	float text_scale = 1.0f;
+	glm::u8vec4 text_tint = glm::u8vec4(255, 255, 255, 255);
 
 	// on_click
 	std::function<void()> const on_click = nullptr;
