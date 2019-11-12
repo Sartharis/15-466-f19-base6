@@ -133,7 +133,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
 	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::none, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
 	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::none, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
-	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura." );
+	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura from fire flowers." );
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
 	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
 

@@ -220,10 +220,13 @@ PlantMode::PlantMode()
 	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
     // add all order into order vector
-	all_orders.push_back(order1);
-	all_orders.push_back(order2);
-	all_orders.push_back(order3);
-	all_orders.push_back(order4);
+	all_orders.push_back( order1 );
+	all_orders.push_back( order2 );
+	all_orders.push_back( order3 );
+	all_orders.push_back( order4 );
+	all_orders.push_back( order5 );
+	all_orders.push_back( order6 );
+	all_orders.push_back( order7 );
 
 	{ //DEBUG: init UI
 
@@ -465,12 +468,12 @@ PlantMode::PlantMode()
 		add_buy_choice( corpseeater_plant );
 
 		btn = new Button(
-			screen_size, Button::tr, glm::vec2( -500.0f, 150.0f ), // position
+			screen_size, Button::tr, glm::vec2( -400.0f, 150.0f ), // position
 			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
 			glm::vec2( 0, 0 ), // sprite anchor
 			0.0f, // sprite scale
-			Button::show_text, // hover behavior
+			Button::darken_text, // hover behavior
 			"COMPLETE", // text
 			glm::vec2( 0, 0 ), // text anchor
 			0.4f, // text scale
@@ -508,13 +511,13 @@ PlantMode::PlantMode()
 
 		UI.all_buttons.push_back( btn );
 
-		btn = new Button(
-			screen_size, Button::tr, glm::vec2( -400.0f, 150.0f ), // position
+		/*btn = new Button(
+			screen_size, Button::tr, glm::vec2( -300.0f, 150.0f ), // position
 			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
 			glm::vec2( 0, 0 ), // sprite anchor
 			0.0f, // sprite scale
-			Button::show_text, // hover behavior
+			Button::darken_text, // hover behavior
 			"CANCEL", // text
 			glm::vec2( 0, 0 ), // text anchor
 			0.4f, // text scale
@@ -527,7 +530,7 @@ PlantMode::PlantMode()
 				std::cout << "Cancel Button Click!" << std::endl;
 			} );
 		
-		UI.all_buttons.push_back( btn );
+		UI.all_buttons.push_back( btn );*/
 	}
 }
 
@@ -798,6 +801,8 @@ void PlantMode::update(float elapsed)
 		action_description = "";
 
 		if( current_tool == glove ) {
+			tool_name = "Glove:";
+			tool_description = "Harvest or Remove Plants";
 			if( hovered_tile->plant_type ) 
 			{
 				if( hovered_tile->is_plant_dead() )
@@ -815,26 +820,39 @@ void PlantMode::update(float elapsed)
 			}
 
 		} else if( current_tool == watering_can ) {
+			tool_name = "Watering Can: ";
+			tool_description = "Water soil";
 			if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
 				action_description = "Water ";
 			}
 
 		} else if( current_tool == fertilizer ) {
+			tool_name = "Fertilizer:";
+			tool_description = "Fertilize soil";
 			if( hovered_tile->fertility < 1.0f ) {
 				action_description = "Fertilize";
 			}
 
 		} else if( current_tool == shovel ) {
+			tool_name = "Shovel:";
+			tool_description = "Dig up soil for planting";
 			if( hovered_tile->can_be_cleared(grid) ) {
 				action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
 			}
 
 		} else if( current_tool == seed ) {
+			tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
+			tool_description = selectedPlant->get_description();
 			if( selectedPlant 
 					&& hovered_tile->tile_type->get_can_plant()
 					&& !hovered_tile->plant_type ) {
 				action_description = "Plant ";
 			}
+		}
+		else
+		{
+			tool_name = "";
+			tool_description = "";
 		}
 
 		//---- update tile properties (watering & fertilizing)
@@ -995,8 +1013,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( selectedPlant->get_name() + " x" + std::to_string(inventory.get_seeds_num(selectedPlant)) +" :", glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
-		draw.draw_text( selectedPlant->get_description(), glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
+		draw.draw_text( tool_name, glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
+		draw.draw_text(tool_description, glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
 		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
