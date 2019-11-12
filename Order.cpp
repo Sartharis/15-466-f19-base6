@@ -64,6 +64,7 @@ void OrderType::draw(glm::uvec2 const &drawable_size, Inventory& inventory) cons
 	{// draw sprite
 		DrawSprites draw(*order_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
 		glm::vec2 ul = glm::vec2(view_min.x+350.0f, view_max.y);
+		(void)ul;
   		//draw.draw(*orderbg_sprite, ul);
 	}//<-- gets drawn on deallocation
 	

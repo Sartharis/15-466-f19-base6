@@ -517,6 +517,14 @@ bool GroundTile::try_remove_plant()
 	// If there is a plant on tile, kick it out and hide the drawable
 	if( plant_type )
 	{
+		if( plant_type->get_aura_type() == Aura::help && help_aura ) {
+			delete help_aura;
+			help_aura = nullptr;
+		}
+		if( plant_type->get_aura_type() == Aura::suck && suck_aura ) {
+			delete suck_aura;
+			suck_aura = nullptr;
+		}
 		plant_type = nullptr;
 		plant_drawable->pipeline.start = 0;
 		plant_drawable->pipeline.count = 0;
