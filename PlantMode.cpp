@@ -378,7 +378,6 @@ PlantMode::PlantMode()
 		add_plant_button( fireflower_plant );
 		add_plant_button( corpseeater_plant );
 
-
 		/*
 	    buttons.emplace_back (
 			glm::vec2(380, 130), // position
@@ -479,18 +478,20 @@ void PlantMode::on_click( int x, int y )
 				}
 				// Harvesting plant
 				else if( collided_tile->is_tile_harvestable() ) {
-					int gain = collided_tile->plant_type->get_harvest_gain();
+					// int gain = collided_tile->plant_type->get_harvest_gain();
+					PlantType const* plant = collided_tile->plant_type;
 					if( collided_tile->try_remove_plant() ) {
-						energy += gain;
-						inventory.change_harvest_num( collided_tile->plant_type, 1 );
+						// energy += gain;
+						assert( plant );
+						inventory.change_harvest_num( plant, 1 );
 					}
 				}
 			}
 
 		} else if( current_tool == watering_can ) {
-
+			// handled in update
 		} else if( current_tool == fertilizer ) {
-
+			// handled in update
 		} else if( current_tool == shovel ) {
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
@@ -811,7 +812,6 @@ void PlantMode::update(float elapsed)
 
 void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	
-	
 	//Draw scene:
 	camera->aspect = float( drawable_size.x) / float(drawable_size.y);
 
@@ -983,28 +983,66 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		if( !UI.storage.hidden ){
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			DrawSprites draw_plants( *plants_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			// seeds
-			std::vector< std::pair<PlantType const*, int> > seeds_to_draw;
+
 			auto plant_to_seeds = inventory.get_plant_to_seeds();
+			auto plant_to_harvest = inventory.get_plant_to_harvest();
+
+			// list of all plant-seed pairs
+			std::vector< std::pair<PlantType const*, int> > seeds_to_draw = {};
 			for( auto p : plant_to_seeds ) {
 				Button* seed_btn = inventory.get_seed_btn( p.first );
 				seed_btn->hidden = true;
-				(void)seed_btn;
 				if( p.second > 0 ) seeds_to_draw.push_back( p );
 			}
-			std::sort( seeds_to_draw.begin(), seeds_to_draw.end(), Inventory::comp_fn );
-			for( int i=0; i<seeds_to_draw.size(); i++ ) {
-				PlantType const* plant = seeds_to_draw[i].first;
-				int num_seeds = seeds_to_draw[i].second;
-				Button* seed_btn = inventory.get_seed_btn( plant );
-				glm::vec2 cell_position = UI.storage.get_cell_position(i);
-				seed_btn->hidden = false;
-				seed_btn->set_position(Button::br, cell_position, screen_size);
-				seed_btn->draw_sprite( draw_plants );
-				// seed num text
-				glm::vec2 text_position = screen_size + cell_position;
-				draw_text.draw_text( std::to_string(num_seeds), 
-						glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.35f );
+			// list of all plant-harvest pairs
+			std::vector< std::pair<PlantType const*, int> > harvest_to_draw = {};
+			for( auto p : plant_to_harvest ) {
+				Button* harvest_btn = inventory.get_harvest_btn( p.first );
+				harvest_btn->hidden = true;
+				if( p.second > 0 ) harvest_to_draw.push_back( p );
+			}
+
+			if( UI.storage.current_tab == 0 ) { // seeds tab
+				// hide harvest btns
+				for( int i=0; i<harvest_to_draw.size(); i++ ) {
+					PlantType const* plant = harvest_to_draw[i].first;
+					inventory.get_harvest_btn( plant )->hidden = true;
+				}
+				// std::sort( seeds_to_draw.begin(), seeds_to_draw.end(), Inventory::comp_fn );
+				for( int i=0; i<seeds_to_draw.size(); i++ ) {
+					PlantType const* plant = seeds_to_draw[i].first;
+					int num_seeds = seeds_to_draw[i].second;
+					Button* seed_btn = inventory.get_seed_btn( plant );
+					glm::vec2 cell_position = UI.storage.get_cell_position(i);
+					seed_btn->hidden = false;
+					seed_btn->set_position(Button::br, cell_position, screen_size);
+					seed_btn->draw_sprite( draw_plants );
+					// seed num text
+					glm::vec2 text_position = screen_size + cell_position;
+					draw_text.draw_text( std::to_string(num_seeds), 
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+				}
+
+			} else if( UI.storage.current_tab == 1 ) {
+				// hide seed btns
+				for( int i=0; i<seeds_to_draw.size(); i++ ) {
+					PlantType const* plant = seeds_to_draw[i].first;
+					inventory.get_harvest_btn( plant )->hidden = true;
+				}
+				// std::sort( harvest_to_draw.begin(), harvest_to_draw.end(), Inventory::comp_fn );
+				for( int i=0; i<harvest_to_draw.size(); i++ ) {
+					PlantType const* plant = harvest_to_draw[i].first;
+					int num_harvest = harvest_to_draw[i].second;
+					Button* harvest_btn = inventory.get_harvest_btn( plant );
+					glm::vec2 cell_position = UI.storage.get_cell_position(i);
+					harvest_btn->hidden = false;
+					harvest_btn->set_position(Button::br, cell_position, screen_size);
+					harvest_btn->draw_sprite( draw_plants );
+					// harvest num text
+					glm::vec2 text_position = screen_size + cell_position;
+					draw_text.draw_text( std::to_string(num_harvest), 
+							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(10, -10), 0.4f );
+				}
 			}
 		}
 
@@ -1149,9 +1187,9 @@ int Inventory::get_seeds_num(const PlantType* plant )
 	{
 		return it->second;
 	}
-	else
+	else 
 	{
-		plant_to_seeds.insert( std::make_pair( plant, 0 ) );
+		if( plant ) plant_to_seeds.insert( std::make_pair( plant, 0 ) );
 		return 0;
 	}
 }
@@ -1165,7 +1203,7 @@ void Inventory::change_seeds_num(const PlantType* plant, int seed_change )
 	}
 	else
 	{
-		plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
+		if( plant )plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
 	}
 }
 
@@ -1174,7 +1212,7 @@ int Inventory::get_harvest_num( const PlantType* plant ) {
 	if( it != plant_to_harvest.end() ) {
 		return it->second;
 	} else {
-		plant_to_harvest.insert( std::make_pair( plant, 0 ) );
+		if( plant )plant_to_harvest.insert( std::make_pair( plant, 0 ) );
 		return 0;
 	}
 }
@@ -1184,7 +1222,7 @@ void Inventory::change_harvest_num( const PlantType* plant, int harvest_change )
 	if( it != plant_to_harvest.end() ) {
 		it->second += harvest_change;
 	} else {
-		plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
+		if( plant )plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
 	}
 }
 

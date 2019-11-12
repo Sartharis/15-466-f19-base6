@@ -18,7 +18,7 @@
 #include "Plant.hpp"
 
 struct Inventory
-{
+{ // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
