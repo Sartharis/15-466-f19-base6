@@ -918,6 +918,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			for (int j=0; j<grid.size_y; j++) {
 				if (grid.tiles[i][j].fire_aura) grid.tiles[i][j].fire_aura->draw( draw_aura );
 				if (grid.tiles[i][j].aqua_aura) grid.tiles[i][j].aqua_aura->draw( draw_aura );
+				if (grid.tiles[i][j].help_aura) grid.tiles[i][j].help_aura->draw( draw_aura );
+				if (grid.tiles[i][j].suck_aura) grid.tiles[i][j].suck_aura->draw( draw_aura );
 			}
 		}
 	}

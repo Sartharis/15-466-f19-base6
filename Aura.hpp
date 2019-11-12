@@ -13,11 +13,13 @@ struct DrawAura;
 // manages aura dots for a tile location (TODO: manage aura for all tiles? Or make it AuraType instead?)
 struct Aura { 
 
-	enum Type { fire, aqua, none };
+	enum Type { fire, aqua, help, suck, none };
 
 	struct Dot {
-		Dot(glm::vec3 _center);
-		void update_position(float elapsed);
+		Dot(glm::vec3 _center, Aura::Type type);
+		void update_position_jump(float elapsed);
+		void update_position_outward(float elapsed);
+		void update_position_inward(float elapsed);
 		// states
 		float timer;
 		glm::vec3 position = glm::vec3(0, 0, 1.2);
@@ -36,6 +38,12 @@ struct Aura {
 				case aqua:
 					color = glm::u8vec4(50, 135, 255, 255);
 					break;
+				case help:
+					color = glm::u8vec4(242, 236, 143, 255);
+					break;
+				case suck:
+					color = glm::u8vec4(94, 63, 138, 255);
+					break;
 				default:
 					std::cout << "WARNING: non-exhaustive match of aura type??" << std::endl;
 					break;
@@ -46,7 +54,7 @@ struct Aura {
 		glm::u8vec4 color;
 	};
 
-	Aura(glm::vec3 _center, Type _type);
+	Aura(glm::vec3 _center, Type _type, int _max_strength = 5);
 	void update(int _strength, float elapsed, Scene::Transform* cam);
 	void draw(DrawAura &draw_aura);
 	

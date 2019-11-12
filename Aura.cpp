@@ -66,12 +66,12 @@ static Load< void > setup_gl(LoadTagDefault, [](){
 	
 });
 
-Aura::Aura(glm::vec3 _center, Type _type) : type(_type), center(_center) {
+Aura::Aura(glm::vec3 _center, Type _type, int _max_strength) : type(_type), max_strength(_max_strength), center(_center) {
 	assert(_type != none);
 
 	dots = std::vector<Dot>();
 	for (int i=0; i<max_strength; i++) {
-		dots.emplace_back(_center);
+		dots.emplace_back(_center, type);
 	}
 
 }
@@ -80,20 +80,37 @@ inline float rand5() {
 	return float(rand() % 10000) / 10000.0f;
 }
 
-Aura::Dot::Dot(glm::vec3 _center) : center(_center) {
+Aura::Dot::Dot(glm::vec3 _center, Aura::Type type) : center(_center) {
 	timer = rand5() * 6.2832f;
 	dot_radius = rand5() * 0.03f + 0.015f;
 	float_height = rand5() * 0.6f + 0.2f;
 	float_azimuth = rand5() * 2.0f * 3.1415926535f;
-	float_radius = rand5() * 0.4f + 0.1f;
+	float_radius = (type==Aura::fire || type==Aura::aqua) ? rand5() * 0.4f + 0.1f : rand5() * 0.8 + 0.2f;
 	// float_speed_horizontal = glm::radians(rand5() * 30.0f + 45.0f);
 	float_speed_vertical = rand5() * 3.0f + 1.0f;
 	position = glm::vec3( cos(float_azimuth), sin(float_azimuth), float_height );
 }
 
-void Aura::Dot::update_position(float elapsed) {
+void Aura::Dot::update_position_jump(float elapsed) {
 	timer += elapsed;
-	// float_azimuth += elapsed * float_speed_horizontal;
+	position = center + float_radius * glm::vec3( 
+		cos(float_azimuth), sin(float_azimuth), 
+		float_height + 0.15f * sin(timer * float_speed_vertical) );
+}
+
+void Aura::Dot::update_position_outward(float elapsed) {
+	timer += elapsed;
+	float_radius += elapsed * 0.15f;
+	if(float_radius > 1.0f) float_radius -= 0.8f;
+	position = center + float_radius * glm::vec3( 
+		cos(float_azimuth), sin(float_azimuth), 
+		float_height + 0.15f * sin(timer * float_speed_vertical) );
+}
+
+void Aura::Dot::update_position_inward(float elapsed) {
+	timer += elapsed;
+	float_radius -= elapsed * 0.15f;
+	if(float_radius < 0.2f) float_radius += 0.8f;
 	position = center + float_radius * glm::vec3( 
 		cos(float_azimuth), sin(float_azimuth), 
 		float_height + 0.15f * sin(timer * float_speed_vertical) );
@@ -105,9 +122,18 @@ void Aura::update(int _strength, float elapsed, Scene::Transform* cam) {
 
 	cam_transform = cam;
 
-	for(int i=0; i<strength; i++) {
-		// update position..
-		dots[i].update_position(elapsed);
+	if( type == Aura::fire || type == Aura::aqua ) {
+		for(int i=0; i<strength; i++) {
+			dots[i].update_position_jump(elapsed);
+		}
+	} else if( type == Aura::help ) {
+		for(int i=0; i<strength; i++) {
+			dots[i].update_position_outward(elapsed);
+		}
+	} else if( type == Aura::suck ) {
+		for(int i=0; i<strength; i++) {
+			dots[i].update_position_inward(elapsed);
+		}
 	}
 }
 

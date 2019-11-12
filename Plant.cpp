@@ -131,8 +131,8 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	corpseeater_3_mesh = &ret->lookup( "leaf3" );
 
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
-	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::none, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
-	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::none, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
+	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::help, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
+	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::suck, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
 	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura." );
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
 	corpseeater_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
@@ -368,8 +368,8 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		update_plant_visuals( current_grow_time / target_time );
 	}
 
-	// apply aura effect onto neighbors (by putting into pending update)
-	if( plant_type && ( plant_type->get_aura_type() != Aura::none ) && !is_plant_dead() )
+	// apply fire & aqua aura effect onto neighbors (by putting into pending update)
+	if( plant_type && ( plant_type->get_aura_type()==Aura::fire || plant_type->get_aura_type()==Aura::aqua ) && !is_plant_dead() )
 	{
 		auto try_apply_aura = [elapsed]( GroundTile& target, Aura::Type aura_type ) {
 			if( target.tile_type->get_can_plant() ) {
@@ -380,8 +380,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				case Aura::aqua:
 					target.pending_update.aqua_aura_effect += 0.2f * elapsed;
 					break;
-				default:
-					std::cerr << "non-exhaustive matching of aura type??";
+				default: // the rest of aura types are decorations only
 					break;
 				}
 			}
@@ -427,6 +426,18 @@ void GroundTile::update_plant_visuals( float percent_grown )
 		plant_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
 			glUniform3f(PROPERTIES_vec3_loc, plant_health, 0.0f, 0.0f);
 		};
+		if( plant_type->get_aura_type() == Aura::help && is_plant_dead() ) {
+			if( help_aura ) {
+				delete help_aura;
+				help_aura = nullptr;
+			}
+		}
+		if( plant_type->get_aura_type() == Aura::suck && is_plant_dead() ) {
+			if( suck_aura ) {
+				delete suck_aura;
+				suck_aura = nullptr;
+			}
+		}
 	}
 }
 
@@ -474,6 +485,9 @@ void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_tr
 	if( aqua_aura ) aqua_aura->update( 
 			int(floor(aqua_aura_effect * aqua_aura->max_strength)), // strength
 			elapsed, camera_transform );
+
+	if( help_aura ) help_aura->update( help_aura->max_strength, elapsed, camera_transform );
+	if( suck_aura ) suck_aura->update( suck_aura->max_strength, elapsed, camera_transform );
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -488,6 +502,11 @@ bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 		current_grow_time = 0.0f;
 		plant_health = 1.0f;
 		update_plant_visuals( 0.0f );
+		if( plant_type->get_aura_type() == Aura::help ) {
+			help_aura = new Aura( tile_drawable->transform->position, Aura::help, 6 );
+		} else if( plant_type->get_aura_type() == Aura::suck ) {
+			suck_aura = new Aura( tile_drawable->transform->position, Aura::suck, 6 );
+		}
 		return true;
 	}
 	return false;

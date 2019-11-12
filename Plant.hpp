@@ -134,6 +134,8 @@ struct GroundTile
 	// Aura 
 	Aura* fire_aura = nullptr;
 	Aura* aqua_aura = nullptr;
+	Aura* help_aura = nullptr;
+	Aura* suck_aura = nullptr;
 
 };
 
