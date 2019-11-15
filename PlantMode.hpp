@@ -136,6 +136,11 @@ struct PlantMode : public Mode {
 				return tl_offset + glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
 			}
 		} magicbook;
+
+		// order
+		struct {
+			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);
+		} order;
 	} UI;
 
 	struct {

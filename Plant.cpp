@@ -503,7 +503,7 @@ bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 		plant_health = 1.0f;
 		update_plant_visuals( 0.0f );
 		if( plant_type->get_aura_type() == Aura::help ) {
-			help_aura = new Aura( tile_drawable->transform->position, Aura::help, 6 );
+			help_aura = new Aura( tile_drawable->transform->position, Aura::help, 4 );
 		} else if( plant_type->get_aura_type() == Aura::suck ) {
 			suck_aura = new Aura( tile_drawable->transform->position, Aura::suck, 6 );
 		}

@@ -59,7 +59,7 @@ struct Button {
 	bool hidden = false;
 
 	// functions
-	void update_hover(glm::vec2 mouse_pos);
+	bool update_hover(glm::vec2 mouse_pos);
 	void update_position(glm::vec2 new_screensize);
 	void set_position(ScreenAnchor new_screen_anchor, glm::vec2 new_rel_pos, glm::vec2 screen_size);
 	bool try_click(glm::vec2 mouse_pos); // if mouse_pos is on this button, call on_click() and return true.

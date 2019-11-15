@@ -76,8 +76,8 @@ void OrderType::draw(glm::uvec2 const &drawable_size, Inventory& inventory) cons
 	glDisable(GL_DEPTH_TEST);
 
 	{// draw sprite
-		DrawSprites draw(*main_atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
-		glm::vec2 ul = glm::vec2(view_min.x+735.0f, view_max.y + 40);
+		DrawSprites draw(*main_atlas, glm::vec2(0,0), drawable_size, drawable_size, DrawSprites::AlignSloppy);
+		glm::vec2 ul = glm::vec2( drawable_size.x - 460.0f, drawable_size.y);
   	draw.draw(*order_background_sprite, ul, 0.45f);
 	}//<-- gets drawn on deallocation
 	

@@ -1014,7 +1014,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	current_order->draw(drawable_size, inventory);
+	current_order->draw(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -1037,8 +1037,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(0.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
 		}
 		
-		// draw hint text
-		// draw.draw_text("Press Space to open magic book", glm::vec2( 10.0f, 150.0f ), 0.6f );
 	}
 
 	{ //draw UI
@@ -1159,6 +1157,17 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(2, -2), 0.4f );
 				}
 			}
+		} else {
+			auto plant_to_seeds = inventory.get_plant_to_seeds();
+			auto plant_to_harvest = inventory.get_plant_to_harvest();
+			for( auto p : plant_to_seeds ) {
+				Button* seed_btn = inventory.get_seed_btn( p.first );
+				seed_btn->hidden = true;
+			}
+			for( auto p : plant_to_harvest ) {
+				Button* harvest_btn = inventory.get_harvest_btn( p.first );
+				harvest_btn->hidden = true;
+			}
 		}
 
 		{ //text
@@ -1178,11 +1187,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 				cursor.scale);
 	}
    
-	if(is_magicbook_open && Mode::current.get() == this)
-	{
-		open_book();
-	}
-
 }
 
 void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )

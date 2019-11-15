@@ -33,18 +33,20 @@ void Button::update_position(glm::vec2 screen_size) {
 	}
 }
 
-void Button::update_hover(glm::vec2 mouse_pos) {
+bool Button::update_hover(glm::vec2 mouse_pos) {
 	if( hidden ) {
 		hovered = false;
-		return;
+		return hovered;
 	}
 	if (mouse_pos.x >= position.x
 			&& mouse_pos.x < position.x + size.x
 			&& mouse_pos.y >= position.y
 			&& mouse_pos.y < position.y + size.y) {
 		hovered = true;
+		return hovered;
 	} else {
 		hovered = false;
+		return hovered;
 	}
 }
 
