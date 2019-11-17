@@ -10,7 +10,6 @@
 #include "load_save_png.hpp"
 #include "collide.hpp"
 #include "DrawSprites.hpp"
-#include "MenuMode.hpp"
 #include "Sound.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -231,7 +230,59 @@ PlantMode::PlantMode()
 	all_orders.push_back( order6 );
 	all_orders.push_back( order7 );
 
-	{ //DEBUG: init UI
+	{ // init UI
+
+		UI_root = new UIElem(
+			nullptr, // parent
+			glm::vec2(0, 0), // anchor
+			glm::vec2(200, 100), // position
+			glm::vec2(200, 150), // size
+			sprites.magicbook.background, // sprite
+			"root", // text
+			glm::vec2(0,0), // sprite pos
+			0.2f, // sprite scale
+			true); // interactive
+		UI_root->set_on_mouse_enter([](){
+			std::cout << "mouse enter root" << std::endl;
+		});
+		UI_root->set_on_mouse_leave([](){
+			std::cout << "mouse leave root" << std::endl;
+		});
+
+		UIElem* e = new UIElem(
+			UI_root, // parent
+			glm::vec2(0.5, 0.5), // anchor
+			glm::vec2(0, 0), // position
+			glm::vec2(90, 65), // size
+			sprites.magicbook.background, // sprite
+			"child", // text
+			glm::vec2(0,0), // sprite pos
+			0.1f, // sprite scale
+			true); // interactive
+		e->set_on_mouse_enter([](){
+			std::cout << "enter child" << std::endl;
+		});
+		e->set_on_mouse_leave([](){
+			std::cout << "leave child" << std::endl;
+		});
+
+		UIElem* e2 = new UIElem(
+			e, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(0, 10), // position
+			glm::vec2(50, 15), // size
+			nullptr, // sprite
+			"some text", // text
+			glm::vec2(0,0), // sprite pos
+			0.4f, // sprite scale
+			true); // interactive
+		e2->set_on_mouse_enter([](){
+			std::cout << "enter text" << std::endl;
+		});
+		e2->set_on_mouse_leave([](){
+			std::cout << "leave text" << std::endl;
+		});
+
 
 		Button* btn;
 
@@ -548,6 +599,8 @@ PlantMode::~PlantMode() {
 	for (int i=0; i<UI.all_buttons.size(); i++) {
 		if (UI.all_buttons[i]) delete UI.all_buttons[i];
 	}
+
+	if (UI_root) delete UI_root;
 }
 
 void PlantMode::on_click( int x, int y )
@@ -884,6 +937,10 @@ void PlantMode::update(float elapsed)
 		for( int i = 0; i < UI.all_buttons.size(); i++) {
 			UI.all_buttons[i]->update_hover( glm::vec2(x, y) );
 		}
+
+		if (UI_root) UI_root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
+		if (UI_root) UI_root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
 		case none:
@@ -1040,6 +1097,12 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	{ //draw UI
+		{
+			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			if (UI_root) UI_root->draw(draw_sprites, draw_text);
+		}
+
 		{//---- magicbook
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			UI.magicbook.icon_btn->draw_sprite( draw_sprites );
@@ -1298,6 +1361,7 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			UI.all_buttons[i]->update_position( screen_size );
 		}
 	}
+	if (UI_root) UI_root->on_resize(screen_size);
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 
@@ -1357,54 +1421,3 @@ Button* Inventory::get_harvest_btn( const PlantType* plant ) {
 	assert( it != plant_to_harvest_btn.end() );
 	return it->second;
 }
-
-void PlantMode::open_book(){
-		std::vector< MenuMode::Item > items;
-		glm::vec2 at(-110.0f, view_max.y - 180.0f);
-		auto add_text = [&items,&at](std::string text) {
-			items.emplace_back(text, nullptr, 1.0f, glm::u8vec4(0x00, 0x00, 0x00, 0xff), nullptr, at);
-			at.y -= 10.0f;
-		};
-
-		auto add_choice = [&items,&at](std::string text, std::function< void(MenuMode::Item const &) > const &fn) {
-			items.emplace_back(text, nullptr, 0.8f, glm::u8vec4(0x00, 0x00, 0x00, 0x88), fn, at + glm::vec2(16.0f, 0.0f));
-			items.back().selected_tint = glm::u8vec4(0x00, 0x00, 0x00, 0xff);
-			at.y -= 15.0f;
-		};
-
-		auto add_buy_choice = [&items, &at, this]( const PlantType* plant ) {
-
-			std::string text = plant->get_name() + " " + std::to_string( plant->get_cost() ) + " energy";
-			std::function< void( MenuMode::Item const& ) > const& fn =
-				[this, plant]( MenuMode::Item const& ){
-				if( energy >= plant->get_cost() ){
-					energy -= plant->get_cost();
-					inventory.change_seeds_num( plant, 1 );
-				}
-			};
-
-			items.emplace_back( text, nullptr, 0.8f, glm::u8vec4( 0x00, 0x00, 0x00, 0x88 ), fn, at + glm::vec2( 16.0f, 0.0f ) );
-			items.back().selected_tint = glm::u8vec4( 0x00, 0x00, 0x00, 0xff );
-			at.y -= 15.0f;
-		};
-
-		add_buy_choice( test_plant );
-		add_buy_choice( friend_plant );
-		add_buy_choice( cactus_plant );
-		add_buy_choice( vampire_plant );
-		add_buy_choice( fireflower_plant );
-
-		add_choice("Close the book", [this](MenuMode::Item const &){
-			is_magicbook_open = false;
-			Mode::current = shared_from_this();
-		});
-		at.y = view_max.y - 160.0f; //gap before choices
-		at.x += 10.0f;
-		add_text("Welcome to magic book");
-		std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
-		menu->atlas = neucha_font->atlas; // for test 
-		menu->view_min = view_min;
-		menu->view_max = view_max;
-		menu->background = shared_from_this();
-		Mode::current = menu;
-	}

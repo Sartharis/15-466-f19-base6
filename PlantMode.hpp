@@ -7,6 +7,7 @@
 #include "Scene.hpp"
 #include "Order.hpp"
 #include "Button.hpp"
+#include "UIElem.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
@@ -47,11 +48,6 @@ struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
-	bool is_magicbook_open = false;
-	//called to create menu for current scene:
-	void open_book();
-	glm::vec2 view_min = glm::vec2(0,0);
-	glm::vec2 view_max = glm::vec2(259, 225);
 	std::vector< OrderType const* > all_orders;
 	int current_order_idx = 0;
 	OrderType const* current_order = nullptr;
@@ -142,6 +138,8 @@ struct PlantMode : public Mode {
 			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);
 		} order;
 	} UI;
+
+	UIElem* UI_root = nullptr;
 
 	struct {
 		Sprite const* sprite = nullptr;

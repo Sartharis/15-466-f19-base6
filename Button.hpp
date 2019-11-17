@@ -4,7 +4,6 @@
 #include "DrawSprites.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
-#include <functional>
 
 /* A button, which can have a sprite and a string associated with it
  * If it has a sprite, draws the sprite.

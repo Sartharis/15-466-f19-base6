@@ -264,7 +264,7 @@ float DrawSprites::get_xadvance(std::string const& char_a, std::string const* _c
 }
 
 void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, glm::vec2 *anchor_out) {
-	// assert( font );
+	assert( font );
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
 
@@ -277,7 +277,7 @@ void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, fl
 			xadvance = get_xadvance( char_a, &char_b );
 		}
 
-		Sprite const &chr = atlas.lookup(char_a);
+		Sprite const &chr = font->atlas->lookup(char_a);
 		draw(chr, moving_anchor, scale, tint);
 		// moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
 		moving_anchor.x += xadvance * scale;
@@ -311,7 +311,7 @@ void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anc
 			xadvance = get_xadvance( char_a, &char_b );
 		}
 
-		Sprite const &chr = atlas.lookup(std::to_string(int(text[pos])));
+		Sprite const &chr = font->atlas->lookup(std::to_string(int(text[pos])));
 		min = glm::min(min, moving_anchor + (chr.min_px - chr.anchor_px) * scale);
 		max = glm::max(max, moving_anchor + (chr.max_px - chr.anchor_px) * scale);
 		// moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;

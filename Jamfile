@@ -158,14 +158,15 @@ if $(OS) = NT { #Windows
 GAME_NAMES =
 	# demo_menu
 	# DemoLightingMultipassMode
-	BasicMaterialProgram
+	# BasicMaterialProgram
 	# DemoLightingForwardMode
-	BasicMaterialForwardProgram
+	# BasicMaterialForwardProgram
 	# LightMeshes
 	# DemoLightingDeferredMode
-	BasicMaterialDeferredProgram
-	CopyToScreenProgram
-	BoneAnimation
+	# BasicMaterialDeferredProgram
+	# CopyToScreenProgram
+	# BoneAnimation
+	# MenuMode
 	PlantMode
 	Order
 	Sound
@@ -174,7 +175,6 @@ GAME_NAMES =
 	DrawSprites
 	ColorTextureProgram
 	Sprite
-	MenuMode
 	main
 	data_path
 	collide
@@ -183,6 +183,7 @@ GAME_NAMES =
 	Aura
 	Plant
 	Button
+	UIElem
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff
