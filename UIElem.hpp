@@ -49,7 +49,11 @@ struct UIElem {
 	void set_on_mouse_leave(std::function<void()> fn){ on_mouse_leave = fn; }
 
 	void print_name(){ std::cout << text << std::endl; }
+	void show(){ hidden = false; }
+	void hide(){ hidden = true; }
 	
+	std::vector<UIElem*> children = std::vector<UIElem*>();
+
 private:
 
 	// content
@@ -68,7 +72,6 @@ private:
 
 	// hierarchy
 	UIElem* parent = nullptr;
-	std::vector<UIElem*> children = std::vector<UIElem*>();
 
 	// interaction behaviors
 	std::function<void()> on_mouse_down = nullptr;

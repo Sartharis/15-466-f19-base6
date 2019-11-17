@@ -95,6 +95,15 @@ struct PlantMode : public Mode {
 
 	//UI states:
 	struct {
+		UIElem* root;
+		struct {
+			UIElem* background;
+			UIElem* glove;
+			UIElem* watering_can;
+			UIElem* fertilizer;
+			UIElem* shovel;
+		} toolbar;
+
 		bool hidden = false;
 		std::vector< Button* > all_buttons = {};
 

@@ -232,131 +232,154 @@ PlantMode::PlantMode()
 
 	{ // init UI
 
-		UI_root = new UIElem(
+		UI.root = new UIElem(
 			nullptr, // parent
 			glm::vec2(0, 0), // anchor
 			glm::vec2(200, 100), // position
 			glm::vec2(200, 150), // size
-			sprites.magicbook.background, // sprite
-			"root", // text
-			glm::vec2(0,0), // sprite pos
-			0.2f, // sprite scale
-			true); // interactive
-		UI_root->set_on_mouse_enter([](){
-			std::cout << "mouse enter root" << std::endl;
-		});
-		UI_root->set_on_mouse_leave([](){
-			std::cout << "mouse leave root" << std::endl;
-		});
-
-		UIElem* e = new UIElem(
-			UI_root, // parent
-			glm::vec2(0.5, 0.5), // anchor
-			glm::vec2(0, 0), // position
-			glm::vec2(90, 65), // size
-			sprites.magicbook.background, // sprite
-			"child", // text
-			glm::vec2(0,0), // sprite pos
-			0.1f, // sprite scale
-			true); // interactive
-		e->set_on_mouse_enter([](){
-			std::cout << "enter child" << std::endl;
-		});
-		e->set_on_mouse_leave([](){
-			std::cout << "leave child" << std::endl;
-		});
-
-		UIElem* e2 = new UIElem(
-			e, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(0, 10), // position
-			glm::vec2(50, 15), // size
 			nullptr, // sprite
-			"some text", // text
+			"", // text
 			glm::vec2(0,0), // sprite pos
-			0.4f, // sprite scale
-			true); // interactive
-		e2->set_on_mouse_enter([](){
-			std::cout << "enter text" << std::endl;
-		});
-		e2->set_on_mouse_leave([](){
-			std::cout << "leave text" << std::endl;
-		});
+			0.0f); // sprite scale
 
-
-		Button* btn;
+		// toolbar background
+		UI.toolbar.background = new UIElem(
+			UI.root, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(0, 0), // position
+			glm::vec2(0, 0), // size
+			sprites.tools.background, // sprite
+			"tools background", // text
+			glm::vec2(-270,0), // sprite pos
+			0.4f); // sprite scale
 
 		// glove
-		btn = new Button (
-			screen_size, Button::bl, glm::vec2(60, -84), // position
+		UI.toolbar.glove = new UIElem(
+			UI.toolbar.background, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(60, -84), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.glove, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
 			"glove", // text
-			glm::vec2(0, 48), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( current_tool == glove ) current_tool = none;
-				else current_tool = glove;
-			} );
-		UI.tools.push_back(btn);
-		UI.all_buttons.push_back(btn);
+			glm::vec2(32, 32), // sprite pos
+			0.3f, // sprite scale
+			true); 
+		UI.toolbar.glove->set_on_mouse_enter([this](){
+			for (auto c : UI.toolbar.glove->children) c->show();
+		});
+		UI.toolbar.glove->set_on_mouse_leave([this](){
+			for (auto c : UI.toolbar.glove->children) c->hide();
+		});
+		UI.toolbar.glove->set_on_mouse_down([this](){
+			if( current_tool == glove ) current_tool = none;
+			else current_tool = glove;
+		});
+		new UIElem(
+			UI.toolbar.glove,
+			glm::vec2(0, 0), // anchor
+			glm::vec2(0, 48), // pos
+			glm::vec2(0, 0),
+			nullptr,
+			"glove",
+			glm::vec2(0, 0),
+			0.4f, false, true); // ..interactive, hidden
 
 		// watering can
-		btn = new Button (
-			screen_size, Button::bl, glm::vec2(142, -79), // position
+		UI.toolbar.watering_can = new UIElem(
+			UI.toolbar.background, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(142, -79), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.watering_can, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
 			"watering can", // text
-			glm::vec2(-4, 44), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( current_tool == watering_can ) current_tool = none;
-				else current_tool = watering_can;
-			} );
-		UI.tools.push_back(btn);
-		UI.all_buttons.push_back(btn);
+			glm::vec2(32, 32), // sprite pos
+			0.3f, // sprite scale
+			true); 
+		UI.toolbar.watering_can->set_on_mouse_enter([this](){
+			for (auto c : UI.toolbar.watering_can->children) c->show();
+		});
+		UI.toolbar.watering_can->set_on_mouse_leave([this](){
+			for (auto c : UI.toolbar.watering_can->children) c->hide();
+		});
+		UI.toolbar.watering_can->set_on_mouse_down([this](){
+			if( current_tool == watering_can ) current_tool = none;
+			else current_tool = watering_can;
+		});
+		new UIElem(
+			UI.toolbar.watering_can,
+			glm::vec2(0, 0), // anchor
+			glm::vec2(-4, 44), // pos
+			glm::vec2(0, 0),
+			nullptr,
+			"watering can",
+			glm::vec2(0, 0),
+			0.4f, false, true); // ..interactive, hidden
 
 		// fertilizer
-		btn = new Button (
-			screen_size, Button::bl, glm::vec2(230, -94), // position
+		UI.toolbar.fertilizer = new UIElem(
+			UI.toolbar.background, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(230, -94), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.fertilizer, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
 			"fertilizer", // text
-			glm::vec2(0, 65), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( current_tool == fertilizer ) current_tool = none;
-				else current_tool = fertilizer;
-			} );
-		UI.tools.push_back(btn);
-		UI.all_buttons.push_back(btn);
+			glm::vec2(32, 32), // sprite pos
+			0.3f, // sprite scale
+			true); 
+		UI.toolbar.fertilizer->set_on_mouse_enter([this](){
+			for (auto c : UI.toolbar.fertilizer->children) c->show();
+		});
+		UI.toolbar.fertilizer->set_on_mouse_leave([this](){
+			for (auto c : UI.toolbar.fertilizer->children) c->hide();
+		});
+		UI.toolbar.fertilizer->set_on_mouse_down([this](){
+			if( current_tool == fertilizer ) current_tool = none;
+			else current_tool = fertilizer;
+		});
+		new UIElem(
+			UI.toolbar.fertilizer,
+			glm::vec2(0, 0), // anchor
+			glm::vec2(0, 65), // pos
+			glm::vec2(0, 0),
+			nullptr,
+			"fertilizer",
+			glm::vec2(0, 0),
+			0.4f, false, true); // ..interactive, hidden
 
 		// shovel
-		btn = new Button (
-			screen_size, Button::bl, glm::vec2(315, -87), // position
+		UI.toolbar.shovel = new UIElem(
+			UI.toolbar.background, // parent
+			glm::vec2(0, 1), // anchor
+			glm::vec2(315, -87), // position
 			glm::vec2(64, 64), // size
 			sprites.tools.shovel, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
 			"shovel", // text
-			glm::vec2(0, 46), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( current_tool == shovel ) current_tool = none;
-				else current_tool = shovel;
-			} );
-		UI.tools.push_back(btn);
-		UI.all_buttons.push_back(btn);
+			glm::vec2(32, 32), // sprite pos
+			0.3f, // sprite scale
+			true); 
+		UI.toolbar.shovel->set_on_mouse_enter([this](){
+			for (auto c : UI.toolbar.shovel->children) c->show();
+		});
+		UI.toolbar.shovel->set_on_mouse_leave([this](){
+			for (auto c : UI.toolbar.shovel->children) c->hide();
+		});
+		UI.toolbar.shovel->set_on_mouse_down([this](){
+			if( current_tool == shovel ) current_tool = none;
+			else current_tool = shovel;
+		});
+		new UIElem(
+			UI.toolbar.shovel,
+			glm::vec2(0, 0), // anchor
+			glm::vec2(0, 46), // pos
+			glm::vec2(0, 0),
+			nullptr,
+			"shovel",
+			glm::vec2(0, 0),
+			0.4f, false, true); // ..interactive, hidden
+
+
+		//------ remaining old UI setup ------
+		Button* btn;
 
 		// button that toggles storage menu
 		UI.storage.icon_btn = new Button (
@@ -600,12 +623,13 @@ PlantMode::~PlantMode() {
 		if (UI.all_buttons[i]) delete UI.all_buttons[i];
 	}
 
-	if (UI_root) delete UI_root;
+	if (UI.root) delete UI.root;
 }
 
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
+	UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
 	for( int i = 0; i < UI.all_buttons.size(); i++ )
 	{
 		if( UI.all_buttons[i]->try_click( glm::vec2(x, y) ) ) return;
@@ -938,8 +962,8 @@ void PlantMode::update(float elapsed)
 			UI.all_buttons[i]->update_hover( glm::vec2(x, y) );
 		}
 
-		if (UI_root) UI_root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
-		if (UI_root) UI_root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
 
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
@@ -1098,9 +1122,11 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw UI
 		{
-			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			if (UI_root) UI_root->draw(draw_sprites, draw_text);
+			{
+				DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+				if (UI.root) UI.root->draw(draw_sprites, draw_text);
+			}
 		}
 
 		{//---- magicbook
@@ -1130,6 +1156,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		{ //sprites
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			
+			/*
 			//---- tools
 			// background
 			draw_sprites.draw( *sprites.tools.background, glm::vec2(-270, 0), 0.4f );
@@ -1137,6 +1164,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			for (int i=0; i<UI.tools.size(); i++) {
 				UI.tools[i]->draw_sprite( draw_sprites );
 			}
+			*/
 
 			//---- storage
 			if( !UI.storage.hidden ) {
@@ -1361,7 +1389,7 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			UI.all_buttons[i]->update_position( screen_size );
 		}
 	}
-	if (UI_root) UI_root->on_resize(screen_size);
+	if (UI.root) UI.root->on_resize(screen_size);
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 
