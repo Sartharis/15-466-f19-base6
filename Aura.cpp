@@ -85,7 +85,7 @@ Aura::Dot::Dot(glm::vec3 _center, Aura::Type type) : center(_center) {
 	dot_radius = rand5() * 0.03f + 0.015f;
 	float_height = rand5() * 0.6f + 0.2f;
 	float_azimuth = rand5() * 2.0f * 3.1415926535f;
-	float_radius = (type==Aura::fire || type==Aura::aqua) ? rand5() * 0.4f + 0.1f : rand5() * 0.8 + 0.2f;
+	float_radius = (type==Aura::fire || type==Aura::aqua) ? rand5() * 0.4f + 0.1f : rand5() * 0.8f + 0.2f;
 	// float_speed_horizontal = glm::radians(rand5() * 30.0f + 45.0f);
 	float_speed_vertical = rand5() * 3.0f + 1.0f;
 	position = glm::vec3( cos(float_azimuth), sin(float_azimuth), float_height );

@@ -58,10 +58,28 @@ struct {
 	} magicbook;
 } sprites;
 
+// Sounds --------------------------------------------------------------------------------------------
 Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "FarmTrackV1.wav" ) );
 } );
 
+Load< Sound::Sample > sea_ambience( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "WATER_Sea_Waves_Small_20sec_loop_stereo.wav" ) );
+} );
+
+Load< Sound::Sample > land_ambience( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "LandAmbience.wav" ) );
+} );
+
+Load< Sound::Sample > shop_open_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "ShopOpen.wav" ) );
+ } );
+
+Load< Sound::Sample > shop_close_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "ShopClose.wav" ) );
+} );
+
+// Sprites -------------------------------------------------------------------------------------------
 // TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
@@ -113,6 +131,7 @@ PlantMode::PlantMode()
 	grid = setup_grid_for_scene( scene, plant_grid_x, plant_grid_y );
 
 	Sound::loop(*background_music, 0.0f, 1.0f);
+	Sound::loop( *land_ambience, 0.0f, 0.85f );
 
 	current_order = order1;
 
@@ -393,6 +412,7 @@ PlantMode::PlantMode()
 			glm::vec2(0, -20), // text anchor
 			0.4f, // text scale
 			[this]() {
+				Sound::play( *shop_open_sound, 0.0f, 1.0f );
 				UI.storage.hidden = false;				
 				UI.storage.icon_btn->hidden = true;
 				for( int i=0; i<UI.storage.tabs.size(); i++) {
@@ -415,6 +435,7 @@ PlantMode::PlantMode()
 			0.4f, // text scale
 			[this]() {
 				if( UI.storage.current_tab == 0 ) {
+					Sound::play( *shop_close_sound, 0.0f, 1.0f );
 					UI.storage.hidden = true;
 					UI.storage.icon_btn->hidden = false;
 					for( int i=0; i<UI.storage.tabs.size(); i++) {

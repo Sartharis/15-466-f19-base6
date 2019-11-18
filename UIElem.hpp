@@ -4,6 +4,7 @@
 #include "DrawSprites.hpp"
 #include <glm/glm.hpp>
 #include <iostream>
+#include <functional>
 
 struct UIElem {
 

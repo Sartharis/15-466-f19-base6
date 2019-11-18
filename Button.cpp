@@ -1,5 +1,16 @@
 #include "Button.hpp"
 #include <iostream>
+#include "Sound.hpp"
+#include "Load.hpp"
+#include "data_path.hpp"
+
+Load< Sound::Sample > button_hover_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "UI_Click_Cut_mono.wav" ) );
+} );
+
+Load< Sound::Sample > button_click_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "Click.wav" ) );
+} );
 
 bool Button::try_click(glm::vec2 mouse_pos) {
 	// early return if no on_click function attached
@@ -9,6 +20,7 @@ bool Button::try_click(glm::vec2 mouse_pos) {
 			&& mouse_pos.x < position.x + size.x
 			&& mouse_pos.y >= position.y
 			&& mouse_pos.y < position.y + size.y) {
+		Sound::play( *button_click_sound, 0.0f, 1.0f );
 		on_click();
 		return true;
 	} else {
@@ -42,6 +54,10 @@ bool Button::update_hover(glm::vec2 mouse_pos) {
 			&& mouse_pos.x < position.x + size.x
 			&& mouse_pos.y >= position.y
 			&& mouse_pos.y < position.y + size.y) {
+		if( !hovered )
+		{
+			Sound::play( *button_hover_sound, 0.0f, 1.0f );
+		}
 		hovered = true;
 		return hovered;
 	} else {
