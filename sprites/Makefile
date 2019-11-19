@@ -9,5 +9,5 @@ endif
 
 all : solidarity/ plants/
 	./pack-sprites ../dist/solidarity solidarity/*.png
-	./pack-sprites ../dist/plants plants/*.png
+	# ./pack-sprites ../dist/plants plants/*.png
 

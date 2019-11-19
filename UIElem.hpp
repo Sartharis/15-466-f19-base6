@@ -51,6 +51,7 @@ struct UIElem {
 	Action test_event(glm::vec2 mouse_pos, Action action);
 
 	void set_position(glm::vec2 _position, glm::vec2 _anchor, glm::vec2 screen_size);
+	void set_scale(float _scale) { scale = _scale; }
 	void set_parent(UIElem* _parent); 
 	void set_text(std::string _text){ text = _text; }
 	void set_z_index(int _z_index){ z_index = _z_index; }
@@ -61,6 +62,7 @@ struct UIElem {
 	Sprite const* get_sprite(){ return sprite; }
 	std::string get_text(){ return text; }
 	bool get_hidden(){ return hidden; }
+	UIElem* get_parent(){ return parent; }
 
 	void update_absolute_position(glm::vec2 new_screen_size);
 	void add_child(UIElem* child){ children.push_back(child); }

@@ -28,8 +28,6 @@ int plant_grid_x = 10;
 int plant_grid_y = 10;
 
 Mesh const* selector_mesh = nullptr;
-Sprite const* magic_book_sprite = nullptr;
-Sprite const* magicbook_icon_sprite = nullptr;
 
 Sprite const* order_background_sprite = nullptr;
 
@@ -38,17 +36,6 @@ struct {
 		Sprite const* regular = nullptr;
 		Sprite const* hand = nullptr;
 	} cursor;
-	struct {
-		Sprite const* icon = nullptr;
-		Sprite const* background = nullptr;
-		Sprite const* seeds_tab = nullptr;
-		Sprite const* harvest_tab = nullptr;
-	} storage;
-	struct {
-		Sprite const* icon = nullptr;
-		Sprite const* background = nullptr;
-		Sprite const* close = nullptr;
-	} magicbook;
 } sprites;
 
 // Sounds --------------------------------------------------------------------------------------------
@@ -74,14 +61,8 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	// cursor
 	sprites.cursor.regular = &ret->lookup("cursorNormal");
 	sprites.cursor.hand = &ret->lookup("cursorHand");
-	// magicbook
-	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
-	sprites.magicbook.background = &ret->lookup("magicbookBackground");
-	sprites.magicbook.close = &ret->lookup("magicbookClose");
 	// TEMP
 	order_background_sprite = &ret->lookup("orderBackground");
-	magic_book_sprite = &ret->lookup("magicbookBackground");
-	magicbook_icon_sprite = &ret->lookup("magicbookIcon");
 	return ret;
 });
 
@@ -118,6 +99,8 @@ PlantMode::PlantMode()
 
 	//DEBUG - ADD ALL SEEDS & init harvest to all 0
 	{
+		change_num_coins( 0 );
+
 		inventory.change_seeds_num( test_plant, 5 );
 		inventory.change_seeds_num( friend_plant, 5 );
 		inventory.change_seeds_num( vampire_plant, 5 );
@@ -262,7 +245,7 @@ PlantMode::PlantMode()
 						inventory.change_harvest_num(require_type, -needed_num);
 						iter++;
 					}
-					energy += current_order->get_bonus_cash();
+					change_num_coins( current_order->get_bonus_cash() );
 					current_order_idx += 1;
 					if( current_order_idx >= all_orders.size() ){
 						current_order_idx = 0;
@@ -336,7 +319,6 @@ void PlantMode::on_click( int x, int y )
 					// int gain = collided_tile->plant_type->get_harvest_gain();
 					PlantType const* plant = collided_tile->plant_type;
 					if( collided_tile->try_remove_plant() ) {
-						// energy += gain;
 						assert( plant );
 						inventory.change_harvest_num( plant, 1 );
 					}
@@ -350,8 +332,8 @@ void PlantMode::on_click( int x, int y )
 		} else if( current_tool == shovel ) {
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
-				if( cost <= energy && collided_tile->try_clear_tile() ) {
-					energy -= cost;
+				if( cost <= num_coins && collided_tile->try_clear_tile() ) {
+					change_num_coins( -cost );
 				}
 			}
 
@@ -778,7 +760,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		draw.draw_text( tool_name, glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
 		draw.draw_text(tool_description, glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
-		draw.draw_text( "Energy: " + std::to_string( energy ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
+		// draw.draw_text( "Energy: " + std::to_string( num_coins ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
 		glm::vec4 sel_clip = world_to_clip * selector->transform->make_local_to_world() * glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -802,10 +784,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			{
 				DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-
-				// std::cout << "-----------------------------------" << std::endl;
-				UI.seed_tab_items->layout_children();
-				UI.harvest_tab_items->layout_children();
 
 				std::vector<UIElem*> elems = std::vector<UIElem*>();
 				UI.root->gather(elems);
@@ -980,6 +958,8 @@ void Inventory::change_seeds_num(const PlantType* plant, int seed_change )
 	}
 	if( seed_num > 0)btn->set_text( std::to_string( seed_num ) );
 	else btn->set_text("");
+	assert( btn->get_parent() );
+	btn->get_parent()->layout_children();
 }
 
 int Inventory::get_harvest_num( const PlantType* plant ) {
@@ -1009,6 +989,8 @@ void Inventory::change_harvest_num( const PlantType* plant, int harvest_change )
 	}
 	if( harvest_num > 0)btn->set_text( std::to_string( harvest_num ) );
 	else btn->set_text("");
+	assert( btn->get_parent() );
+	btn->get_parent()->layout_children();
 }
 
 UIElem* Inventory::get_seed_item( const PlantType* plant ) {
@@ -1021,4 +1003,9 @@ UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
 	std::unordered_map<PlantType const*, UIElem*>::iterator it = plant_to_harvest_item.find( plant );
 	assert( it != plant_to_harvest_item.end() );
 	return it->second;
+}
+
+void PlantMode::change_num_coins(int change) {
+	num_coins += change;
+	UI.coins_text->set_text( std::to_string(num_coins) );
 }
