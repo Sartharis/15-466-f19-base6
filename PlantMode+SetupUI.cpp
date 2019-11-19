@@ -12,8 +12,8 @@ Load< Sound::Sample > shop_close_sound( LoadTagDefault, []() -> Sound::Sample co
 struct {
 	struct {
 		Sprite const* background = nullptr;
+		Sprite const* hand = nullptr;
 		Sprite const* watering_can = nullptr;
-		Sprite const* glove = nullptr;
 		Sprite const* shovel = nullptr;
 		Sprite const* fertilizer = nullptr;
 	} tools;
@@ -30,31 +30,34 @@ struct {
 	struct {
 		Sprite const* icon = nullptr;
 		Sprite const* background = nullptr;
-		Sprite const* close = nullptr;
 	} magicbook;
+	Sprite const* close = nullptr;
+	Sprite const* coins = nullptr;
 } sprites;
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	// tools
 	sprites.tools.background = &ret->lookup("toolsBackground");
+	sprites.tools.hand = &ret->lookup("hand");
 	sprites.tools.watering_can = &ret->lookup("wateringCan");
-	sprites.tools.glove = &ret->lookup("glove");
 	sprites.tools.shovel = &ret->lookup("shovel");
 	sprites.tools.fertilizer = &ret->lookup("fertilizer");
 	// storage
-	sprites.storage.icon = &ret->lookup("seedBagClosed"); //TODO
+	sprites.storage.icon = &ret->lookup("seedBagClosed");
 	sprites.storage.background = &ret->lookup("seedMenuBackground");
 	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
 	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
 	// magicbook
 	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
 	sprites.magicbook.background = &ret->lookup("magicbookBackground");
-	sprites.magicbook.close = &ret->lookup("magicbookClose");
+	// other
+	sprites.coins = &ret->lookup("coins");
+	sprites.close = &ret->lookup("magicbookClose");
 });
 
 void PlantMode::setup_UI() {
-	//---------------- toolbar ------------------
+	// root
 	UI.root = new UIElem(
 		nullptr, // parent
 		glm::vec2(0, 0), // anchor
@@ -64,6 +67,22 @@ void PlantMode::setup_UI() {
 		"", // text
 		glm::vec2(0,0), // sprite pos
 		0.0f); // sprite scale
+
+	//---------------- money ------------------
+	UIElem* money_icon = new UIElem(
+		UI.root,
+		glm::vec2(1, 0), // anchor
+		glm::vec2(-160, 20), // pos
+		glm::vec2(0, 0), // size
+		sprites.coins, "coins",
+		glm::vec2(0, 0), // sprite pos
+		0.4f);
+	UI.coins_text = new UIElem(money_icon);
+	UI.coins_text->set_scale(0.68f);
+	UI.coins_text->set_text("hoofda");
+	UI.coins_text->set_position(glm::vec2(76, 6), glm::vec2(0, 0), screen_size);
+
+	//---------------- toolbar ------------------
 
 	// toolbar background
 	UIElem* toolbar_bg = new UIElem(
@@ -76,15 +95,15 @@ void PlantMode::setup_UI() {
 		glm::vec2(-270,0), // sprite pos
 		0.4f); // sprite scale
 
-	// glove
+	// default hand
 	UI.toolbar.glove = new UIElem(
 		toolbar_bg, // parent
 		glm::vec2(0, 1), // anchor
 		glm::vec2(60, -84), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.glove, // sprite
+		sprites.tools.hand, // sprite
 		"glove", // text
-		glm::vec2(32, 32), // sprite pos
+		glm::vec2(0, 0), // sprite pos
 		0.3f, // sprite scale
 		true); 
 	UI.toolbar.glove->set_on_mouse_enter([this](){
@@ -94,8 +113,7 @@ void PlantMode::setup_UI() {
 		for (auto c : UI.toolbar.glove->children) c->hide();
 	});
 	UI.toolbar.glove->set_on_mouse_down([this](){
-		if( current_tool == glove ) current_tool = none;
-		else current_tool = glove;
+		set_current_tool( default_hand );
 	});
 	new UIElem(
 		UI.toolbar.glove,
@@ -125,8 +143,8 @@ void PlantMode::setup_UI() {
 		for (auto c : UI.toolbar.watering_can->children) c->hide();
 	});
 	UI.toolbar.watering_can->set_on_mouse_down([this](){
-		if( current_tool == watering_can ) current_tool = none;
-		else current_tool = watering_can;
+		if( current_tool == watering_can ) set_current_tool( default_hand );
+		else set_current_tool( watering_can );
 	});
 	new UIElem(
 		UI.toolbar.watering_can,
@@ -156,8 +174,8 @@ void PlantMode::setup_UI() {
 		for (auto c : UI.toolbar.fertilizer->children) c->hide();
 	});
 	UI.toolbar.fertilizer->set_on_mouse_down([this](){
-		if( current_tool == fertilizer ) current_tool = none;
-		else current_tool = fertilizer;
+		if( current_tool == fertilizer ) set_current_tool( default_hand );
+		else set_current_tool( fertilizer );
 	});
 	new UIElem(
 		UI.toolbar.fertilizer,
@@ -187,8 +205,8 @@ void PlantMode::setup_UI() {
 		for (auto c : UI.toolbar.shovel->children) c->hide();
 	});
 	UI.toolbar.shovel->set_on_mouse_down([this](){
-		if( current_tool == shovel ) current_tool = none;
-		else current_tool = shovel;
+		if( current_tool == shovel ) set_current_tool( default_hand );
+		else set_current_tool( shovel );
 	});
 	new UIElem(
 		UI.toolbar.shovel,
@@ -203,6 +221,7 @@ void PlantMode::setup_UI() {
 	//---------------- storage ------------------
 	UIElem* storage_bg = nullptr;
 	UIElem* storage_icon = nullptr;
+	UIElem* storage_close = nullptr;
 	UIElem* seed_tab = nullptr;
 	UIElem* harvest_tab = nullptr;
 	UIElem* seed_tab_items = nullptr;
@@ -218,6 +237,15 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // sprite anchor
 		0.5f);
 	storage_bg->set_z_index(2);
+
+	storage_close = new UIElem(
+		storage_bg,
+		glm::vec2(0, 0),
+		glm::vec2(375, -350),
+		glm::vec2(40, 40),
+		sprites.close, "close storage",
+		glm::vec2(20, 20),
+		0.3f, true, true, false);
 
 	storage_icon = new UIElem(
 		UI.root,
@@ -241,12 +269,12 @@ void PlantMode::setup_UI() {
 	seed_tab = new UIElem(
 		storage_bg,
 		glm::vec2(0, 0), // anchor
-		glm::vec2(265, -374), // pos
+		glm::vec2(215, -374), // pos
 		glm::vec2(64, 64),
 		sprites.storage.seeds_tab,
 		"seeds tab",
 		glm::vec2(32, 32),
-		0.6f, true, true);
+		0.6f, true, true, false);
 	UIElem* seeds_tab_text = new UIElem(
 		seed_tab,
 		glm::vec2(0, 0), // anchor
@@ -263,12 +291,12 @@ void PlantMode::setup_UI() {
 	harvest_tab = new UIElem(
 		storage_bg,
 		glm::vec2(0, 0), // anchor
-		glm::vec2(345, -374), // pos
+		glm::vec2(295, -374), // pos
 		glm::vec2(64, 64),
 		sprites.storage.harvest_tab,
 		"harvest tab",
 		glm::vec2(32, 32),
-		0.5f, true, true);
+		0.5f, true, true, false);
 	harvest_tab->set_z_index(-1);
 	UIElem* harvest_tab_text = new UIElem(
 		harvest_tab,
@@ -292,9 +320,10 @@ void PlantMode::setup_UI() {
 	storage_icon->set_on_mouse_leave([storage_icon_text](){
 		storage_icon_text->hide();
 	});
-	storage_icon->set_on_mouse_down([this, storage_icon, seed_tab, harvest_tab, storage_bg](){
+	storage_icon->set_on_mouse_down([this, storage_icon, storage_close, seed_tab, harvest_tab, storage_bg](){
 		Sound::play( *shop_open_sound, 0.0f, 1.0f );
 		storage_icon->hide();
+		storage_close->show();
 		seed_tab->show();
 		harvest_tab->show();
 		storage_bg->set_position(
@@ -303,18 +332,32 @@ void PlantMode::setup_UI() {
 				screen_size);
 	});
 
+	storage_close->set_on_mouse_down([this, seed_tab, harvest_tab, storage_icon, storage_close, storage_bg](){
+		Sound::play( *shop_close_sound, 0.0f, 1.0f );
+		seed_tab->hide();
+		harvest_tab->hide();
+		storage_close->hide();
+		storage_icon->show();
+		storage_bg->set_position(
+				storage_bg->get_position() + glm::vec2(0, 290),
+				storage_bg->get_anchor(),
+				screen_size);
+	});
+
 	seed_tab->set_on_mouse_enter([seeds_tab_text](){
+		Sound::play( *button_hover_sound, 0.0f, 1.0f );
 		seeds_tab_text->show();
 	});
 	seed_tab->set_on_mouse_leave([seeds_tab_text](){
 		seeds_tab_text->hide();
 	});
-	seed_tab->set_on_mouse_down([this, seed_tab, seed_tab_items, harvest_tab, harvest_tab_items, storage_icon, storage_bg](){
+	seed_tab->set_on_mouse_down([this, seed_tab, seed_tab_items, harvest_tab, harvest_tab_items, storage_icon, storage_close, storage_bg](){
 		if (UI.storage_current_tab == 0) {
 			Sound::play( *shop_close_sound, 0.0f, 1.0f );
 			seed_tab->hide();
 			harvest_tab->hide();
 			storage_icon->show();
+			storage_close->hide();
 			storage_bg->set_position(
 					storage_bg->get_position() + glm::vec2(0, 290),
 					storage_bg->get_anchor(),
@@ -348,17 +391,19 @@ void PlantMode::setup_UI() {
 	});
 	
 	harvest_tab->set_on_mouse_enter([harvest_tab_text](){
+		Sound::play( *button_hover_sound, 0.0f, 1.0f );
 		harvest_tab_text->show();
 	});
 	harvest_tab->set_on_mouse_leave([harvest_tab_text](){
 		harvest_tab_text->hide();
 	});
-	harvest_tab->set_on_mouse_down([this, seed_tab, seed_tab_items, harvest_tab, harvest_tab_items, storage_icon, storage_bg](){
+	harvest_tab->set_on_mouse_down([this, seed_tab, seed_tab_items, harvest_tab, harvest_tab_items, storage_icon, storage_close, storage_bg](){
 		if (UI.storage_current_tab == 1) {
 			Sound::play( *shop_close_sound, 0.0f, 1.0f );
 			seed_tab->hide();
 			harvest_tab->hide();
 			storage_icon->show();
+			storage_close->hide();
 			storage_bg->set_position(
 					storage_bg->get_position() + glm::vec2(0, 290),
 					storage_bg->get_anchor(),
@@ -396,7 +441,15 @@ void PlantMode::setup_UI() {
 		UIElem* harvest_icon = nullptr;
 		plant->make_menu_items(screen_size, &selectedPlant, &current_tool, &seed_icon, &harvest_icon);
 		assert(seed_icon); assert(harvest_icon);
+		seed_icon->set_on_mouse_enter([this, plant](){
+			tool_name = plant->get_name() + " x" + std::to_string( inventory.get_seeds_num( plant ) ) + " :";
+			tool_description = plant->get_description();
+		});
+		seed_icon->set_on_mouse_leave([this](){
+			set_current_tool(current_tool);
+		});
 
+		// the small number on top left of seed / harvest
 		UIElem* seed = new UIElem( // will get automatically laid out anyway
 			seed_tab_items,
 			glm::vec2(0, 0), // anchor
@@ -420,9 +473,6 @@ void PlantMode::setup_UI() {
 	add_plant_buttons( cactus_plant );
 	add_plant_buttons( fireflower_plant );
 	add_plant_buttons( corpseeater_plant );
-
-	UI.seed_tab_items = seed_tab_items;
-	UI.harvest_tab_items = harvest_tab_items;
 	
 	//---------------- magic book ------------------
 	UIElem* magicbook_icon = new UIElem(
@@ -451,8 +501,8 @@ void PlantMode::setup_UI() {
 
 	UIElem* magicbook_bg = new UIElem(
 		UI.root,
-		glm::vec2(0.15f, 0.1f), // anchor
-		glm::vec2(0, 0), // pos
+		glm::vec2(0.5f, 0.5f), // anchor
+		glm::vec2(-459, -310), // pos
 		glm::vec2(0, 0), // size
 		sprites.magicbook.background, "magicbook background",
 		glm::vec2(0, 0),
@@ -467,9 +517,9 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(830, 30), // pos
 		glm::vec2(40, 40), // size
-		sprites.magicbook.close, "close magicbook",
+		sprites.close, "close magicbook",
 		glm::vec2(20, 20),
-		0.35f, true);
+		0.35f, true, false, false);
 	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
 		magicbook_bg->hide();
 	});
@@ -493,11 +543,11 @@ void PlantMode::setup_UI() {
 			glm::vec2(0, 0), // pos
 			glm::vec2(270, 32), // size
 			nullptr, text,
-			glm::vec2(6.0f, 2.36f), // text anchor
+			glm::vec2(6.0f, 1.0f), // text anchor
 			0.54f, true);
 		entry->set_on_mouse_down([this, plant](){
-			if( energy >= plant->get_cost() ){
-				energy -= plant->get_cost();
+			if( num_coins >= plant->get_cost() ){
+			change_num_coins( -plant->get_cost() );
 				inventory.change_seeds_num( plant, 1 );
 			}
 		});

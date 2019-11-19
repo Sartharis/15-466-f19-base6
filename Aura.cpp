@@ -83,7 +83,7 @@ inline float rand5() {
 Aura::Dot::Dot(glm::vec3 _center, Aura::Type type) : center(_center) {
 	timer = rand5() * 6.2832f;
 	dot_radius = rand5() * 0.03f + 0.015f;
-	float_height = rand5() * 0.6f + 0.2f;
+	float_height = (type==Aura::fire || type==Aura::aqua) ? rand5() * 0.6f + 0.2f : rand5() * 0.3f + 0.1f;
 	float_azimuth = rand5() * 2.0f * 3.1415926535f;
 	float_radius = (type==Aura::fire || type==Aura::aqua) ? rand5() * 0.4f + 0.1f : rand5() * 0.8f + 0.2f;
 	// float_speed_horizontal = glm::radians(rand5() * 30.0f + 45.0f);
@@ -104,7 +104,7 @@ void Aura::Dot::update_position_outward(float elapsed) {
 	if(float_radius > 1.0f) float_radius -= 0.8f;
 	position = center + float_radius * glm::vec3( 
 		cos(float_azimuth), sin(float_azimuth), 
-		float_height + 0.15f * sin(timer * float_speed_vertical) );
+		float_height );
 }
 
 void Aura::Dot::update_position_inward(float elapsed) {

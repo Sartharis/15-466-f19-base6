@@ -28,8 +28,8 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 	switch (action) {
 	case mouseDown:
 		if (inside(mouse_pos)) {
+			if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 			if (on_mouse_down) {
-				if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 				on_mouse_down();
 			}
 			return mouseDown;
@@ -48,8 +48,8 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 
 	case mouseEnter:
 		if (!hovered && inside(mouse_pos)) {
+			if (default_sound) Sound::play( *button_hover_sound, 0.0f, 1.0f );
 			if (on_mouse_enter) {
-				if (default_sound) Sound::play( *button_hover_sound, 0.0f, 1.0f );
 				on_mouse_enter();
 			}
 			hovered = true;
