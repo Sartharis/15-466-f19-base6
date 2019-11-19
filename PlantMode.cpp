@@ -35,13 +35,6 @@ Sprite const* order_background_sprite = nullptr;
 
 struct {
 	struct {
-		Sprite const* background = nullptr;
-		Sprite const* watering_can = nullptr;
-		Sprite const* glove = nullptr;
-		Sprite const* shovel = nullptr;
-		Sprite const* fertilizer = nullptr;
-	} tools;
-	struct {
 		Sprite const* regular = nullptr;
 		Sprite const* hand = nullptr;
 	} cursor;
@@ -71,36 +64,16 @@ Load< Sound::Sample > land_ambience( LoadTagDefault, []() -> Sound::Sample const
 	return new Sound::Sample( data_path( "LandAmbience.wav" ) );
 } );
 
-Load< Sound::Sample > shop_open_sound( LoadTagDefault, []() -> Sound::Sample const* {
-	return new Sound::Sample( data_path( "ShopOpen.wav" ) );
- } );
-
-Load< Sound::Sample > shop_close_sound( LoadTagDefault, []() -> Sound::Sample const* {
-	return new Sound::Sample( data_path( "ShopClose.wav" ) );
-} );
-
 // Sprites -------------------------------------------------------------------------------------------
-// TODO: rename to sprite_atlas since this contains a lot of non-magicbook stuff
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	std::cout << "----2D sprites loaded (solidarity):" << std::endl;
 	for( auto p : ret->sprites ) {
 		std::cout << p.first << std::endl;
 	}
-	// tools
-	sprites.tools.background = &ret->lookup("toolsBackground");
-	sprites.tools.watering_can = &ret->lookup("wateringCan");
-	sprites.tools.glove = &ret->lookup("glove");
-	sprites.tools.shovel = &ret->lookup("shovel");
-	sprites.tools.fertilizer = &ret->lookup("fertilizer");
 	// cursor
 	sprites.cursor.regular = &ret->lookup("cursorNormal");
 	sprites.cursor.hand = &ret->lookup("cursorHand");
-	// storage
-	sprites.storage.icon = &ret->lookup("seedBagClosed"); //TODO
-	sprites.storage.background = &ret->lookup("seedMenuBackground");
-	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
-	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
 	// magicbook
 	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
 	sprites.magicbook.background = &ret->lookup("magicbookBackground");
@@ -137,6 +110,10 @@ PlantMode::PlantMode()
 
 	{
 		selectedPlant = test_plant;
+	}
+
+	{//init UI
+		setup_UI();
 	}
 
 	//DEBUG - ADD ALL SEEDS & init harvest to all 0
@@ -249,321 +226,8 @@ PlantMode::PlantMode()
 	all_orders.push_back( order6 );
 	all_orders.push_back( order7 );
 
-	{ // init UI
-
-		UI.root = new UIElem(
-			nullptr, // parent
-			glm::vec2(0, 0), // anchor
-			glm::vec2(200, 100), // position
-			glm::vec2(200, 150), // size
-			nullptr, // sprite
-			"", // text
-			glm::vec2(0,0), // sprite pos
-			0.0f); // sprite scale
-
-		// toolbar background
-		UI.toolbar.background = new UIElem(
-			UI.root, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(0, 0), // position
-			glm::vec2(0, 0), // size
-			sprites.tools.background, // sprite
-			"tools background", // text
-			glm::vec2(-270,0), // sprite pos
-			0.4f); // sprite scale
-
-		// glove
-		UI.toolbar.glove = new UIElem(
-			UI.toolbar.background, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(60, -84), // position
-			glm::vec2(64, 64), // size
-			sprites.tools.glove, // sprite
-			"glove", // text
-			glm::vec2(32, 32), // sprite pos
-			0.3f, // sprite scale
-			true); 
-		UI.toolbar.glove->set_on_mouse_enter([this](){
-			for (auto c : UI.toolbar.glove->children) c->show();
-		});
-		UI.toolbar.glove->set_on_mouse_leave([this](){
-			for (auto c : UI.toolbar.glove->children) c->hide();
-		});
-		UI.toolbar.glove->set_on_mouse_down([this](){
-			if( current_tool == glove ) current_tool = none;
-			else current_tool = glove;
-		});
-		new UIElem(
-			UI.toolbar.glove,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(0, 48), // pos
-			glm::vec2(0, 0),
-			nullptr,
-			"glove",
-			glm::vec2(0, 0),
-			0.4f, false, true); // ..interactive, hidden
-
-		// watering can
-		UI.toolbar.watering_can = new UIElem(
-			UI.toolbar.background, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(142, -79), // position
-			glm::vec2(64, 64), // size
-			sprites.tools.watering_can, // sprite
-			"watering can", // text
-			glm::vec2(32, 32), // sprite pos
-			0.3f, // sprite scale
-			true); 
-		UI.toolbar.watering_can->set_on_mouse_enter([this](){
-			for (auto c : UI.toolbar.watering_can->children) c->show();
-		});
-		UI.toolbar.watering_can->set_on_mouse_leave([this](){
-			for (auto c : UI.toolbar.watering_can->children) c->hide();
-		});
-		UI.toolbar.watering_can->set_on_mouse_down([this](){
-			if( current_tool == watering_can ) current_tool = none;
-			else current_tool = watering_can;
-		});
-		new UIElem(
-			UI.toolbar.watering_can,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(-4, 44), // pos
-			glm::vec2(0, 0),
-			nullptr,
-			"watering can",
-			glm::vec2(0, 0),
-			0.4f, false, true); // ..interactive, hidden
-
-		// fertilizer
-		UI.toolbar.fertilizer = new UIElem(
-			UI.toolbar.background, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(230, -94), // position
-			glm::vec2(64, 64), // size
-			sprites.tools.fertilizer, // sprite
-			"fertilizer", // text
-			glm::vec2(32, 32), // sprite pos
-			0.3f, // sprite scale
-			true); 
-		UI.toolbar.fertilizer->set_on_mouse_enter([this](){
-			for (auto c : UI.toolbar.fertilizer->children) c->show();
-		});
-		UI.toolbar.fertilizer->set_on_mouse_leave([this](){
-			for (auto c : UI.toolbar.fertilizer->children) c->hide();
-		});
-		UI.toolbar.fertilizer->set_on_mouse_down([this](){
-			if( current_tool == fertilizer ) current_tool = none;
-			else current_tool = fertilizer;
-		});
-		new UIElem(
-			UI.toolbar.fertilizer,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(0, 65), // pos
-			glm::vec2(0, 0),
-			nullptr,
-			"fertilizer",
-			glm::vec2(0, 0),
-			0.4f, false, true); // ..interactive, hidden
-
-		// shovel
-		UI.toolbar.shovel = new UIElem(
-			UI.toolbar.background, // parent
-			glm::vec2(0, 1), // anchor
-			glm::vec2(315, -87), // position
-			glm::vec2(64, 64), // size
-			sprites.tools.shovel, // sprite
-			"shovel", // text
-			glm::vec2(32, 32), // sprite pos
-			0.3f, // sprite scale
-			true); 
-		UI.toolbar.shovel->set_on_mouse_enter([this](){
-			for (auto c : UI.toolbar.shovel->children) c->show();
-		});
-		UI.toolbar.shovel->set_on_mouse_leave([this](){
-			for (auto c : UI.toolbar.shovel->children) c->hide();
-		});
-		UI.toolbar.shovel->set_on_mouse_down([this](){
-			if( current_tool == shovel ) current_tool = none;
-			else current_tool = shovel;
-		});
-		new UIElem(
-			UI.toolbar.shovel,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(0, 46), // pos
-			glm::vec2(0, 0),
-			nullptr,
-			"shovel",
-			glm::vec2(0, 0),
-			0.4f, false, true); // ..interactive, hidden
-
-
-		//------ remaining old UI setup ------
+	{ // init UI (just left with orders for now)
 		Button* btn;
-
-		// button that toggles storage menu
-		UI.storage.icon_btn = new Button (
-			screen_size, Button::br, glm::vec2(-190, -80), // position
-			glm::vec2(64, 64), // size
-			sprites.storage.icon, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
-			"storage", // text
-			glm::vec2(0, -20), // text anchor
-			0.4f, // text scale
-			[this]() {
-				Sound::play( *shop_open_sound, 0.0f, 1.0f );
-				UI.storage.hidden = false;				
-				UI.storage.icon_btn->hidden = true;
-				for( int i=0; i<UI.storage.tabs.size(); i++) {
-					UI.storage.tabs[i]->hidden = false;
-					UI.storage.tabs[i]->hidden = false;
-				}
-			} );
-		UI.all_buttons.push_back( UI.storage.icon_btn );
-
-		// seeds tab button
-		btn = new Button (
-			screen_size, Button::br, glm::vec2(-300, -380), // position
-			glm::vec2(64, 64), // size
-			sprites.storage.seeds_tab, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.6f, // sprite scale
-			Button::show_text, // hover behavior
-			"seeds", // text
-			glm::vec2(5, 36), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( UI.storage.current_tab == 0 ) {
-					Sound::play( *shop_close_sound, 0.0f, 1.0f );
-					UI.storage.hidden = true;
-					UI.storage.icon_btn->hidden = false;
-					for( int i=0; i<UI.storage.tabs.size(); i++) {
-						UI.storage.tabs[i]->hidden = true;
-						UI.storage.tabs[i]->hidden = true;
-					}
-				} else {
-					UI.storage.current_tab = 0;
-				}
-			}, true );
-		UI.storage.tabs.push_back( btn );
-		UI.all_buttons.push_back( btn );
-
-		// harvest tab button
-		btn = new Button (
-			screen_size, Button::br, glm::vec2(-220, -380), // position
-			glm::vec2(64, 64), // size
-			sprites.storage.harvest_tab, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.5f, // sprite scale
-			Button::show_text, // hover behavior
-			"harvest", // text
-			glm::vec2(12, 44), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if( UI.storage.current_tab == 1 ) {
-					UI.storage.hidden = true;
-					UI.storage.icon_btn->hidden = false;
-					for( int i=0; i<UI.storage.tabs.size(); i++) {
-						UI.storage.tabs[i]->hidden = true;
-						UI.storage.tabs[i]->hidden = true;
-					}
-				} else {
-					UI.storage.current_tab = 1;
-				}
-			}, true );
-		UI.storage.tabs.push_back( btn );
-		UI.all_buttons.push_back( btn );
-
-		//---- plant buttons
-		auto add_plant_button = [this](PlantType const* plant) {
-			Button* seed = nullptr;
-			Button* harvest = nullptr;
-			plant->make_buttons( screen_size, &selectedPlant, &current_tool, &seed, &harvest );
-			assert(seed); assert(harvest);
-			inventory.set_seed_btn( plant, seed );
-			inventory.set_harvest_btn( plant, harvest );
-			UI.storage.all_seeds.push_back(seed);
-			UI.storage.all_harvest.push_back(harvest);
-			UI.all_buttons.push_back(seed);
-			UI.all_buttons.push_back(harvest);
-		};
-
-		add_plant_button( test_plant );
-		add_plant_button( friend_plant );
-		add_plant_button( vampire_plant );
-		add_plant_button( cactus_plant );
-		add_plant_button( fireflower_plant );
-		add_plant_button( corpseeater_plant );
-
-		// button that toggles magicbook
-		UI.magicbook.icon_btn = new Button (
-			screen_size, Button::br, glm::vec2(-110, -80), // position
-			glm::vec2(64, 64), // size
-			sprites.magicbook.icon, // sprite
-			glm::vec2(32, 32), // sprite anchor
-			0.3f, // sprite scale
-			Button::show_text, // hover behavior
-			"magic book", // text
-			glm::vec2(0, -20), // text anchor
-			0.4f, // text scale
-			[this]() {
-				UI.magicbook.hidden = !UI.magicbook.hidden;				
-				UI.magicbook.close_btn->hidden = false;
-				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
-					UI.magicbook.items[i]->hidden = !UI.magicbook.items[i]->hidden;
-				}
-			} );
-		UI.all_buttons.push_back( UI.magicbook.icon_btn );
-
-		// close button of magicbook
-		UI.magicbook.close_btn = new Button (
-			screen_size, Button::tl, UI.magicbook.tl_offset + glm::vec2(830, 30), // position
-			glm::vec2(32, 32), // size
-			sprites.magicbook.close, // sprite
-			glm::vec2(16, 16), // sprite anchor
-			0.3f, // sprite scale
-			Button::none, // hover behavior
-			"close", // text
-			glm::vec2(0, 0), // text anchor
-			0.4f, // text scale
-			[this]() {
-				UI.magicbook.hidden = true;
-				UI.magicbook.close_btn->hidden = true;
-				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
-					UI.magicbook.items[i]->hidden = true;
-				}
-			}, true );
-		UI.all_buttons.push_back( UI.magicbook.close_btn );
-
-		// magicbook buy choices
-		auto add_buy_choice = [this]( PlantType const* plant ) {
-			std::string text = "Buy " + plant->get_name() + " seed - $" + std::to_string( plant->get_cost() );
-			Button* btn = new Button (
-				screen_size, Button::tl, glm::vec2(0, 0), // position gets dynamically set in draw
-				glm::vec2(290, 32), // size
-				nullptr, // no sprite
-				glm::vec2(0, 0), // no sprite so sprite anchor doesn't matter
-				1.0f,
-				Button::darken_text, 
-				text, // will be set on draw
-				glm::vec2(6, 2.36), // text anchor
-				0.54f, // text scale
-				[this, plant]() {
-					if( energy >= plant->get_cost() ){
-						energy -= plant->get_cost();
-						inventory.change_seeds_num( plant, 1 );
-					}
-				}, true, glm::u8vec4(92, 76, 53, 255));
-			UI.magicbook.items.push_back( btn );
-			UI.all_buttons.push_back( btn );
-		};
-		add_buy_choice( test_plant );
-		add_buy_choice( friend_plant );
-		add_buy_choice( cactus_plant );
-		add_buy_choice( vampire_plant );
-		add_buy_choice( fireflower_plant );
-		add_buy_choice( corpseeater_plant );
 
 		btn = new Button(
 			screen_size, Button::tr, glm::vec2( -360.0f, 150.0f ), // position
@@ -794,14 +458,6 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			selectedPlant = fireflower_plant;
 			break;
-		/*
-		case SDLK_SPACE:
-			if(is_magicbook_open==false){
-				is_magicbook_open = true;
-			}else{
-				is_magicbook_open = false;
-			}
-		*/
 		case SDLK_5:
 			selectedPlant = cactus_plant;
 			break;
@@ -999,22 +655,22 @@ void PlantMode::update(float elapsed)
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case glove:
-			cursor.sprite = sprites.tools.glove;
+			cursor.sprite = UI.toolbar.glove->get_sprite();
 			cursor.scale = 0.24f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case watering_can:
-			cursor.sprite = sprites.tools.watering_can;
+			cursor.sprite = UI.toolbar.watering_can->get_sprite();
 			cursor.scale = 0.24f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case fertilizer:
-			cursor.sprite = sprites.tools.fertilizer;
+			cursor.sprite = UI.toolbar.fertilizer->get_sprite();
 			cursor.scale = 0.24f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case shovel:
-			cursor.sprite = sprites.tools.shovel;
+			cursor.sprite = UI.toolbar.shovel->get_sprite();
 			cursor.scale = 0.24f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
@@ -1146,139 +802,18 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			{
 				DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-				if (UI.root) UI.root->draw(draw_sprites, draw_text);
-			}
-		}
 
-		{//---- magicbook
-			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			UI.magicbook.icon_btn->draw_sprite( draw_sprites );
-			if( !UI.magicbook.hidden ) {
-				DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-				// background
-				draw_sprites.draw( *sprites.magicbook.background, 
-						glm::vec2(UI.magicbook.tl_offset.x, screen_size.y - UI.magicbook.tl_offset.y), 0.9f );
-				// close button
-				UI.magicbook.close_btn->draw_sprite( draw_sprites );
-				// items
-				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
-					glm::vec2 item_position = UI.magicbook.get_item_position(i);
-					UI.magicbook.items[i]->set_position(Button::tl, item_position, screen_size);
-					UI.magicbook.items[i]->hidden = false;
-					UI.magicbook.items[i]->draw_sprite( draw_text );
-				}
-			} else {
-				for( int i=0; i<UI.magicbook.items.size(); i++ ) {
-					UI.magicbook.items[i]->hidden = true;
-				}
-			}
-		}
+				// std::cout << "-----------------------------------" << std::endl;
+				UI.seed_tab_items->layout_children();
+				UI.harvest_tab_items->layout_children();
 
-		{ //sprites
-			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			
-			/*
-			//---- tools
-			// background
-			draw_sprites.draw( *sprites.tools.background, glm::vec2(-270, 0), 0.4f );
-			// tools
-			for (int i=0; i<UI.tools.size(); i++) {
-				UI.tools[i]->draw_sprite( draw_sprites );
-			}
-			*/
+				std::vector<UIElem*> elems = std::vector<UIElem*>();
+				UI.root->gather(elems);
+				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
 
-			//---- storage
-			if( !UI.storage.hidden ) {
-				// unselected tab(s)
-				for( int i=0; i<UI.storage.tabs.size(); i++) {
-					if( i != UI.storage.current_tab ) UI.storage.tabs[i]->draw_sprite( draw_sprites );
+				for( int i=0; i<elems.size(); i++ ){
+					elems[i]->draw_self( draw_sprites, draw_text );
 				}
-				// background
-				draw_sprites.draw( *sprites.storage.background, glm::vec2(screen_size.x, 290) + UI.storage.br_offset, 0.5f );
-				// selected tab
-				UI.storage.tabs[UI.storage.current_tab]->draw_sprite( draw_sprites );
-			} else {
-				// background only, no tabs
-				draw_sprites.draw( *sprites.storage.background, glm::vec2(screen_size.x, 0) + UI.storage.br_offset, 0.5f );
-			}
-			// icon
-			UI.storage.icon_btn->draw_sprite( draw_sprites );
-		}
-		//---- plant-related (seed & harvest)
-		if( !UI.storage.hidden ){
-			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			DrawSprites draw_plants( *plants_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-
-			auto plant_to_seeds = inventory.get_plant_to_seeds();
-			auto plant_to_harvest = inventory.get_plant_to_harvest();
-
-			// list of all plant-seed pairs
-			std::vector< std::pair<PlantType const*, int> > seeds_to_draw = {};
-			for( auto p : plant_to_seeds ) {
-				Button* seed_btn = inventory.get_seed_btn( p.first );
-				seed_btn->hidden = true;
-				if( p.second > 0 ) seeds_to_draw.push_back( p );
-			}
-			// list of all plant-harvest pairs
-			std::vector< std::pair<PlantType const*, int> > harvest_to_draw = {};
-			for( auto p : plant_to_harvest ) {
-				Button* harvest_btn = inventory.get_harvest_btn( p.first );
-				harvest_btn->hidden = true;
-				if( p.second > 0 ) harvest_to_draw.push_back( p );
-			}
-
-			if( UI.storage.current_tab == 0 ) { // seeds tab
-				// hide harvest btns
-				for( int i=0; i<harvest_to_draw.size(); i++ ) {
-					PlantType const* plant = harvest_to_draw[i].first;
-					inventory.get_harvest_btn( plant )->hidden = true;
-				}
-				// std::sort( seeds_to_draw.begin(), seeds_to_draw.end(), Inventory::comp_fn );
-				for( int i=0; i<seeds_to_draw.size(); i++ ) {
-					PlantType const* plant = seeds_to_draw[i].first;
-					int num_seeds = seeds_to_draw[i].second;
-					Button* seed_btn = inventory.get_seed_btn( plant );
-					glm::vec2 cell_position = UI.storage.get_cell_position(i);
-					seed_btn->hidden = false;
-					seed_btn->set_position(Button::br, cell_position, screen_size);
-					seed_btn->draw_sprite( draw_plants );
-					// seed num text
-					glm::vec2 text_position = screen_size + cell_position;
-					draw_text.draw_text( std::to_string(num_seeds), 
-							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(2, -2), 0.4f );
-				}
-
-			} else if( UI.storage.current_tab == 1 ) {
-				// hide seed btns
-				for( int i=0; i<seeds_to_draw.size(); i++ ) {
-					PlantType const* plant = seeds_to_draw[i].first;
-					inventory.get_harvest_btn( plant )->hidden = true;
-				}
-				// std::sort( harvest_to_draw.begin(), harvest_to_draw.end(), Inventory::comp_fn );
-				for( int i=0; i<harvest_to_draw.size(); i++ ) {
-					PlantType const* plant = harvest_to_draw[i].first;
-					int num_harvest = harvest_to_draw[i].second;
-					Button* harvest_btn = inventory.get_harvest_btn( plant );
-					glm::vec2 cell_position = UI.storage.get_cell_position(i);
-					harvest_btn->hidden = false;
-					harvest_btn->set_position(Button::br, cell_position, screen_size);
-					harvest_btn->draw_sprite( draw_plants );
-					// harvest num text
-					glm::vec2 text_position = screen_size + cell_position;
-					draw_text.draw_text( std::to_string(num_harvest), 
-							glm::vec2(text_position.x, screen_size.y - text_position.y) + glm::vec2(2, -2), 0.4f );
-				}
-			}
-		} else {
-			auto plant_to_seeds = inventory.get_plant_to_seeds();
-			auto plant_to_harvest = inventory.get_plant_to_harvest();
-			for( auto p : plant_to_seeds ) {
-				Button* seed_btn = inventory.get_seed_btn( p.first );
-				seed_btn->hidden = true;
-			}
-			for( auto p : plant_to_harvest ) {
-				Button* harvest_btn = inventory.get_harvest_btn( p.first );
-				harvest_btn->hidden = true;
 			}
 		}
 
@@ -1410,7 +945,7 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			UI.all_buttons[i]->update_position( screen_size );
 		}
 	}
-	if (UI.root) UI.root->on_resize(screen_size);
+	if (UI.root) UI.root->update_absolute_position(screen_size);
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 
@@ -1429,15 +964,22 @@ int Inventory::get_seeds_num(const PlantType* plant )
 
 void Inventory::change_seeds_num(const PlantType* plant, int seed_change )
 {
+	assert( plant );
+	UIElem* btn = get_seed_item( plant );
+	int seed_num = 0;
 	std::unordered_map<PlantType const*, int>::iterator it = plant_to_seeds.find( plant );
 	if( it != plant_to_seeds.end() )
 	{
 		it->second += seed_change;
+		seed_num = it->second;
 	}
 	else
 	{
-		if( plant )plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
+		plant_to_seeds.insert( std::make_pair( plant, seed_change ) );
+		seed_num = seed_change;
 	}
+	if( seed_num > 0)btn->set_text( std::to_string( seed_num ) );
+	else btn->set_text("");
 }
 
 int Inventory::get_harvest_num( const PlantType* plant ) {
@@ -1451,22 +993,32 @@ int Inventory::get_harvest_num( const PlantType* plant ) {
 }
 
 void Inventory::change_harvest_num( const PlantType* plant, int harvest_change ) {
+	assert( plant );
+	UIElem* btn = get_harvest_item( plant );
+	int harvest_num = 0;
 	std::unordered_map<PlantType const*, int>::iterator it = plant_to_harvest.find( plant );
-	if( it != plant_to_harvest.end() ) {
+	if( it != plant_to_harvest.end() ) 
+	{
 		it->second += harvest_change;
-	} else {
-		if( plant )plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
+		harvest_num = it->second;
+	} 
+	else
+	{
+		plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
+		harvest_num = harvest_change;
 	}
+	if( harvest_num > 0)btn->set_text( std::to_string( harvest_num ) );
+	else btn->set_text("");
 }
 
-Button* Inventory::get_seed_btn( const PlantType* plant ) {
-	std::unordered_map<PlantType const*, Button*>::iterator it = plant_to_seed_btn.find( plant );
-	assert( it != plant_to_seed_btn.end() );
+UIElem* Inventory::get_seed_item( const PlantType* plant ) {
+	std::unordered_map<PlantType const*, UIElem*>::iterator it = plant_to_seed_item.find( plant );
+	assert( it != plant_to_seed_item.end() );
 	return it->second;
 }
 
-Button* Inventory::get_harvest_btn( const PlantType* plant ) {
-	std::unordered_map<PlantType const*, Button*>::iterator it = plant_to_harvest_btn.find( plant );
-	assert( it != plant_to_harvest_btn.end() );
+UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
+	std::unordered_map<PlantType const*, UIElem*>::iterator it = plant_to_harvest_item.find( plant );
+	assert( it != plant_to_harvest_item.end() );
 	return it->second;
 }

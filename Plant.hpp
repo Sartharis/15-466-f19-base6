@@ -3,6 +3,7 @@
 #include "Aura.hpp"
 #include "Sprite.hpp"
 #include "Button.hpp"
+#include "UIElem.hpp"
 #include "Load.hpp"
 #include <vector>
 #include "Mesh.hpp"
@@ -59,6 +60,9 @@ struct PlantType
 	void make_buttons( 
 			glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
 			Button** seed_btn, Button** harvest_btn ) const;
+	void make_menu_items( 
+			glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+			UIElem** seed_item, UIElem** harvest_item ) const;
 
 private:
 	// TODO: each plant type should have multiple meshes attached (always 3?)

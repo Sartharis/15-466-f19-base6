@@ -71,7 +71,7 @@ Sprite const* corpseeater_seed_sprite = nullptr;
 Sprite const* corpseeater_harvest_sprite = nullptr;
 
 Load< SpriteAtlas > plants_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *ret = new SpriteAtlas(data_path("plants"));
+	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	std::cout << "----2D sprites loaded (plants):" << std::endl;
 	for( auto p : ret->sprites ) {
 		std::cout << p.first << std::endl;
@@ -614,4 +614,42 @@ void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedP
 		0.4f, // text scale
 		[]() { // empty for now
 		}, true);
+}
+
+void PlantType::make_menu_items( 
+		glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+		UIElem** seed_item, UIElem** harvest_item ) const {
+	assert( selectedPlant );
+	assert( seed_item );
+	assert( harvest_item );
+	assert( seed_sprite );
+	assert( harvest_sprite );
+	*seed_item = new UIElem(
+		nullptr,
+		glm::vec2(0, 0), // anchor
+		glm::vec2(0, 5), // pos
+		glm::vec2(64, 64),
+		seed_sprite, // sprite,
+		name + " seed",
+		glm::vec2(32, 32),
+		0.3f, true);
+	(*seed_item)->set_on_mouse_down([this, selectedPlant, current_tool](){
+		if( *current_tool == seed && *selectedPlant == this ) {
+			*selectedPlant = nullptr;
+			*current_tool = none;
+		} else {
+			*selectedPlant = this;
+			*current_tool = seed;
+		}
+	});
+
+	*harvest_item = new UIElem(
+		nullptr,
+		glm::vec2(0, 0),
+		glm::vec2(0, 5),
+		glm::vec2(64, 64),
+		harvest_sprite,
+		name,
+		glm::vec2(32, 32),
+		0.4f);
 }

@@ -168,6 +168,7 @@ GAME_NAMES =
 	# BoneAnimation
 	# MenuMode
 	PlantMode
+	PlantMode+SetupUI
 	Order
 	Sound
 	load_wav

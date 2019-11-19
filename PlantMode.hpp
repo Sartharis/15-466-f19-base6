@@ -20,14 +20,16 @@
 
 struct Inventory
 { // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
+	// TODO: when seed / harvest number changes, update UI by changing corresponding elem text and re-layout all plant elems.
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
 	void change_harvest_num(const PlantType* plant, int harvest_change );
-	Button* get_seed_btn( const PlantType* plant );
-	void set_seed_btn( const PlantType* plant, Button* btn ) { plant_to_seed_btn.insert( std::make_pair( plant, btn ) ); }
-	Button* get_harvest_btn( const PlantType* plant );
-	void set_harvest_btn( const PlantType* plant, Button* btn ) { plant_to_harvest_btn.insert( std::make_pair( plant, btn ) ); }
+
+	UIElem* get_seed_item( const PlantType* plant );
+	void set_seed_item( const PlantType* plant, UIElem* item ) { plant_to_seed_item.insert( std::make_pair( plant, item ) ); }
+	UIElem* get_harvest_item( const PlantType* plant );
+	void set_harvest_item( const PlantType* plant, UIElem* item ) { plant_to_harvest_item.insert( std::make_pair( plant, item ) ); }
 
 	static bool comp_fn(std::pair<PlantType const*, int> p1, std::pair<PlantType const*, int> p2) {
 		return p1.second > p2.second;
@@ -41,6 +43,9 @@ private:
 	std::unordered_map<PlantType const*, int> plant_to_harvest;
 	std::unordered_map<PlantType const*, Button*> plant_to_seed_btn;
 	std::unordered_map<PlantType const*, Button*> plant_to_harvest_btn;
+
+	std::unordered_map<PlantType const*, UIElem*> plant_to_seed_item;
+	std::unordered_map<PlantType const*, UIElem*> plant_to_harvest_item;
 };
 
 // The 'PlantMode':
@@ -94,53 +99,22 @@ struct PlantMode : public Mode {
 	Tool current_tool = none;
 
 	//UI states:
+	void setup_UI();
 	struct {
 		UIElem* root;
 		struct {
-			UIElem* background;
 			UIElem* glove;
 			UIElem* watering_can;
 			UIElem* fertilizer;
 			UIElem* shovel;
 		} toolbar;
 
-		bool hidden = false;
+		// storage
+		UIElem* seed_tab_items;
+		UIElem* harvest_tab_items;
+		int storage_current_tab = 0;
+
 		std::vector< Button* > all_buttons = {};
-
-		// tools
-		std::vector< Button* > tools = {};
-
-		// storage (seed, harvest)
-		struct {
-			bool hidden = true;
-			glm::vec2 br_offset = glm::vec2(-565, -306);
-			Button* icon_btn = nullptr;
-			// tab
-			std::vector< Button* > tabs = {};
-			int current_tab = 0; // 0: seeds, 1: harvest
-			// seeds
-			std::vector< Button* > all_seeds = {};
-			std::vector< Button* > all_harvest = {};
-			glm::vec2 get_cell_position(int index) {
-				int row = index / 4;
-				int col = index % 4;
-				return br_offset + glm::vec2(41, 26) + glm::vec2(col * 93.5f, row * 89);
-			};
-		} storage;
-
-		// magicbook
-		struct {
-			bool hidden = true;
-			glm::vec2 tl_offset = glm::vec2(80, 100);
-			Button* icon_btn = nullptr;
-			Button* close_btn = nullptr;
-			std::vector< Button* > items = {};
-			glm::vec2 get_item_position(int index) {
-				int page = index / 4;
-				int row = index % 4;
-				return tl_offset + glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
-			}
-		} magicbook;
 
 		// order
 		struct {
