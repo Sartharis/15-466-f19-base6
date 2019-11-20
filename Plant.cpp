@@ -1,4 +1,5 @@
 #include "Plant.hpp"
+#include "PlantMode.hpp"
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
 #include "Mesh.hpp"
@@ -577,47 +578,7 @@ bool TileGrid::is_in_grid( int x, int y ) const
 	return x >= 0 && y >= 0 && x < size_x && y < size_y;
 }
 
-void PlantType::make_buttons( glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool, Button** seed_btn, Button** harvest_btn ) const {
-	assert( selectedPlant );
-	assert( seed_btn );
-	assert( harvest_btn );
-	assert( seed_sprite );
-	assert( harvest_sprite );
-	*seed_btn = new Button (
-		screen_size, Button::tl, glm::vec2(100, 100), // position
-		glm::vec2(64, 64), // size
-		seed_sprite, // sprite
-		glm::vec2(32, 32), // sprite anchor
-		0.3f, // sprite scale
-		Button::show_text, // hover behavior
-		name, // text
-		glm::vec2(0, -20), // text anchor
-		0.4f, // text scale
-		[this, selectedPlant, current_tool]() {
-			if( *current_tool == seed && *selectedPlant == this ) {
-				*current_tool = none;
-			} else {
-				*selectedPlant = this;
-				*current_tool = seed;
-			}
-		}, true);
-	
-	*harvest_btn = new Button (
-		screen_size, Button::tl, glm::vec2(100, 200), // position
-		glm::vec2(64, 64), // size
-		harvest_sprite, // sprite
-		glm::vec2(32, 32), // sprite anchor
-		0.4f, // sprite scale
-		Button::show_text, // hover behavior
-		name, // text
-		glm::vec2(0, -20), // text anchor
-		0.4f, // text scale
-		[]() { // empty for now
-		}, true);
-}
-
-void PlantType::make_menu_items( 
-		glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+void PlantType::make_menu_items(const PlantType** selectedPlant, Tool* current_tool,
 		UIElem** seed_item, UIElem** harvest_item ) const {
 	assert( selectedPlant );
 	assert( seed_item );
@@ -636,7 +597,7 @@ void PlantType::make_menu_items(
 	(*seed_item)->set_on_mouse_down([this, selectedPlant, current_tool](){
 		if( *current_tool == seed && *selectedPlant == this ) {
 			*selectedPlant = nullptr;
-			*current_tool = none;
+			*current_tool = default_hand;
 		} else {
 			*selectedPlant = this;
 			*current_tool = seed;

@@ -97,7 +97,8 @@ struct PlantMode : public Mode {
 	float camera_elevation = glm::radians(40.0f);
 
 	//tool selection
-	Tool current_tool = none;
+	Tool current_tool = default_hand;
+	void set_current_tool(Tool tool);
 
 	//UI states:
 	void setup_UI();
@@ -110,12 +111,11 @@ struct PlantMode : public Mode {
 			UIElem* fertilizer;
 			UIElem* shovel;
 		} toolbar;
-
 		// storage
 		int storage_current_tab = 0;
 
+		// NOTE: deprecated, to be removed
 		std::vector< Button* > all_buttons = {};
-
 		// order
 		struct {
 			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);

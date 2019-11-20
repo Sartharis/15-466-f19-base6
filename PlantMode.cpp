@@ -59,8 +59,7 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 		std::cout << p.first << std::endl;
 	}
 	// cursor
-	sprites.cursor.regular = &ret->lookup("cursorNormal");
-	sprites.cursor.hand = &ret->lookup("cursorHand");
+	sprites.cursor.hand = &ret->lookup("hand");
 	// TEMP
 	order_background_sprite = &ret->lookup("orderBackground");
 	return ret;
@@ -100,6 +99,7 @@ PlantMode::PlantMode()
 	//DEBUG - ADD ALL SEEDS & init harvest to all 0
 	{
 		change_num_coins( 0 );
+		set_current_tool( default_hand );
 
 		inventory.change_seeds_num( test_plant, 5 );
 		inventory.change_seeds_num( friend_plant, 5 );
@@ -297,7 +297,10 @@ PlantMode::~PlantMode() {
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
+	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
+	if( action == UIElem::mouseDown ) return;
+	
+	// old UI
 	for( int i = 0; i < UI.all_buttons.size(); i++ )
 	{
 		if( UI.all_buttons[i]->try_click( glm::vec2(x, y) ) ) return;
@@ -308,15 +311,10 @@ void PlantMode::on_click( int x, int y )
 
 	if( collided_tile ) {
 
-		if( current_tool == glove ) {
+		if( current_tool == default_hand ) {
 			if( collided_tile->plant_type ) {
-				// Removing dead plant
-				if( collided_tile->is_plant_dead() ) {
-					collided_tile->try_remove_plant();
-				}
 				// Harvesting plant
-				else if( collided_tile->is_tile_harvestable() ) {
-					// int gain = collided_tile->plant_type->get_harvest_gain();
+				if( collided_tile->is_tile_harvestable() ) {
 					PlantType const* plant = collided_tile->plant_type;
 					if( collided_tile->try_remove_plant() ) {
 						assert( plant );
@@ -326,10 +324,14 @@ void PlantMode::on_click( int x, int y )
 			}
 
 		} else if( current_tool == watering_can ) {
-			// handled in update
+			collided_tile->moisture = 1.0f;
 		} else if( current_tool == fertilizer ) {
-			// handled in update
+			collided_tile->fertility = 1.0f;
 		} else if( current_tool == shovel ) {
+			// Removing dead plant
+			if( collided_tile->plant_type && collided_tile->is_plant_dead() ) {
+				collided_tile->try_remove_plant();
+			}
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
 				if( cost <= num_coins && collided_tile->try_clear_tile() ) {
@@ -343,6 +345,9 @@ void PlantMode::on_click( int x, int y )
 				if( collided_tile->try_add_plant( selectedPlant ) ) {
 					inventory.change_seeds_num( selectedPlant, -1 );
 				}
+			}
+			if( inventory.get_seeds_num( selectedPlant ) <= 0 ){
+				set_current_tool( default_hand );
 			}
 		}
 
@@ -460,6 +465,14 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		return false;
 	}
 
+	if( evt.type == SDL_MOUSEMOTION )
+	{
+		int x, y;
+		SDL_GetMouseState( &x, &y );
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+	}
+
 	return false;
 }
 
@@ -539,49 +552,39 @@ void PlantMode::update(float elapsed)
 		//---- update action description
 		action_description = "";
 
-		if( current_tool == glove ) {
-			tool_name = "Glove:";
-			tool_description = "Harvest or Remove Plants";
+		if( current_tool == default_hand ) {
 			if( hovered_tile->plant_type ) 
 			{
-				if( hovered_tile->is_plant_dead() )
-				{
-					action_description = "Remove ";
-				}
-				else if( hovered_tile->is_tile_harvestable() )
+				if( hovered_tile->is_tile_harvestable() )
 				{
 					action_description = "Harvest ";
 				}
-				else
+				else if( !hovered_tile->is_plant_dead() )
 				{
 					action_description = "Growing ";
 				}
 			}
 
 		} else if( current_tool == watering_can ) {
-			tool_name = "Watering Can: ";
-			tool_description = "Water soil";
 			if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
 				action_description = "Water ";
 			}
 
 		} else if( current_tool == fertilizer ) {
-			tool_name = "Fertilizer:";
-			tool_description = "Fertilize soil";
 			if( hovered_tile->fertility < 1.0f ) {
 				action_description = "Fertilize";
 			}
 
 		} else if( current_tool == shovel ) {
-			tool_name = "Shovel:";
-			tool_description = "Dig up soil for planting";
 			if( hovered_tile->can_be_cleared(grid) ) {
 				action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
 			}
+			else if( hovered_tile->is_plant_dead() )
+			{
+				action_description = "Remove ";
+			}
 
 		} else if( current_tool == seed ) {
-			tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
-			tool_description = selectedPlant->get_description();
 			if( selectedPlant 
 					&& hovered_tile->tile_type->get_can_plant()
 					&& !hovered_tile->plant_type ) {
@@ -594,15 +597,6 @@ void PlantMode::update(float elapsed)
 			tool_description = "";
 		}
 
-		//---- update tile properties (watering & fertilizing)
-		if( SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(SDL_BUTTON_LEFT) ) {// left btn down
-			if( current_tool == watering_can ) {
-				hovered_tile->moisture = std::min(1.0f, hovered_tile->moisture + elapsed);
-
-			} else if( current_tool == fertilizer ) {
-				hovered_tile->fertility = std::min(1.0f, hovered_tile->fertility + elapsed * 2.0f);
-			}
-		}
 	} 
 
 	//Selector positioning
@@ -621,24 +615,18 @@ void PlantMode::update(float elapsed)
 			UI.all_buttons[i]->update_hover( glm::vec2(x, y) );
 		}
 
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+		if (UI.root) UI.root->update(elapsed);
 
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
-		case none:
-			cursor.sprite = sprites.cursor.regular;
-			cursor.scale = 1.0f;
+		case default_hand:
+			cursor.sprite = sprites.cursor.hand;
+			cursor.scale = 0.2f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case seed: //TODO
 			cursor.sprite = selectedPlant->get_seed_sprite();
 			cursor.scale = 0.3f;
-			cursor.offset = glm::vec2(0, 0);
-			break;
-		case glove:
-			cursor.sprite = UI.toolbar.glove->get_sprite();
-			cursor.scale = 0.24f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
 		case watering_can:
@@ -780,6 +768,12 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	}
 
 	{ //draw UI
+		{ //text (old UI)
+			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			for (int i=0; i<UI.all_buttons.size(); i++) {
+				UI.all_buttons[i]->draw_text( draw_text );
+			}
+		}
 		{
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			{
@@ -795,12 +789,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			}
 		}
 
-		{ //text
-			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			for (int i=0; i<UI.all_buttons.size(); i++) {
-				UI.all_buttons[i]->draw_text( draw_text );
-			}
-		}
 		// cursor
 		SpriteAtlas const* atlas = (current_tool == seed) ? plants_atlas : main_atlas;
 		DrawSprites draw_cursor( *atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -923,7 +911,10 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			UI.all_buttons[i]->update_position( screen_size );
 		}
 	}
-	if (UI.root) UI.root->update_absolute_position(screen_size);
+	if (UI.root) {
+		UI.root->set_size( screen_size );
+		UI.root->update_absolute_position();
+	}
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 
@@ -1008,4 +999,30 @@ UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
 void PlantMode::change_num_coins(int change) {
 	num_coins += change;
 	UI.coins_text->set_text( std::to_string(num_coins) );
+}
+
+void PlantMode::set_current_tool(Tool tool) {
+	current_tool = tool;
+	switch (current_tool){
+	case default_hand:
+		tool_name = "Glove:";
+		tool_description = "Harvest Plants";
+		break;
+	case watering_can:
+		tool_name = "Watering Can: ";
+		tool_description = "Water soil";
+		break;
+	case fertilizer:
+		tool_name = "Fertilizer:";
+		tool_description = "Fertilize soil";
+		break;
+	case shovel:
+		tool_name = "Shovel:";
+		tool_description = "Remove dead plant or dig up soil for planting";
+		break;
+	case seed:
+		tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
+		tool_description = selectedPlant->get_description();
+		break;
+	}
 }
