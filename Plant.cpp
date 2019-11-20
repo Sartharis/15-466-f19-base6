@@ -653,3 +653,4 @@ void PlantType::make_menu_items(
 		glm::vec2(32, 32),
 		0.4f);
 }
+

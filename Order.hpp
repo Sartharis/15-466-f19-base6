@@ -1,6 +1,7 @@
 #pragma once
 #include "Plant.hpp"
 #include "Button.hpp"
+#include <list>
 
 struct Inventory;
 
@@ -46,3 +47,5 @@ extern OrderType const* order4;
 extern OrderType const* order5;
 extern OrderType const* order6;
 extern OrderType const* order7;
+extern std::list<OrderType const*> main_orders;
+PlantType const* get_plant_type_by_name(std::string plant_type_name);

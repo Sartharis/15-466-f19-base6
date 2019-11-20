@@ -121,7 +121,7 @@ struct Connection {
 struct Server {
 	Server(std::string const &port); //pass the port number to listen on, as a string (servname, really)
 
-	//poll() updates the list of active connections and provides information to your callbacks:
+	//poll() updates the  of active connections and provides information to your callbacks:
 	void poll(
 		std::function< void(Connection *, Connection::Event event) > const &connection_event = nullptr,
 		double timeout = 0.0 //timeout (seconds)
