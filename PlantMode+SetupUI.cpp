@@ -9,6 +9,18 @@ Load< Sound::Sample > shop_close_sound( LoadTagDefault, []() -> Sound::Sample co
 	return new Sound::Sample( data_path( "ShopClose.wav" ) );
 } );
 
+Load< Sound::Sample > magic_book_toggle_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "BOOK_Turn_Page_01_mono.wav" ) );
+} );
+
+Load< Sound::Sample > magic_book_flip_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "BOOK_Turn_Page_04_mono.wav" ) );
+ } );
+
+Load< Sound::Sample > magic_book_purchase_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "COINS_Rattle_01_mono.wav" ) );
+} );
+
 struct {
 	struct {
 		Sprite const* background = nullptr;
@@ -32,25 +44,25 @@ struct {
 		Sprite const* background = nullptr;
 		Sprite const* close = nullptr;
 	} magicbook;
-} sprites;
+} ui_sprites;
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	// tools
-	sprites.tools.background = &ret->lookup("toolsBackground");
-	sprites.tools.watering_can = &ret->lookup("wateringCan");
-	sprites.tools.glove = &ret->lookup("glove");
-	sprites.tools.shovel = &ret->lookup("shovel");
-	sprites.tools.fertilizer = &ret->lookup("fertilizer");
+	ui_sprites.tools.background = &ret->lookup("toolsBackground");
+	ui_sprites.tools.watering_can = &ret->lookup("wateringCan");
+	ui_sprites.tools.glove = &ret->lookup("glove");
+	ui_sprites.tools.shovel = &ret->lookup("shovel");
+	ui_sprites.tools.fertilizer = &ret->lookup("fertilizer");
 	// storage
-	sprites.storage.icon = &ret->lookup("seedBagClosed"); //TODO
-	sprites.storage.background = &ret->lookup("seedMenuBackground");
-	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
-	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
+	ui_sprites.storage.icon = &ret->lookup("seedBagClosed"); //TODO
+	ui_sprites.storage.background = &ret->lookup("seedMenuBackground");
+	ui_sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
+	ui_sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
 	// magicbook
-	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
-	sprites.magicbook.background = &ret->lookup("magicbookBackground");
-	sprites.magicbook.close = &ret->lookup("magicbookClose");
+	ui_sprites.magicbook.icon = &ret->lookup("magicbookIcon");
+	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	ui_sprites.magicbook.close = &ret->lookup("magicbookClose");
 });
 
 void PlantMode::setup_UI() {
@@ -71,7 +83,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(0, 0), // position
 		glm::vec2(0, 0), // size
-		sprites.tools.background, // sprite
+		ui_sprites.tools.background, // sprite
 		"tools background", // text
 		glm::vec2(-270,0), // sprite pos
 		0.4f); // sprite scale
@@ -82,7 +94,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(60, -84), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.glove, // sprite
+		ui_sprites.tools.glove, // sprite
 		"glove", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -113,7 +125,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(142, -79), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.watering_can, // sprite
+		ui_sprites.tools.watering_can, // sprite
 		"watering can", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -144,7 +156,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(230, -94), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.fertilizer, // sprite
+		ui_sprites.tools.fertilizer, // sprite
 		"fertilizer", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -175,7 +187,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(315, -87), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.shovel, // sprite
+		ui_sprites.tools.shovel, // sprite
 		"shovel", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -213,7 +225,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-565, 306), // position
 		glm::vec2(0, 0), // size
-		sprites.storage.background,
+		ui_sprites.storage.background,
 		"storage background",
 		glm::vec2(0, 0), // sprite anchor
 		0.5f);
@@ -224,7 +236,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-190, -80), // position
 		glm::vec2(64, 64), //size
-		sprites.storage.icon, // sprite
+		ui_sprites.storage.icon, // sprite
 		"storage icon",
 		glm::vec2(32, 32),
 		0.3f, true, false, false);
@@ -243,7 +255,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(265, -374), // pos
 		glm::vec2(64, 64),
-		sprites.storage.seeds_tab,
+		ui_sprites.storage.seeds_tab,
 		"seeds tab",
 		glm::vec2(32, 32),
 		0.6f, true, true);
@@ -265,7 +277,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(345, -374), // pos
 		glm::vec2(64, 64),
-		sprites.storage.harvest_tab,
+		ui_sprites.storage.harvest_tab,
 		"harvest tab",
 		glm::vec2(32, 32),
 		0.5f, true, true);
@@ -430,7 +442,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-110, -80), // pos
 		glm::vec2(64, 64), // size
-		sprites.magicbook.icon,
+		ui_sprites.magicbook.icon,
 		"magic book icon",
 		glm::vec2(32, 32),
 		0.3f, true);
@@ -454,12 +466,20 @@ void PlantMode::setup_UI() {
 		glm::vec2(0.15f, 0.1f), // anchor
 		glm::vec2(0, 0), // pos
 		glm::vec2(0, 0), // size
-		sprites.magicbook.background, "magicbook background",
+		ui_sprites.magicbook.background, "magicbook background",
 		glm::vec2(0, 0),
 		0.9f, false, true);
 	magicbook_icon->set_on_mouse_down([magicbook_bg](){
-		if (magicbook_bg->get_hidden()) { magicbook_bg->show(); }
-		else magicbook_bg->hide();
+		if (magicbook_bg->get_hidden()) 
+		{ 
+			Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f ); 
+			magicbook_bg->show(); 
+		}
+		else
+		{
+			Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
+			magicbook_bg->hide();
+		}
 	});
 
 	UIElem* magicbook_close_btn = new UIElem(
@@ -467,10 +487,12 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(830, 30), // pos
 		glm::vec2(40, 40), // size
-		sprites.magicbook.close, "close magicbook",
+		ui_sprites.magicbook.close, "close magicbook",
 		glm::vec2(20, 20),
 		0.35f, true);
-	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
+	magicbook_close_btn->set_on_mouse_down([magicbook_bg]()
+	{
+		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
 	});
 
@@ -497,6 +519,7 @@ void PlantMode::setup_UI() {
 			0.54f, true);
 		entry->set_on_mouse_down([this, plant](){
 			if( energy >= plant->get_cost() ){
+				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				energy -= plant->get_cost();
 				inventory.change_seeds_num( plant, 1 );
 			}
