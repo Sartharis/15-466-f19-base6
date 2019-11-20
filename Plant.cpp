@@ -578,8 +578,7 @@ bool TileGrid::is_in_grid( int x, int y ) const
 	return x >= 0 && y >= 0 && x < size_x && y < size_y;
 }
 
-void PlantType::make_menu_items( 
-		glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+void PlantType::make_menu_items(const PlantType** selectedPlant, Tool* current_tool,
 		UIElem** seed_item, UIElem** harvest_item ) const {
 	assert( selectedPlant );
 	assert( seed_item );

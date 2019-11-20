@@ -297,7 +297,10 @@ PlantMode::~PlantMode() {
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
+	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
+	if( action == UIElem::mouseDown ) return;
+	
+	// old UI
 	for( int i = 0; i < UI.all_buttons.size(); i++ )
 	{
 		if( UI.all_buttons[i]->try_click( glm::vec2(x, y) ) ) return;
@@ -462,6 +465,14 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		return false;
 	}
 
+	if( evt.type == SDL_MOUSEMOTION )
+	{
+		int x, y;
+		SDL_GetMouseState( &x, &y );
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
+		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+	}
+
 	return false;
 }
 
@@ -604,8 +615,7 @@ void PlantMode::update(float elapsed)
 			UI.all_buttons[i]->update_hover( glm::vec2(x, y) );
 		}
 
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+		if (UI.root) UI.root->update(elapsed);
 
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
@@ -901,7 +911,10 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 			UI.all_buttons[i]->update_position( screen_size );
 		}
 	}
-	if (UI.root) UI.root->update_absolute_position(screen_size);
+	if (UI.root) {
+		UI.root->set_size( screen_size );
+		UI.root->update_absolute_position();
+	}
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 

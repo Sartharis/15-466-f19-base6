@@ -1,5 +1,6 @@
 #include "PlantMode.hpp"
 #include "data_path.hpp"
+#include <cstddef>
 
 Load< Sound::Sample > shop_open_sound( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "ShopOpen.wav" ) );
@@ -80,7 +81,7 @@ void PlantMode::setup_UI() {
 	UI.coins_text = new UIElem(money_icon);
 	UI.coins_text->set_scale(0.68f);
 	UI.coins_text->set_text("hoofda");
-	UI.coins_text->set_position(glm::vec2(76, 6), glm::vec2(0, 0), screen_size);
+	UI.coins_text->set_position(glm::vec2(76, 6), glm::vec2(0, 0));
 
 	//---------------- toolbar ------------------
 
@@ -320,7 +321,7 @@ void PlantMode::setup_UI() {
 	storage_icon->set_on_mouse_leave([storage_icon_text](){
 		storage_icon_text->hide();
 	});
-	storage_icon->set_on_mouse_down([this, storage_icon, storage_close, seed_tab, harvest_tab, storage_bg](){
+	storage_icon->set_on_mouse_down([storage_icon, storage_close, seed_tab, harvest_tab, storage_bg](){
 		Sound::play( *shop_open_sound, 0.0f, 1.0f );
 		storage_icon->hide();
 		storage_close->show();
@@ -328,11 +329,10 @@ void PlantMode::setup_UI() {
 		harvest_tab->show();
 		storage_bg->set_position(
 				storage_bg->get_position() + glm::vec2(0, -290),
-				storage_bg->get_anchor(),
-				screen_size);
+				storage_bg->get_anchor(), 0.2f);
 	});
 
-	storage_close->set_on_mouse_down([this, seed_tab, harvest_tab, storage_icon, storage_close, storage_bg](){
+	storage_close->set_on_mouse_down([seed_tab, harvest_tab, storage_icon, storage_close, storage_bg](){
 		Sound::play( *shop_close_sound, 0.0f, 1.0f );
 		seed_tab->hide();
 		harvest_tab->hide();
@@ -340,8 +340,7 @@ void PlantMode::setup_UI() {
 		storage_icon->show();
 		storage_bg->set_position(
 				storage_bg->get_position() + glm::vec2(0, 290),
-				storage_bg->get_anchor(),
-				screen_size);
+				storage_bg->get_anchor(), 0.2f);
 	});
 
 	seed_tab->set_on_mouse_enter([seeds_tab_text](){
@@ -360,8 +359,7 @@ void PlantMode::setup_UI() {
 			storage_close->hide();
 			storage_bg->set_position(
 					storage_bg->get_position() + glm::vec2(0, 290),
-					storage_bg->get_anchor(),
-					screen_size);
+					storage_bg->get_anchor(), 0.2f);
 		} else {
 			UI.storage_current_tab = 0;
 			seed_tab->set_z_index(0);
@@ -371,7 +369,7 @@ void PlantMode::setup_UI() {
 		}
 	});
 
-	seed_tab_items->set_layout_children_fn([this, seed_tab_items](){
+	seed_tab_items->set_layout_children_fn([seed_tab_items](){
 		auto children = seed_tab_items->children;
 		auto children_to_show = std::vector<UIElem*>();
 		for (auto c : children) {
@@ -386,7 +384,7 @@ void PlantMode::setup_UI() {
 			int row = i / 4;
 			int col = i % 4;
 			children_to_show[i]->set_position(
-					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0), screen_size);
+					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
 		}
 	});
 	
@@ -406,8 +404,7 @@ void PlantMode::setup_UI() {
 			storage_close->hide();
 			storage_bg->set_position(
 					storage_bg->get_position() + glm::vec2(0, 290),
-					storage_bg->get_anchor(),
-					screen_size);
+					storage_bg->get_anchor(), 0.2f);
 		} else {
 			UI.storage_current_tab = 1;
 			seed_tab->set_z_index(-1);
@@ -417,7 +414,7 @@ void PlantMode::setup_UI() {
 		}
 	});
 
-	harvest_tab_items->set_layout_children_fn([this, harvest_tab_items](){
+	harvest_tab_items->set_layout_children_fn([harvest_tab_items](){
 		auto children = harvest_tab_items->children;
 		auto children_to_show = std::vector<UIElem*>();
 		for (auto c : children) {
@@ -432,14 +429,14 @@ void PlantMode::setup_UI() {
 			int row = i / 4;
 			int col = i % 4;
 			children_to_show[i]->set_position(
-					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0), screen_size);
+					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
 		}
 	});
 
 	auto add_plant_buttons = [this, seed_tab_items, harvest_tab_items](PlantType const* plant) {
 		UIElem* seed_icon = nullptr;
 		UIElem* harvest_icon = nullptr;
-		plant->make_menu_items(screen_size, &selectedPlant, &current_tool, &seed_icon, &harvest_icon);
+		plant->make_menu_items(&selectedPlant, &current_tool, &seed_icon, &harvest_icon);
 		assert(seed_icon); assert(harvest_icon);
 		seed_icon->set_on_mouse_enter([this, plant](){
 			tool_name = plant->get_name() + " x" + std::to_string( inventory.get_seeds_num( plant ) ) + " :";
@@ -525,18 +522,18 @@ void PlantMode::setup_UI() {
 	});
 
 	UIElem* all_choices = new UIElem(magicbook_bg);
-	all_choices->set_layout_children_fn([this, all_choices](){
+	all_choices->set_layout_children_fn([all_choices](){
 		for (int i=0; i<all_choices->children.size(); i++) {
 			int page = i / 4;
 			int row = i % 4;
 			glm::vec2 pos = glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
-			all_choices->children[i]->set_position(pos, glm::vec2(0, 0), screen_size);
+			all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
 		}	
 	});
 	
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
-		std::string text = plant->get_name() + " seed - $" + std::to_string( plant->get_cost() );
+		std::string text = plant->get_name() + " Seed - $" + std::to_string( plant->get_cost() );
 		UIElem* entry = new UIElem( // will get laid out automatically anyway.
 			all_choices,
 			glm::vec2(0, 0), // anchor
@@ -567,5 +564,4 @@ void PlantMode::setup_UI() {
 	add_buy_choice( corpseeater_plant );
 
 	all_choices->layout_children();
-
 }

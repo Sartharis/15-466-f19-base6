@@ -57,8 +57,7 @@ struct PlantType
 	std::string get_name() const { return name; }
 	std::string get_description() const { return description; };
 	Sprite const* get_seed_sprite() const { return seed_sprite; };
-	void make_menu_items( 
-			glm::vec2 screen_size, const PlantType** selectedPlant, Tool* current_tool,
+	void make_menu_items(const PlantType** selectedPlant, Tool* current_tool,
 			UIElem** seed_item, UIElem** harvest_item ) const;
 
 private:
