@@ -79,7 +79,8 @@ struct PlantMode : public Mode {
 	Scene::Drawable* selector = nullptr;
 	
 	Inventory inventory;
-	int energy = 30;
+	int num_coins = 30;
+	void change_num_coins(int change);
 
 	glm::vec3 forward_camera_dir = glm::vec3();
 	glm::vec3 forward_dir = glm::vec3();
@@ -96,26 +97,25 @@ struct PlantMode : public Mode {
 	float camera_elevation = glm::radians(40.0f);
 
 	//tool selection
-	Tool current_tool = none;
+	Tool current_tool = default_hand;
+	void set_current_tool(Tool tool);
 
 	//UI states:
 	void setup_UI();
 	struct {
 		UIElem* root;
+		UIElem* coins_text;
 		struct {
 			UIElem* glove;
 			UIElem* watering_can;
 			UIElem* fertilizer;
 			UIElem* shovel;
 		} toolbar;
-
 		// storage
-		UIElem* seed_tab_items;
-		UIElem* harvest_tab_items;
 		int storage_current_tab = 0;
 
+		// NOTE: deprecated, to be removed
 		std::vector< Button* > all_buttons = {};
-
 		// order
 		struct {
 			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);

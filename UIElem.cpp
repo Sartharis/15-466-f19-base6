@@ -15,8 +15,9 @@ UIElem::~UIElem(){
 	}
 }
 
+// TODO: should take z-index into consideration here as well
 UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
-	if (hidden) return none;
+	if (hidden || get_in_animation()) return none;
 	for (int i=0; i<children.size(); i++) {
 		Action child_result = children[i]->test_event(mouse_pos, action);
 		if (child_result != none) {
@@ -28,8 +29,8 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 	switch (action) {
 	case mouseDown:
 		if (inside(mouse_pos)) {
+			if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 			if (on_mouse_down) {
-				if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 				on_mouse_down();
 			}
 			return mouseDown;
@@ -37,19 +38,20 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 		break;
 
 	case mouseUp:
+		/*
 		if (inside(mouse_pos)) {
 			if (on_mouse_up) {
 				if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 				on_mouse_up();
 			}
 			return mouseUp;
-		}
+		} */
 		break;
 
 	case mouseEnter:
 		if (!hovered && inside(mouse_pos)) {
+			if (default_sound) Sound::play( *button_hover_sound, 0.0f, 1.0f );
 			if (on_mouse_enter) {
-				if (default_sound) Sound::play( *button_hover_sound, 0.0f, 1.0f );
 				on_mouse_enter();
 			}
 			hovered = true;
@@ -83,23 +85,30 @@ bool UIElem::inside(glm::vec2 mouse_pos){
 	}
 }
 
-void UIElem::set_position(glm::vec2 _position, glm::vec2 _anchor, glm::vec2 screen_size){
+void UIElem::set_position(glm::vec2 _position, glm::vec2 _anchor, float _animation_duration){
 	anchor = _anchor;
-	position = _position;
-	update_absolute_position(screen_size);
+	// if anim duration is small, there's no point animating. just jump to target.
+	if (_animation_duration >= 0.001f) {
+		animation_duration = _animation_duration;
+		start_position = position;
+		target_position = _position;
+		timeout = _animation_duration;
+	} else {
+		position = _position;
+	}
+	update_absolute_position();
 }
 
 // NOTE: requires parent to be updated before children
-void UIElem::update_absolute_position(glm::vec2 new_screen_size){
+void UIElem::update_absolute_position(){
 	if (!parent) {
-		size = new_screen_size;
 		absolute_position = glm::vec2(0, 0);
 	} else {
 		absolute_position.x = parent->absolute_position.x + anchor.x * parent->size.x + position.x;
 		absolute_position.y = parent->absolute_position.y + anchor.y * parent->size.y + position.y;
 	}
 	for (int i=0; i<children.size(); i++) {
-		children[i]->update_absolute_position(new_screen_size);
+		children[i]->update_absolute_position();
 	}
 }
 
@@ -132,6 +141,28 @@ bool UIElem::get_hidden_from_hierarchy() {
 int UIElem::get_absolute_z_index() {
 	if (!parent) return z_index;
 	return parent->get_absolute_z_index() + z_index;
+}
+
+glm::vec2 ease_out(glm::vec2 start, glm::vec2 end, float t) {
+	// a list of easing functions: https://gist.github.com/gre/1650294
+	float ease_param = 1.0f - std::pow( 1.0f - t, 3 ); // cubic
+	return start + (end - start) * ease_param;
+}
+
+void UIElem::update(float elapsed) {
+
+	if (get_in_animation()) {
+		timeout = std::max(0.0f, timeout - elapsed);
+		float progress = 1.0f - timeout / animation_duration;
+		position = ease_out(start_position, target_position, progress);
+		update_absolute_position();
+	}
+	
+	// update children
+	for( int i=0; i<children.size(); i++) {
+		children[i]->update(elapsed);
+	}
+
 }
 
 void UIElem::draw(DrawSprites& draw_sprites, DrawSprites& draw_text){
