@@ -10,6 +10,18 @@ Load< Sound::Sample > shop_close_sound( LoadTagDefault, []() -> Sound::Sample co
 	return new Sound::Sample( data_path( "ShopClose.wav" ) );
 } );
 
+Load< Sound::Sample > magic_book_toggle_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "BOOK_Turn_Page_01_mono.wav" ) );
+} );
+
+Load< Sound::Sample > magic_book_flip_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "BOOK_Turn_Page_04_mono.wav" ) );
+ } );
+
+Load< Sound::Sample > magic_book_purchase_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "COINS_Rattle_01_mono.wav" ) );
+} );
+
 struct {
 	struct {
 		Sprite const* background = nullptr;
@@ -505,8 +517,16 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0),
 		0.9f, false, true);
 	magicbook_icon->set_on_mouse_down([magicbook_bg](){
-		if (magicbook_bg->get_hidden()) { magicbook_bg->show(); }
-		else magicbook_bg->hide();
+		if (magicbook_bg->get_hidden()) 
+		{ 
+			Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f ); 
+			magicbook_bg->show(); 
+		}
+		else
+		{
+			Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
+			magicbook_bg->hide();
+		}
 	});
 
 	UIElem* magicbook_close_btn = new UIElem(
@@ -518,6 +538,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(20, 20),
 		0.35f, true, false, false);
 	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
+		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
 	});
 
@@ -543,8 +564,11 @@ void PlantMode::setup_UI() {
 			glm::vec2(6.0f, 1.0f), // text anchor
 			0.54f, true);
 		entry->set_on_mouse_down([this, plant](){
+
 			if( num_coins >= plant->get_cost() ){
-			change_num_coins( -plant->get_cost() );
+				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
+				change_num_coins( -plant->get_cost() );
+
 				inventory.change_seeds_num( plant, 1 );
 			}
 		});
