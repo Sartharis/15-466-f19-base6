@@ -1,0 +1,57 @@
+<
+title:daily_order1
+description:I need some ferns.
+number_of_required_plants_type:1
+test_plant 2
+bonus_energy:50
+bonus_plant:null
+>
+<
+title:daily_order2
+description:I need cacti for self-defense
+number_of_required_plants_type:1
+cactus_plant 2
+bonus_energy:100
+bonus_plant:null
+>
+<
+title:daily_order3
+description:My dad has been lonely lately. I need companion carrots.
+number_of_required_plants_type:1
+cactus_plant 1
+bonus_energy:105
+bonus_plant:null
+>
+<
+title:daily_order4
+description:I need a Sap Sucker, don't ask me why.
+number_of_required_plants_type:1
+vampire_plant 1
+bonus_energy:125
+bonus_plant:null
+>
+<
+title:daily_order5
+description:I need cacti for self-defense
+number_of_required_plants_type:1
+cactus_plant 2
+bonus_energy:115
+bonus_plant:null
+>
+<
+title:daily_order6
+description:I need a Sap Sucker, don't ask me why.
+number_of_required_plants_type:2
+vampire_plant 1
+cactus_plant 2
+bonus_energy:205
+bonus_plant:null
+>
+<
+title:daily_order7
+description:I need cacti for self-defense
+number_of_required_plants_type:1
+cactus_plant 2
+bonus_energy:105
+bonus_plant:null
+>
