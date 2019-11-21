@@ -51,3 +51,4 @@ private:
 extern std::vector< OrderType const* > main_orders;
 extern std::vector< OrderType const* > all_orders;
 PlantType const* get_plant_type_by_name(std::string plant_type_name);
+OrderType const* generate_random_daily_order();
