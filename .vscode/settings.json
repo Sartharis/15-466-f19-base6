@@ -68,6 +68,9 @@
         "*.tcc": "cpp",
         "hash_map": "cpp",
         "cinttypes": "cpp",
-        "hashtable": "cpp"
+        "hashtable": "cpp",
+        "__functional_03": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     }
 }

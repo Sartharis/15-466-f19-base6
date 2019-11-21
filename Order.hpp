@@ -1,6 +1,7 @@
 #pragma once
 #include "Plant.hpp"
 #include "Button.hpp"
+#include <list>
 
 struct Inventory;
 
@@ -25,6 +26,7 @@ struct OrderType
 	PlantType const* get_bonus_plant() const {return bonus_plant;};
 
 	void draw(glm::uvec2 const &drawable_size, Inventory& inventory ) const;
+	void draw_main_order(glm::uvec2 const &drawable_size, Inventory& inventory) const;
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(1000, 800);
 	glm::vec2 text_min = glm::vec2(0,0);
@@ -39,10 +41,13 @@ private:
 	glm::u8vec4 text_col = glm::u8vec4(92, 76, 53, 255);
 };
 
-extern OrderType const* order1;
-extern OrderType const* order2;
-extern OrderType const* order3;
-extern OrderType const* order4;
-extern OrderType const* order5;
-extern OrderType const* order6;
-extern OrderType const* order7;
+// extern OrderType const* order1;
+// extern OrderType const* order2;
+// extern OrderType const* order3;
+// extern OrderType const* order4;
+// extern OrderType const* order5;
+// extern OrderType const* order6;
+// extern OrderType const* order7;
+extern std::vector< OrderType const* > main_orders;
+extern std::vector< OrderType const* > all_orders;
+PlantType const* get_plant_type_by_name(std::string plant_type_name);

@@ -614,3 +614,4 @@ void PlantType::make_menu_items(const PlantType** selectedPlant, Tool* current_t
 		glm::vec2(32, 32),
 		0.4f);
 }
+

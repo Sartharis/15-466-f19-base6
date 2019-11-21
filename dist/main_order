@@ -1,0 +1,17 @@
+<
+title:main_order1
+description:This is your main order
+number_of_required_plants_type:1
+test_plant 4
+bonus_energy:100
+bonus_plant:cactus_plant
+>
+<
+title:main_order2
+description:This is your main order
+number_of_required_plants_type:2
+test_plant 2
+cactus_plant 1
+bonus_energy:105
+bonus_plant:friend_plant
+>

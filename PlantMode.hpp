@@ -53,9 +53,12 @@ struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
-	std::vector< OrderType const* > all_orders;
 	int current_order_idx = 0;
 	OrderType const* current_order = nullptr;
+	bool cancel_order_state = false;
+	float cancel_order_freeze_time = 10;
+	int current_main_order_idx = 0;
+	OrderType const* current_main_order = nullptr;
 	
 	// init harvest_plant_map
 	// Harvest Plant Map

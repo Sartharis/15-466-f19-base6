@@ -85,8 +85,9 @@ PlantMode::PlantMode()
 
 	Sound::loop(*background_music, 0.0f, 1.0f);
 	Sound::loop( *land_ambience, 0.0f, 0.85f );
-
-	current_order = order1;
+	
+	current_main_order = main_orders[current_main_order_idx];
+	current_order = all_orders[current_order_idx];
 
 	{
 		selectedPlant = test_plant;
@@ -200,14 +201,6 @@ PlantMode::PlantMode()
 	side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
 	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
-    // add all order into order vector
-	all_orders.push_back( order1 );
-	all_orders.push_back( order2 );
-	all_orders.push_back( order3 );
-	all_orders.push_back( order4 );
-	all_orders.push_back( order5 );
-	all_orders.push_back( order6 );
-	all_orders.push_back( order7 );
 
 	{ // init UI (just left with orders for now)
 		Button* btn;
@@ -255,9 +248,13 @@ PlantMode::PlantMode()
 			}, false, glm::u8vec4(92, 76, 53, 255));
 
 		UI.all_buttons.push_back( btn );
+	}
 
-		/*btn = new Button(
-			screen_size, Button::tr, glm::vec2( -300.0f, 150.0f ), // position
+	// if(cancel_order_state == true){
+		{
+			Button* cancel_btn;
+			cancel_btn = new Button(
+			screen_size, Button::tr, glm::vec2( -270.0f, 150.0f ), // position
 			glm::vec2( 80, 20 ), // size
 			nullptr, // sprite
 			glm::vec2( 0, 0 ), // sprite anchor
@@ -267,15 +264,69 @@ PlantMode::PlantMode()
 			glm::vec2( 0, 0 ), // text anchor
 			0.4f, // text scale
 			[this]() {
-				current_order_idx += 1;
-				if(current_order_idx >= all_orders.size()){
-					current_order_idx = 0;
-				}
-				current_order = all_orders[current_order_idx];
-				std::cout << "Cancel Button Click!" << std::endl;
+				if(cancel_order_state==true){
+					current_order_idx += 1;
+					if(current_order_idx >= all_orders.size()){
+						current_order_idx = 0;
+					}
+					current_order = all_orders[current_order_idx];
+					cancel_order_freeze_time = 10;
+					std::cout << "Cancel Button Click!" << std::endl;
+				}else{
+					std::cout << "Cannot cancel this order!" << std::endl;
+				}				
 			} );
 		
-		UI.all_buttons.push_back( btn );*/
+		UI.all_buttons.push_back( cancel_btn );
+	}
+		
+	{ // init main order UI (just left with orders for now)
+		Button* main_order_btn;
+
+		main_order_btn = new Button(
+			screen_size, Button::tr, glm::vec2( -760.0f, 150.0f ), // position
+			glm::vec2( 80, 20 ), // size
+			nullptr, // sprite
+			glm::vec2( 0, 0 ), // sprite anchor
+			0.0f, // sprite scale
+			Button::darken_text, // hover behavior
+			"COMPLETE", // text
+			glm::vec2( 0, 0 ), // text anchor
+			0.4f, // text scale
+			[this]() {
+				std::cout << "Submit Main Order Button Click!" << std::endl;
+				std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
+				bool orderFinished = true;
+				std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+				while( iter != require_plants.end() ) {
+					PlantType const* require_type = iter->first;
+					int needed_num = iter->second;
+					if( inventory.get_harvest_num(require_type) < needed_num ){
+						orderFinished = false;
+						break;
+					}
+					iter++;
+				}
+				std::cout << orderFinished << std::endl;
+				if( orderFinished == true ){
+					iter = require_plants.begin();
+					while( iter != require_plants.end() ) {
+						PlantType const* require_type = iter->first;
+						int needed_num = iter->second;
+						inventory.change_harvest_num(require_type, -needed_num);
+						iter++;
+					}
+					change_num_coins( current_main_order->get_bonus_cash() );
+					current_main_order_idx += 1;
+					if( current_main_order_idx >= main_orders.size() ){
+						current_main_order_idx =  main_orders.size()-1;
+					}
+					std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
+					current_main_order = main_orders[current_main_order_idx];
+				}
+			}, false, glm::u8vec4(92, 76, 53, 255));
+		UI.all_buttons.push_back( main_order_btn );
+
 	}
 }
 
@@ -478,6 +529,13 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
+	// update order cancel state
+	cancel_order_freeze_time -= elapsed;
+	if(cancel_order_freeze_time<=0){
+		cancel_order_state = true;
+	}else{
+		cancel_order_state = false;
+	}
 	const Uint8* state = SDL_GetKeyboardState( NULL );
 
 	if( state[SDL_SCANCODE_A] )
@@ -743,6 +801,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	//test draw order
 	current_order->draw(screen_size, inventory);
+	current_main_order->draw_main_order(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );

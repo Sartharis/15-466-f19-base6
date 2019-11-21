@@ -103,7 +103,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(0, 0), // position
 		glm::vec2(0, 0), // size
-		ui_sprites.tools.background, // sprite
+		sprites.tools.background, // sprite
 		"tools background", // text
 		glm::vec2(-270,0), // sprite pos
 		0.4f); // sprite scale
@@ -144,7 +144,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(142, -79), // position
 		glm::vec2(64, 64), // size
-		ui_sprites.tools.watering_can, // sprite
+		sprites.tools.watering_can, // sprite
 		"watering can", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -175,7 +175,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(230, -94), // position
 		glm::vec2(64, 64), // size
-		ui_sprites.tools.fertilizer, // sprite
+		sprites.tools.fertilizer, // sprite
 		"fertilizer", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -206,7 +206,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(315, -87), // position
 		glm::vec2(64, 64), // size
-		ui_sprites.tools.shovel, // sprite
+		sprites.tools.shovel, // sprite
 		"shovel", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
@@ -245,7 +245,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-565, 306), // position
 		glm::vec2(0, 0), // size
-		ui_sprites.storage.background,
+		sprites.storage.background,
 		"storage background",
 		glm::vec2(0, 0), // sprite anchor
 		0.5f);
@@ -265,7 +265,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-190, -80), // position
 		glm::vec2(64, 64), //size
-		ui_sprites.storage.icon, // sprite
+		sprites.storage.icon, // sprite
 		"storage icon",
 		glm::vec2(32, 32),
 		0.3f, true, false, false);
@@ -284,7 +284,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(215, -374), // pos
 		glm::vec2(64, 64),
-		ui_sprites.storage.seeds_tab,
+		sprites.storage.seeds_tab,
 		"seeds tab",
 		glm::vec2(32, 32),
 		0.6f, true, true, false);
@@ -306,7 +306,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(295, -374), // pos
 		glm::vec2(64, 64),
-		ui_sprites.storage.harvest_tab,
+		sprites.storage.harvest_tab,
 		"harvest tab",
 		glm::vec2(32, 32),
 		0.5f, true, true, false);
@@ -489,7 +489,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-110, -80), // pos
 		glm::vec2(64, 64), // size
-		ui_sprites.magicbook.icon,
+		sprites.magicbook.icon,
 		"magic book icon",
 		glm::vec2(32, 32),
 		0.3f, true);
@@ -513,7 +513,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0.5f, 0.5f), // anchor
 		glm::vec2(-459, -310), // pos
 		glm::vec2(0, 0), // size
-		ui_sprites.magicbook.background, "magicbook background",
+		sprites.magicbook.background, "magicbook background",
 		glm::vec2(0, 0),
 		0.9f, false, true);
 	magicbook_icon->set_on_mouse_down([magicbook_bg](){
