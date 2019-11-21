@@ -1,5 +1,6 @@
 #include "UIElem.hpp"
 #include "data_path.hpp"
+#include <algorithm>
 
 Load< Sound::Sample > button_hover_sound( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "UI_Click_Cut_mono.wav" ) );
