@@ -65,6 +65,7 @@ struct PlantMode : public Mode {
 	std::map< PlantType const*, int > harvest_plant_map;
     
 	void on_click( int x, int y );
+	void get_sea_plane(glm::vec3 &tl, glm::vec3 &tr, glm::vec3 &bl, glm::vec3 &br);
 	GroundTile* get_tile_under_mouse( int x, int y);
 	virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
@@ -80,6 +81,7 @@ struct PlantMode : public Mode {
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
+	Scene::Drawable* sea = nullptr;
 	
 	Inventory inventory;
 	int num_coins = 30;
@@ -134,7 +136,7 @@ struct PlantMode : public Mode {
 		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
 	} cursor;
 
-	//-------- opengl stuff 
+	//-------- opengl stuff for drawing everything except the sea
 
 	glm::vec2 screen_size = glm::vec2(960, 600); 
 	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -161,7 +163,6 @@ struct PlantMode : public Mode {
 	GLuint trivial_vao = 0;
 	GLuint trivial_vbo = 0;
 
-	//--------
 };
 
 extern Load< SpriteAtlas > main_atlas;

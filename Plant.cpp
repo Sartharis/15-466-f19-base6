@@ -19,11 +19,11 @@ PlantType const* vampire_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
-GroundTileType const* sea_tile = nullptr;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* dirt_tile = nullptr;
 GroundTileType const* grass_short_tile = nullptr;
 GroundTileType const* grass_tall_tile = nullptr;
+GroundTileType const* empty_tile = nullptr;
 
 // ground tiles
 Mesh const* sea_tile_mesh = nullptr;
@@ -31,6 +31,7 @@ Mesh const* ground_tile_mesh = nullptr;
 Mesh const* dirt_tile_mesh = nullptr;
 Mesh const* grass_short_tile_mesh = nullptr;
 Mesh const* grass_tall_tile_mesh = nullptr;
+Mesh const* empty_tile_mesh = nullptr;
 
 // Dead plant
 Mesh const* dead_plant_mesh = nullptr;
@@ -100,17 +101,18 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	}
 
 	// TILE MESHES --------------------------------------------------
-	sea_tile_mesh = &ret->lookup( "sea" );
+	sea_tile_mesh = &ret->lookup( "empty" );
 	ground_tile_mesh = &ret->lookup( "soil" );
 	dirt_tile_mesh = &ret->lookup( "unoccupied" );
 	grass_short_tile_mesh = &ret->lookup( "shortgrass" );
 	grass_tall_tile_mesh = &ret->lookup( "tallgrass" );
+	empty_tile_mesh = new Mesh();
 
-	sea_tile = new GroundTileType( false, sea_tile_mesh, -1 );
 	ground_tile = new GroundTileType( true, ground_tile_mesh, -1 );
 	dirt_tile = new GroundTileType( false, dirt_tile_mesh, 40 );
 	grass_short_tile = new GroundTileType( false, grass_short_tile_mesh, 50 );
 	grass_tall_tile = new GroundTileType( false, grass_tall_tile_mesh, 60 );
+	empty_tile = new GroundTileType( false, empty_tile_mesh, -1 );
 
 	// PLANT MESHES -------------------------------------------------
 	dead_plant_mesh = &ret->lookup( "deadplant" );
@@ -206,7 +208,7 @@ TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y 
 				grid.tiles[x][y].plant_drawable = plant;
 
 				// Set default type for the tile
-				grid.tiles[x][y].change_tile_type( sea_tile );
+				grid.tiles[x][y].change_tile_type( empty_tile );
 
 			}
 		}

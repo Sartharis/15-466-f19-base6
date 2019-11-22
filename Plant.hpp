@@ -151,6 +151,7 @@ struct TileGrid
 };
 
 extern const MeshBuffer* plant_mesh_buffer;
+extern Mesh const* sea_tile_mesh;
 extern Load< SpriteAtlas > plants_atlas;
 extern glm::vec2 plant_grid_tile_size;
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y );
@@ -160,8 +161,9 @@ extern PlantType const* vampire_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
 extern PlantType const* corpseeater_plant;
-extern GroundTileType const* sea_tile;
 extern GroundTileType const* ground_tile;
 extern GroundTileType const* grass_short_tile;
 extern GroundTileType const* grass_tall_tile;
 extern GroundTileType const* dirt_tile;
+extern GroundTileType const* empty_tile;
+extern Load< GLuint > plant_meshes_for_firstpass_program;

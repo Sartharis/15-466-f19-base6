@@ -31,13 +31,6 @@ Mesh const* selector_mesh = nullptr;
 
 Sprite const* order_background_sprite = nullptr;
 
-struct {
-	struct {
-		Sprite const* regular = nullptr;
-		Sprite const* hand = nullptr;
-	} cursor;
-} sprites;
-
 // Sounds --------------------------------------------------------------------------------------------
 Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "FarmTrackV1.wav" ) );
@@ -54,13 +47,6 @@ Load< Sound::Sample > land_ambience( LoadTagDefault, []() -> Sound::Sample const
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
-	std::cout << "----2D sprites loaded (solidarity):" << std::endl;
-	for( auto p : ret->sprites ) {
-		std::cout << p.first << std::endl;
-	}
-	// cursor
-	sprites.cursor.hand = &ret->lookup("hand");
-	// TEMP
 	order_background_sprite = &ret->lookup("orderBackground");
 	return ret;
 });
@@ -151,7 +137,7 @@ PlantMode::PlantMode()
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				const GroundTileType* type = sea_tile;
+				const GroundTileType* type = empty_tile;
 				if( island[x + y * plant_grid_x] == 'x' )
 				{
 					type = grass_short_tile;
@@ -201,6 +187,21 @@ PlantMode::PlantMode()
 	side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
 	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
+	{
+		scene.transforms.emplace_back();
+		Scene::Transform* sea_transform = &scene.transforms.back();
+		sea_transform->position = glm::vec3();
+		sea_transform->scale = glm::vec3( 50, 50, 1 );
+		scene.drawables.emplace_back( sea_transform );
+		sea = &scene.drawables.back();
+
+		Scene::Drawable::Pipeline sea_info;
+		sea_info = firstpass_program_pipeline;
+		sea_info.vao = *plant_meshes_for_firstpass_program;
+		sea_info.start = sea_tile_mesh->start;
+		sea_info.count = sea_tile_mesh->count;
+		sea->pipeline = sea_info;
+	}
 
 	{ // init UI (just left with orders for now)
 		Button* btn;
@@ -404,6 +405,51 @@ void PlantMode::on_click( int x, int y )
 
 	}
 }
+void PlantMode::get_sea_plane(glm::vec3 &tl, glm::vec3 &tr, glm::vec3 &bl, glm::vec3 &br) {
+	glm::mat4 cam_proj_inv = glm::inverse( camera->make_projection() );
+	glm::mat4 l2w = glm::inverse( camera->transform->make_world_to_local() );
+	glm::vec3 ray_o = camera->transform->position;
+	glm::vec3 ray_d;
+	float sea_level = 0.0f;
+	float t;
+	
+	// tl --------
+	glm::vec4 tl_clip = glm::vec4( -1.0f, 1.0f, -1.0f, 1.0f );
+	glm::vec4 tl_cam = cam_proj_inv * tl_clip;
+	tl_cam.z = -1.0f; tl_cam.w = 0.0f;
+	glm::vec4 tl_world4 = l2w * tl_cam;
+	glm::vec3 tl_world3 = glm::vec3( tl_world4.x, tl_world4.y, tl_world4.z );
+	ray_d = glm::normalize( tl_world3 );
+	t = (ray_o.z - sea_level) / (-ray_d.z);
+	tl = ray_o + t * ray_d;
+	// bl --------
+	glm::vec4 bl_clip = glm::vec4( -1.0f, -1.0f, -1.0f, 1.0f );
+	glm::vec4 bl_cam = cam_proj_inv * bl_clip;
+	bl_cam.z = -1.0f; bl_cam.w = 0.0f;
+	glm::vec4 bl_world4 = l2w * bl_cam;
+	glm::vec3 bl_world3 = glm::vec3( bl_world4.x, bl_world4.y, bl_world4.z );
+	ray_d = glm::normalize( bl_world3 );
+	t = (ray_o.z - sea_level) / (-ray_d.z);
+	bl = ray_o + t * ray_d;
+	// tr --------
+	glm::vec4 tr_clip = glm::vec4( 1.0f, 1.0f, -1.0f, 1.0f );
+	glm::vec4 tr_cam = cam_proj_inv * tr_clip;
+	tr_cam.z = -1.0f; tr_cam.w = 0.0f;
+	glm::vec4 tr_world4 = l2w * tr_cam;
+	glm::vec3 tr_world3 = glm::vec3( tr_world4.x, tr_world4.y, tr_world4.z );
+	ray_d = glm::normalize( tr_world3 );
+	t = (ray_o.z - sea_level) / (-ray_d.z);
+	tr = ray_o + t * ray_d;
+	// br --------
+	glm::vec4 br_clip = glm::vec4( 1.0f, -1.0f, -1.0f, 1.0f );
+	glm::vec4 br_cam = cam_proj_inv * br_clip;
+	br_cam.z = -1.0f; br_cam.w = 0.0f;
+	glm::vec4 br_world4 = l2w * br_cam;
+	glm::vec3 br_world3 = glm::vec3( br_world4.x, br_world4.y, br_world4.z );
+	ray_d = glm::normalize( br_world3 );
+	t = (ray_o.z - sea_level) / (-ray_d.z);
+	br = ray_o + t * ray_d;
+}
 
 GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 {
@@ -420,7 +466,7 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 	glm::vec4 ray_wort = glm::inverse( camera->transform->make_world_to_local() ) * ray_cam;
 	glm::vec3 ray_wor = glm::vec3( ray_wort.x, ray_wort.y, ray_wort.z );
 	ray_wor = glm::normalize( ray_wor );
-
+	
 
 	float col_check_dist = 1000.0f;
 	glm::vec3 from_camera_start = camera->transform->position;
@@ -667,6 +713,10 @@ void PlantMode::update(float elapsed)
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 	}
 
+	//Sea positioning
+	sea->transform->position = camera->transform->position;
+	sea->transform->position.z = -0.2f;
+
 	{ // update UI and cursor
 		// update buttons' hovered state
 		for( int i = 0; i < UI.all_buttons.size(); i++) {
@@ -678,7 +728,7 @@ void PlantMode::update(float elapsed)
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
 		case default_hand:
-			cursor.sprite = sprites.cursor.hand;
+			cursor.sprite = UI.toolbar.glove->get_sprite();
 			cursor.scale = 0.2f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
@@ -716,7 +766,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glViewport(0, 0, 
 		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
 		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
-	glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
+	//glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
 	glEnable(GL_DEPTH_TEST);
@@ -865,6 +916,26 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 {
 	{ // init the opengl stuff
 		screen_size = glm::vec2( new_drawable_size.x, new_drawable_size.y );
+		/*
+		// ------ setup stuff for drawing the sea
+		glGenVertexArrays( 1, &sea_vao );
+		glBindVertexArray( sea_vao );
+
+		glGenBuffers( 1, &sea_vbo );
+		glBindBuffer( GL_ARRAY_BUFFER, sea_vbo );
+		glBufferData(
+			GL_ARRAY_BUFFER,
+			sea_plane_vector.size() * sizeof( glm::vec3 ),
+			sea_plane_vector.data(),
+			GL_STREAM_DRAW );
+
+		glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof( float ), (void*)0 );
+		glEnableVertexAttribArray( 0 );
+
+		glBindBuffer( GL_ARRAY_BUFFER, 0 );
+		glBindVertexArray( 0 );
+		GL_ERRORS();*/
+
 		// ------ generate framebuffer for firstpass
 		glGenFramebuffers( 1, &firstpass_fbo );
 		glBindFramebuffer( GL_FRAMEBUFFER, firstpass_fbo );
