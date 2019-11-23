@@ -2,6 +2,7 @@
 #include "PlantMode.hpp"
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
+#include "WaterProgram.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
 #include "gl_errors.hpp"
@@ -26,7 +27,7 @@ GroundTileType const* grass_tall_tile = nullptr;
 GroundTileType const* empty_tile = nullptr;
 
 // ground tiles
-Mesh const* sea_tile_mesh = nullptr;
+Mesh const* sea_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* dirt_tile_mesh = nullptr;
 Mesh const* grass_short_tile_mesh = nullptr;
@@ -101,7 +102,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	}
 
 	// TILE MESHES --------------------------------------------------
-	sea_tile_mesh = &ret->lookup( "empty" );
+	sea_mesh = &ret->lookup( "empty" );
 	ground_tile_mesh = &ret->lookup( "soil" );
 	dirt_tile_mesh = &ret->lookup( "unoccupied" );
 	grass_short_tile_mesh = &ret->lookup( "shortgrass" );
@@ -148,6 +149,10 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 
 Load< GLuint > plant_meshes_for_firstpass_program( LoadTagDefault, [](){
 	return new GLuint( plant_meshes->make_vao_for_program( firstpass_program->program ) );
+} );
+
+Load< GLuint > plant_meshes_for_water_program( LoadTagDefault, [](){
+	return new GLuint( plant_meshes->make_vao_for_program( water_program->program ) );
 } );
 
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y )
