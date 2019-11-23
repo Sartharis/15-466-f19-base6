@@ -20,6 +20,7 @@ PlantType const* vampire_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
+std::vector< PlantType const* > all_plants;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* dirt_tile = nullptr;
 GroundTileType const* grass_short_tile = nullptr;
@@ -141,7 +142,12 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura from fire flowers." );
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
-
+	all_plants.push_back(test_plant);
+	all_plants.push_back(friend_plant);
+	all_plants.push_back(vampire_plant);
+	all_plants.push_back(cactus_plant);
+	all_plants.push_back(fireflower_plant);
+	all_plants.push_back(corpseeater_plant);
 	plant_mesh_buffer = ret;
 
 	return ret;

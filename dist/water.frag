@@ -97,11 +97,11 @@ float cnoise(vec3 P){
 void main() {
 	// big wave
 	float noise_L = cnoise( vec3(pos.x / 4.0f , pos.y / 4.0f , TIME / 10.0f) );
-	vec3 dark_L = vec3( 58.0f / 255.0f, 87.0f / 255.0f, 137.0f / 255.0f );
-	vec3 light_L = vec3( 55.0f / 255.0f, 103.0f / 255.0f, 161.0f / 255.0f );
+	vec3 dark_L = vec3( 80.0f / 255.0f, 131.0f / 255.0f, 195.0f / 255.0f );
+	vec3 light_L = vec3( 97.0f / 255.0f, 145.0f / 255.0f, 203.0f / 255.0f );
 	vec3 L = (noise_L < -0.2f || noise_L > 0.3f) ? dark_L : light_L;
 
-	float noise_S = cnoise(  vec3(pos.x , pos.y , TIME / 5.0f) );
+	float noise_S = cnoise(  vec3(pos.x / 1.5f , pos.y / 1.5f , TIME / 5.0f) );
 	vec3 col_S = vec3( 184.0f / 255.0f, 211.0f / 255.0f, 226.0f / 255.0f );
 	vec3 S = (noise_S > 0.15f && noise_S < 0.2f) ? col_S : L;
 
