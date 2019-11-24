@@ -480,6 +480,17 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 	return collided_tile;
 }
 
+glm::vec2 PlantMode::get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size) {
+	glm::vec2 anchor = cursor_loc + glm::vec2(40, 0);
+	if (anchor.y + box_size.y + 10.0f > screen_size.y) {
+		anchor.y = screen_size.y - box_size.y - 10.0f;
+	}
+	if (anchor.x + box_size.x + 10.0f > screen_size.x) {
+		anchor.x = cursor_loc.x - box_size.x - 10.0f;
+	}
+	return anchor;
+}
+
 bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
 	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
@@ -622,17 +633,17 @@ void PlantMode::update(float elapsed)
 			{
 				if( hovered_tile->is_tile_harvestable() )
 				{
-					action_description = "Harvest ";
+					action_description = "Harvest";
 				}
 				else if( !hovered_tile->is_plant_dead() )
 				{
-					action_description = "Growing ";
+					action_description = "Growing";
 				}
 			}
 
 		} else if( current_tool == watering_can ) {
 			if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
-				action_description = "Water ";
+				action_description = "Water";
 			}
 
 		} else if( current_tool == fertilizer ) {
@@ -646,14 +657,14 @@ void PlantMode::update(float elapsed)
 			}
 			else if( hovered_tile->is_plant_dead() )
 			{
-				action_description = "Remove ";
+				action_description = "Remove";
 			}
 
 		} else if( current_tool == seed ) {
 			if( selectedPlant 
 					&& hovered_tile->tile_type->get_can_plant()
 					&& !hovered_tile->plant_type ) {
-				action_description = "Plant ";
+				action_description = "Plant";
 			}
 		}
 		else
@@ -818,8 +829,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		draw.draw_text( tool_name, glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
-		draw.draw_text(tool_description, glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
-		// draw.draw_text( "Energy: " + std::to_string( num_coins ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
+		draw.draw_text( tool_description, glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f, glm::u8vec4(255,255,255,255), 400.0f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
 		glm::vec4 sel_clip = world_to_clip * selector->transform->make_local_to_world() * glm::vec4( 0.0f, 0.0f, 0.0f, 1.0f );
@@ -833,7 +843,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec2 extent_min, extent_max;
 			draw.get_text_extents( action_description, glm::vec2( 0.0f, 0.0f ), scale, &extent_min, &extent_max );
 			glm::vec2 textbox_size = extent_max - extent_min;
-			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(0.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
+			draw.draw_text( action_description, window_pos + glm::vec2(-textbox_size.x, textbox_size.y)/2.0f + glm::vec2(8.0f, 10.0f) * sel_clip_pos.z, scale / sel_clip_pos.z );
 		}
 		
 	}
@@ -849,26 +859,28 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			{
 				DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-
+				// UI elements
 				std::vector<UIElem*> elems = std::vector<UIElem*>();
 				UI.root->gather(elems);
 				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
-
+				// text for UI elements
 				for( int i=0; i<elems.size(); i++ ){
 					elems[i]->draw_self( draw_sprites, draw_text );
 				}
+				// cursor
+				int mouse_x, mouse_y;
+				SDL_GetMouseState(&mouse_x, &mouse_y);
+				draw_sprites.draw(*cursor.sprite, 
+						glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
+						cursor.scale);
+				// cursor text
+				glm::vec2 tmin, size;
+				draw_text.get_text_extents(cursor.text, glm::vec2(0.0f, 0.0f), 0.4f, &tmin, &size, 250.0f);
+				glm::vec2 anchor = get_hover_loc(glm::vec2(mouse_x, mouse_y), size);
+				anchor.y = screen_size.y - anchor.y;
+				draw_text.draw_text( cursor.text, anchor, 0.4f, glm::u8vec4(255,255,255,255), 250.0f );
 			}
 		}
-
-		// cursor
-		SpriteAtlas const* atlas = (current_tool == seed) ? plants_atlas : main_atlas;
-		DrawSprites draw_cursor( *atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		int mouse_x, mouse_y;
-		SDL_GetMouseState(&mouse_x, &mouse_y);
-		draw_cursor.draw( 
-				*cursor.sprite, 
-				glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
-				cursor.scale);
 	}
    
 }

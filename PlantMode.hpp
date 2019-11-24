@@ -105,7 +105,7 @@ struct PlantMode : public Mode {
 	Tool current_tool = default_hand;
 	void set_current_tool(Tool tool);
 
-	//UI states:
+	// UI
 	void setup_UI();
 	struct {
 		UIElem* root;
@@ -127,12 +127,11 @@ struct PlantMode : public Mode {
 		} order;
 	} UI;
 
-	UIElem* UI_root = nullptr;
-
 	// cursor
+	glm::vec2 get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size);
 	struct {
 		Sprite const* sprite = nullptr;
-		std::string text = ""; // TODO: text that floats around cursor?
+		std::string text = "Some sample text that hovers around the cursor. I'm making it intentionally longer than needed."; 
 		float scale = 1.0f;
 		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
 	} cursor;

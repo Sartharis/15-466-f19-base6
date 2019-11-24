@@ -263,13 +263,39 @@ float DrawSprites::get_xadvance(std::string const& char_a, std::string const* _c
 	}
 }
 
-void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, glm::vec2 *anchor_out) {
+void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, float scale, glm::u8vec4 const &tint, float max_width, glm::vec2 *anchor_out) {
 	assert( font );
 	glm::vec2 moving_anchor = anchor;
+
 	for (size_t pos = 0; pos < text.size(); pos++){
 
 		float xadvance;
 		std::string char_a = std::to_string(int(text[pos]));
+
+		if (text[pos] == ' ') {
+			float next_word_width = 0.0f;
+			if (pos < text.size()-1) {
+				std::string nxt = std::to_string( int(text[pos+1]) );
+				next_word_width += get_xadvance( std::to_string(int(' ')), &nxt );
+			}
+			size_t i = pos + 1;
+			while (i < text.size() && text[i] != ' ') {
+				std::string moving_char_a = std::to_string(int(text[i]));
+				if (i == text.size()-1) {
+					next_word_width += get_xadvance( moving_char_a, nullptr );
+				} else {
+					std::string moving_char_b = std::to_string( int(text[i+1]) );
+					next_word_width += get_xadvance( moving_char_a, &moving_char_b ) * scale;
+				}
+				i++;
+			}
+			if (moving_anchor.x - anchor.x + next_word_width > max_width) {
+				moving_anchor.x = anchor.x;
+				moving_anchor.y -= 48.0f * scale;
+				continue;
+			}
+		}
+
 		if (pos == text.size()-1) {
 			xadvance = get_xadvance( char_a, nullptr );
 		} else {
@@ -288,7 +314,7 @@ void DrawSprites::draw_text(std::string const &text, glm::vec2 const &anchor, fl
 	}
 }
 
-void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anchor, float scale, glm::vec2 *min_, glm::vec2 *max_) {
+void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anchor, float scale, glm::vec2 *min_, glm::vec2 *max_, float max_width) {
 	assert( font );
 
 	assert(min_);
@@ -298,12 +324,39 @@ void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anc
 
 	min = glm::vec2(std::numeric_limits< float >::infinity());
 	max = glm::vec2(-std::numeric_limits< float >::infinity());
+	int lines = 1;
 
 	glm::vec2 moving_anchor = anchor;
 	for (size_t pos = 0; pos < text.size(); pos++){
 		
 		float xadvance;
 		std::string char_a = std::to_string(int(text[pos]));
+
+		if (text[pos] == ' ') {
+			float next_word_width = 0.0f;
+			if (pos < text.size()-1) {
+				std::string nxt = std::to_string( int(text[pos+1]) );
+				next_word_width += get_xadvance( std::to_string(int(' ')), &nxt );
+			}
+			size_t i = pos + 1;
+			while (i < text.size() && text[i] != ' ') {
+				std::string moving_char_a = std::to_string(int(text[i]));
+				if (i == text.size()-1) {
+					next_word_width += get_xadvance( moving_char_a, nullptr );
+				} else {
+					std::string moving_char_b = std::to_string( int(text[i+1]) );
+					next_word_width += get_xadvance( moving_char_a, &moving_char_b ) * scale;
+				}
+				i++;
+			}
+			if (moving_anchor.x - anchor.x + next_word_width > max_width) {
+				moving_anchor.x = anchor.x;
+				moving_anchor.y -= 48.0f * scale;
+				lines++;
+				continue;
+			}
+		}
+
 		if (pos == text.size()-1) {
 			xadvance = get_xadvance( char_a, nullptr );
 		} else {
@@ -311,12 +364,15 @@ void DrawSprites::get_text_extents(std::string const &text, glm::vec2 const &anc
 			xadvance = get_xadvance( char_a, &char_b );
 		}
 
-		Sprite const &chr = font->atlas->lookup(std::to_string(int(text[pos])));
-		min = glm::min(min, moving_anchor + (chr.min_px - chr.anchor_px) * scale);
-		max = glm::max(max, moving_anchor + (chr.max_px - chr.anchor_px) * scale);
-		// moving_anchor.x += (chr.max_px.x - chr.min_px.x + 1) * scale;
+		// Sprite const &chr = font->atlas->lookup(std::to_string(int(text[pos])));
+		// min = glm::min(min, moving_anchor + (chr.min_px - chr.anchor_px) * scale);
+		// max = glm::max(max, moving_anchor + (chr.max_px - chr.anchor_px) * scale);
+		min.x = glm::min(min.x, moving_anchor.x);
+		max.x = glm::max(max.x, moving_anchor.x + 48.0f * scale);
 		moving_anchor.x += xadvance * scale;
 	}
+	min.y = anchor.y;
+	max.y = min.y + (float)lines * 48.0f * scale;
 }
 
 DrawSprites::~DrawSprites() {
