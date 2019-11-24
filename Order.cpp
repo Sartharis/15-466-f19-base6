@@ -22,49 +22,8 @@
 #include <random>
 #include <unordered_map>
 
-// OrderType const* order1 = nullptr;
-// OrderType const* order2 = nullptr;
-// OrderType const* order3 = nullptr;
-// OrderType const* order4 = nullptr;
-// OrderType const* order5 = nullptr;
-// OrderType const* order6 = nullptr;
-// OrderType const* order7 = nullptr;
 std::vector< OrderType const* > main_orders;
 std::vector< OrderType const* > all_orders;
-
-// Load< void > order_atlas(LoadTagLate, []() {
-// 	std::map< PlantType const*, int > require_plants_in1;
-// 	require_plants_in1.insert( std::pair<PlantType const*, int>( test_plant, 4 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in2;
-// 	require_plants_in2.insert( std::pair<PlantType const*, int>( friend_plant, 1 ) );
-// 	require_plants_in1.insert( std::pair<PlantType const*, int>( test_plant, 2 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in3;
-// 	require_plants_in3.insert( std::pair<PlantType const*, int>( cactus_plant, 3 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in4;
-// 	require_plants_in4.insert( std::pair<PlantType const*, int>( friend_plant, 2 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in5;
-// 	require_plants_in5.insert( std::pair<PlantType const*, int>( vampire_plant, 1 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in6;
-// 	require_plants_in6.insert( std::pair<PlantType const*, int>( corpseeater_plant, 1 ) );
-// 	require_plants_in6.insert( std::pair<PlantType const*, int>( friend_plant, 2 ) );
-
-// 	std::map< PlantType const*, int > require_plants_in7;
-// 	require_plants_in7.insert( std::pair<PlantType const*, int>( vampire_plant, 1 ) );
-// 	require_plants_in5.insert( std::pair<PlantType const*, int>( corpseeater_plant, 2 ) );
-
-// 	order1 = new OrderType("ORDER", "I need some ferns.",require_plants_in1, 150,nullptr);
-// 	order2 = new OrderType("ORDER", "I need cacti for self-defense",require_plants_in2,200,nullptr);
-// 	order3 = new OrderType("ORDER", "My dad has been lonely lately. I need companion carrots.",require_plants_in3,250,nullptr);	
-// 	order4 = new OrderType("ORDER", "I need a Sap Sucker, don't ask me why.",require_plants_in4,300,nullptr);	
-// 	order5 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in5, 350, nullptr );
-// 	order6 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in6, 400, nullptr );
-// 	order7 = new OrderType( "ORDER", "I need a Sap Sucker, don't ask me why.", require_plants_in7, 450, nullptr );
-// });
 
 // TODO: would ideally get rid of this along with the draw function (and write the draw code in PlantMode::draw directly)
 Load< SpriteAtlas > font_atlas_tmp( LoadTagDefault, []() -> SpriteAtlas const* {
@@ -135,6 +94,11 @@ Load< void > daily_order_load_from_file(LoadTagLate, []() {
 			}
 		}
 		
+	}
+    
+	// This part is to randomly generate three daily order.
+	for(int i=0;i<3;i++){
+		all_orders.push_back(generate_random_daily_order());
 	}
 	
 });
@@ -225,6 +189,22 @@ PlantType const* get_plant_type_by_name(std::string plant_type_name){
 		return nullptr;
 	}
 }
+
+// Randomly generate daily order with combination of different required plants
+OrderType const* generate_random_daily_order(){
+	std::map< PlantType const*, int > rand_require_plants;
+	int rand_required_plants_type_num = rand()%3+1;
+	int rand_bonus_energy = 0;
+	for(int i=0;i<rand_required_plants_type_num;i++){
+		int rand_required_num = rand()%5+1;
+		rand_bonus_energy += rand()%125 + 55;
+		int rand_plant_type = rand()%all_plants.size();
+		rand_require_plants.insert(std::pair<PlantType const*, int>(all_plants[rand_plant_type],rand_required_num));
+	}
+	OrderType const* tmp_daily_order = new OrderType("random order", "Someone orders these..",rand_require_plants, rand_bonus_energy,nullptr);
+	return tmp_daily_order;
+}
+
 
 void OrderType::draw_main_order(glm::uvec2 const &drawable_size, Inventory& inventory) const {
 

@@ -20,7 +20,6 @@
 
 struct Inventory
 { // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
-	// TODO: when seed / harvest number changes, update UI by changing corresponding elem text and re-layout all plant elems.
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
@@ -53,6 +52,8 @@ struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
+	float timer = 0.0f;
+
 	int current_order_idx = 0;
 	OrderType const* current_order = nullptr;
 	bool cancel_order_state = false;
@@ -80,6 +81,7 @@ struct PlantMode : public Mode {
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
+	Scene::Drawable* sea = nullptr;
 	
 	Inventory inventory;
 	int num_coins = 30;
@@ -128,6 +130,7 @@ struct PlantMode : public Mode {
 
 	UIElem* UI_root = nullptr;
 
+	// cursor
 	struct {
 		Sprite const* sprite = nullptr;
 		std::string text = ""; // TODO: text that floats around cursor?
@@ -135,7 +138,7 @@ struct PlantMode : public Mode {
 		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
 	} cursor;
 
-	//-------- opengl stuff 
+	//-------- opengl stuff
 
 	glm::vec2 screen_size = glm::vec2(960, 600); 
 	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -162,7 +165,6 @@ struct PlantMode : public Mode {
 	GLuint trivial_vao = 0;
 	GLuint trivial_vbo = 0;
 
-	//--------
 };
 
 extern Load< SpriteAtlas > main_atlas;

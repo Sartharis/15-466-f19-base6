@@ -2,6 +2,7 @@
 #include "PlantMode.hpp"
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
+#include "WaterProgram.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
 #include "gl_errors.hpp"
@@ -23,17 +24,20 @@ PlantType const* spreader_source_plant = nullptr;
 PlantType const* spreader_child_plant = nullptr;
 PlantType const* teleporter_plant = nullptr;
 GroundTileType const* sea_tile = nullptr;
+std::vector< PlantType const* > all_plants;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* dirt_tile = nullptr;
 GroundTileType const* grass_short_tile = nullptr;
 GroundTileType const* grass_tall_tile = nullptr;
+GroundTileType const* empty_tile = nullptr;
 
 // ground tiles
-Mesh const* sea_tile_mesh = nullptr;
+Mesh const* sea_mesh = nullptr;
 Mesh const* ground_tile_mesh = nullptr;
 Mesh const* dirt_tile_mesh = nullptr;
 Mesh const* grass_short_tile_mesh = nullptr;
 Mesh const* grass_tall_tile_mesh = nullptr;
+Mesh const* empty_tile_mesh = nullptr;
 
 // Dead plant
 Mesh const* dead_plant_mesh = nullptr;
@@ -103,17 +107,18 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	}
 
 	// TILE MESHES --------------------------------------------------
-	sea_tile_mesh = &ret->lookup( "sea" );
+	sea_mesh = &ret->lookup( "empty" );
 	ground_tile_mesh = &ret->lookup( "soil" );
 	dirt_tile_mesh = &ret->lookup( "unoccupied" );
 	grass_short_tile_mesh = &ret->lookup( "shortgrass" );
 	grass_tall_tile_mesh = &ret->lookup( "tallgrass" );
+	empty_tile_mesh = new Mesh();
 
-	sea_tile = new GroundTileType( false, sea_tile_mesh, -1 );
 	ground_tile = new GroundTileType( true, ground_tile_mesh, -1 );
 	dirt_tile = new GroundTileType( false, dirt_tile_mesh, 40 );
 	grass_short_tile = new GroundTileType( false, grass_short_tile_mesh, 50 );
 	grass_tall_tile = new GroundTileType( false, grass_tall_tile_mesh, 60 );
+	empty_tile = new GroundTileType( false, empty_tile_mesh, -1 );
 
 	// PLANT MESHES -------------------------------------------------
 	dead_plant_mesh = &ret->lookup( "deadplant" );
@@ -162,6 +167,21 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	teleporter_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									  Aura::none, 5, 50, 40.0f, "Teleporting Twinleaf", 
 									  "Teleports around the field while growing." );;
+	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
+	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::help, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
+	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::suck, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
+	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, Aura::none, 10, 20, 60.0f, "Crisp Cactus", "Grows only in fire aura from fire flowers." );
+	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, Aura::fire, 5, 0, 20.0f, "Fire Flower", "Gives off fire aura." );
+	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, Aura::none, 5, 50, 40.0f, "Detritus Dahlia", "Feeds off a neighboring dead plant." );
+	all_plants.push_back(test_plant);
+	all_plants.push_back(friend_plant);
+	all_plants.push_back(vampire_plant);
+	all_plants.push_back(cactus_plant);
+	all_plants.push_back(fireflower_plant);
+	all_plants.push_back(corpseeater_plant);
+	all_plants.push_back(spreader_source_plant);
+	all_plants.push_back(spreader_child_plant);
+	all_plants.push_back(teleporter_plant);
 	plant_mesh_buffer = ret;
 
 	return ret;
@@ -173,6 +193,9 @@ Load< GLuint > plant_meshes_for_firstpass_program( LoadTagDefault, [](){
 
 Load< Sound::Sample > plant_death_sound( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "PlantDeath.wav" ) );
+
+Load< GLuint > plant_meshes_for_water_program( LoadTagDefault, [](){
+	return new GLuint( plant_meshes->make_vao_for_program( water_program->program ) );
 } );
 
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y )
@@ -233,7 +256,7 @@ TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y 
 				grid.tiles[x][y].plant_drawable = plant;
 
 				// Set default type for the tile
-				grid.tiles[x][y].change_tile_type( sea_tile );
+				grid.tiles[x][y].change_tile_type( empty_tile );
 
 			}
 		}

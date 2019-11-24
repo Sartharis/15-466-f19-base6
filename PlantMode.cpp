@@ -2,6 +2,7 @@
 
 #include "FirstpassProgram.hpp"
 #include "PostprocessingProgram.hpp"
+#include "WaterProgram.hpp"
 #include "Load.hpp"
 #include "Mesh.hpp"
 #include "Scene.hpp"
@@ -31,13 +32,6 @@ Mesh const* selector_mesh = nullptr;
 
 Sprite const* order_background_sprite = nullptr;
 
-struct {
-	struct {
-		Sprite const* regular = nullptr;
-		Sprite const* hand = nullptr;
-	} cursor;
-} sprites;
-
 // Sounds --------------------------------------------------------------------------------------------
 Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "FarmTrackV1.wav" ) );
@@ -66,13 +60,6 @@ Load< Sound::Sample > plant_sound( LoadTagDefault, []() -> Sound::Sample const* 
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
-	std::cout << "----2D sprites loaded (solidarity):" << std::endl;
-	for( auto p : ret->sprites ) {
-		std::cout << p.first << std::endl;
-	}
-	// cursor
-	sprites.cursor.hand = &ret->lookup("hand");
-	// TEMP
 	order_background_sprite = &ret->lookup("orderBackground");
 	return ret;
 });
@@ -163,7 +150,7 @@ PlantMode::PlantMode()
 		{
 			for( int32_t y = 0; y < plant_grid_y; ++y )
 			{
-				const GroundTileType* type = sea_tile;
+				const GroundTileType* type = empty_tile;
 				if( island[x + y * plant_grid_x] == 'x' )
 				{
 					type = grass_short_tile;
@@ -213,6 +200,24 @@ PlantMode::PlantMode()
 	side_camera_dir = camera->transform->rotation * glm::vec3( 1.0f, 0.0f, 0.0f );
 	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
+	{ // make sea
+		scene.transforms.emplace_back();
+		Scene::Transform* sea_transform = &scene.transforms.back();
+		sea_transform->position = glm::vec3();
+		sea_transform->scale = glm::vec3( 40, 40, 1 );
+		scene.drawables.emplace_back( sea_transform );
+		sea = &scene.drawables.back();
+
+		Scene::Drawable::Pipeline sea_info = water_program_pipeline;
+		sea_info.vao = *plant_meshes_for_water_program;
+		sea_info.start = sea_mesh->start;
+		sea_info.count = sea_mesh->count;
+		GLint TIME_float_loc = water_program->TIME_float;
+		sea_info.set_uniforms = [TIME_float_loc, this](){
+			glUniform1f(TIME_float_loc, timer);
+		};
+		sea->pipeline = sea_info;
+	}
 
 	{ // init UI (just left with orders for now)
 		Button* btn;
@@ -439,7 +444,7 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 	glm::vec4 ray_wort = glm::inverse( camera->transform->make_world_to_local() ) * ray_cam;
 	glm::vec3 ray_wor = glm::vec3( ray_wort.x, ray_wort.y, ray_wort.z );
 	ray_wor = glm::normalize( ray_wor );
-
+	
 
 	float col_check_dist = 1000.0f;
 	glm::vec3 from_camera_start = camera->transform->position;
@@ -548,6 +553,8 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
+	timer += elapsed;
+
 	// update order cancel state
 	cancel_order_freeze_time -= elapsed;
 	if(cancel_order_freeze_time<=0){
@@ -675,7 +682,7 @@ void PlantMode::update(float elapsed)
 	} 
 
 	//Selector positioning
-	if( hovered_tile )
+	if( hovered_tile && hovered_tile->tile_type != empty_tile )
 	{
 		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.03f );
 	}
@@ -683,6 +690,10 @@ void PlantMode::update(float elapsed)
 	{
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 	}
+
+	//Sea positioning
+	sea->transform->position = camera->transform->position;
+	sea->transform->position.z = -0.1f;
 
 	{ // update UI and cursor
 		// update buttons' hovered state
@@ -695,7 +706,7 @@ void PlantMode::update(float elapsed)
 		// update cursor sprite depending on current tool
 		switch( current_tool ) {
 		case default_hand:
-			cursor.sprite = sprites.cursor.hand;
+			cursor.sprite = UI.toolbar.glove->get_sprite();
 			cursor.scale = 0.2f;
 			cursor.offset = glm::vec2(0, 0);
 			break;
@@ -733,7 +744,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glViewport(0, 0, 
 		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
 		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
-	glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
+	//glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
 	glEnable(GL_DEPTH_TEST);
@@ -882,6 +894,7 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 {
 	{ // init the opengl stuff
 		screen_size = glm::vec2( new_drawable_size.x, new_drawable_size.y );
+
 		// ------ generate framebuffer for firstpass
 		glGenFramebuffers( 1, &firstpass_fbo );
 		glBindFramebuffer( GL_FRAMEBUFFER, firstpass_fbo );
