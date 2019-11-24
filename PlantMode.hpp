@@ -104,6 +104,7 @@ struct PlantMode : public Mode {
 	//tool selection
 	Tool current_tool = default_hand;
 	void set_current_tool(Tool tool);
+	void set_current_tool_tooltip( Tool tool );
 
 	// UI
 	void setup_UI();

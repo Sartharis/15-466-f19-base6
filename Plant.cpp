@@ -20,6 +20,10 @@ PlantType const* vampire_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
+PlantType const* spreader_source_plant = nullptr;
+PlantType const* spreader_child_plant = nullptr;
+PlantType const* teleporter_plant = nullptr;
+GroundTileType const* sea_tile = nullptr;
 std::vector< PlantType const* > all_plants;
 GroundTileType const* ground_tile = nullptr;
 GroundTileType const* dirt_tile = nullptr;
@@ -136,6 +140,33 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	corpseeater_2_mesh = &ret->lookup( "corpseeater2" );
 	corpseeater_3_mesh = &ret->lookup( "corpseeater3" );
 
+	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, 
+								  Aura::none, 5, 10, 20.0f, "Familiar Fern", 
+								"Cheap plant. Grows anywhere." );
+	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, 
+								  Aura::help, 10, 25, 30.0f, "Companion Carrot", 
+								  "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
+	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, 
+								   Aura::suck, 20, 60, 50.0f, "Sap Sucker", 
+								   "Grows by stealing life from neighbor plants. 3 plants sustain it." );
+	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, 
+								  Aura::none, 10, 20, 60.0f, "Crisp Cactus", 
+								  "Grows only in fire aura from fire flowers." );
+	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
+									  Aura::fire, 5, 0, 20.0f, "Fire Flower", 
+									  "Gives off fire aura." );
+	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+									   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
+									   "Feeds off a neighboring dead plant." );
+	spreader_source_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+										   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
+										   "Once fully grown tries to spread all over the farm." );
+	spreader_child_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+										  Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
+										  "Offshoot of the " );
+	teleporter_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+									  Aura::none, 5, 50, 40.0f, "Teleporting Twinleaf", 
+									  "Teleports around the field while growing." );;
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, Aura::none, 5, 10, 20.0f, "Familiar Fern", "Cheap plant. Grows anywhere." );
 	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, Aura::help, 10, 25, 30.0f, "Companion Carrot", "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
 	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, Aura::suck, 20, 60, 50.0f, "Sap Sucker", "Grows by stealing life from neighbor plants. 3 plants sustain it." );
@@ -148,6 +179,9 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	all_plants.push_back(cactus_plant);
 	all_plants.push_back(fireflower_plant);
 	all_plants.push_back(corpseeater_plant);
+	all_plants.push_back(spreader_source_plant);
+	all_plants.push_back(spreader_child_plant);
+	all_plants.push_back(teleporter_plant);
 	plant_mesh_buffer = ret;
 
 	return ret;
@@ -156,6 +190,10 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 Load< GLuint > plant_meshes_for_firstpass_program( LoadTagDefault, [](){
 	return new GLuint( plant_meshes->make_vao_for_program( firstpass_program->program ) );
 } );
+
+Load< Sound::Sample > plant_death_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "PlantDeath.wav" ) );
+										 } );
 
 Load< GLuint > plant_meshes_for_water_program( LoadTagDefault, [](){
 	return new GLuint( plant_meshes->make_vao_for_program( water_program->program ) );
@@ -238,7 +276,7 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 		if( tile_type->get_can_plant() ) {
 			GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
 			tile_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
-				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, fertility);
+				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, fertilization);
 			};
 		}
 	}
@@ -259,7 +297,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 		{
 			if( plant_type == test_plant )
 			{
-				current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
+				current_grow_time += grow_power + elapsed * std::sqrtf(moisture);
 			}
 			else if( plant_type == friend_plant )
 			{
@@ -295,11 +333,11 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( neighbor >= 2 )
 				{
-					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture);
 				}
 				else
 				{
-					plant_health -= elapsed * ( plant_health_restore_rate + 0.1f );
+					change_health(- elapsed * ( plant_health_restore_rate + 0.1f ));
 				}
 			}
 			else if( plant_type == vampire_plant )
@@ -323,12 +361,12 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( victims.size() > 0 )
 				{
-					victims[rand() % victims.size()]->plant_health -= elapsed * ( 2*plant_health_restore_rate + 0.2f );
-					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
+					victims[rand() % victims.size()]->change_health (- elapsed * ( 2*plant_health_restore_rate + 0.2f ));
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture);
 				}
 				else
 				{
-					plant_health -= elapsed * ( plant_health_restore_rate + 0.1f );
+					change_health( - elapsed * ( plant_health_restore_rate + 0.1f ));
 				}
 			}
 			else if( plant_type == corpseeater_plant )
@@ -352,31 +390,34 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 				if( dead_plants > 0 )
 				{
-					current_grow_time += grow_power + elapsed * std::sqrtf(moisture * fertility);
+					current_grow_time += grow_power + elapsed * std::sqrtf(moisture);
 				}
 				else
 				{
-					plant_health -= elapsed * ( plant_health_restore_rate + 0.1f );
+					change_health( - elapsed * ( plant_health_restore_rate + 0.1f ));
 				}
 			}
 			else if( plant_type == fireflower_plant )
 			{
-				current_grow_time += grow_power + elapsed * std::sqrtf(fertility);
+				current_grow_time += grow_power + elapsed;
 			}
 			else if( plant_type == cactus_plant )
 			{
 				if( fire_aura_effect > 0.1f && aqua_aura_effect <= 0.0f )
 				{
-					current_grow_time += grow_power * fire_aura_effect + elapsed * std::sqrtf(fertility);
+					current_grow_time += grow_power * fire_aura_effect + elapsed;
 				}
 				else
 				{
-					plant_health -= elapsed * ( plant_health_restore_rate + 0.1f );
+					change_health (- elapsed * ( plant_health_restore_rate + 0.1f ));
 				}
 			}
 
-			if( plant_health < 1.0f ) plant_health = std::min( 1.0f, plant_health + elapsed * plant_health_restore_rate );
+			change_health( elapsed * plant_health_restore_rate );
 		}
+
+		fertilization = std::max(0.0f,fertilization - elapsed);
+		if( fertilization > 0.0f ) change_health( elapsed * plant_health_fertilization_restore_rate );
 
 		float target_time = plant_type->get_growth_time();
 		if( current_grow_time > target_time ) current_grow_time = target_time;
@@ -423,7 +464,6 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 
 	// update tile state
 	moisture -= moisture_dry_rate * elapsed;
-	if( plant_type && !is_plant_dead() ) fertility -= fertility_consume_rate * elapsed;
 	fire_aura_effect = std::max( 0.0f, fire_aura_effect - 0.1f * elapsed );
 	aqua_aura_effect = std::max( 0.0f, aqua_aura_effect - 0.1f * elapsed );
 }
@@ -470,8 +510,6 @@ void GroundTile::apply_pending_update(float elapsed)
 
 	moisture = std::max( 0.0f, moisture );
 	moisture = std::min( 1.0f, moisture );
-	fertility = std::max( 0.0f, fertility );
-	fertility = std::min( 1.0f, fertility );
 	
 }
 
@@ -503,6 +541,21 @@ void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_tr
 
 	if( help_aura ) help_aura->update( help_aura->max_strength, elapsed, camera_transform );
 	if( suck_aura ) suck_aura->update( suck_aura->max_strength, elapsed, camera_transform );
+}
+
+bool GroundTile::try_swap_plants(GroundTile& tile_a, GroundTile& tile_b )
+{
+	if( tile_a.is_cleared() && tile_b.is_cleared() )
+	{
+		const PlantType* swap_type = tile_b.plant_type;
+		float swap_health = tile_b.plant_health;
+		tile_b.plant_type = tile_a.plant_type;
+		tile_b.plant_health = tile_a.plant_health;
+		tile_a.plant_type = swap_type;
+		tile_a.plant_health = swap_health;
+		return true;
+	}
+	return false;
 }
 
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
@@ -584,6 +637,17 @@ bool GroundTile::try_clear_tile()
 bool GroundTile::is_cleared() const
 {
 	return tile_type == ground_tile;
+}
+
+void GroundTile::change_health( float change )
+{
+	if( plant_type && !is_plant_dead() )
+	{
+		float prev_health = plant_health;
+		(void) prev_health;
+		plant_health = glm::clamp( plant_health + change, 0.0f, 1.0f );
+		if( is_plant_dead() ) Sound::play( *plant_death_sound, 0.0f, 1.0f );
+	}
 }
 
 bool TileGrid::is_in_grid( int x, int y ) const

@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "Load.hpp"
 // #include "Mesh.hpp"
 // #include "Scene.hpp"
@@ -62,7 +64,7 @@ Load< void > daily_order_load_from_file(LoadTagLate, []() {
 			std::cout <<"num:"<< num_of_plants_type << std::endl;
 			new_order_count = 4;
 		}else if(new_order_count <= num_of_plants_type+3){
-			int pos = line.find(" ");
+			int pos = (int)line.find(" ");
 			std::string tmp_name = line.substr(0,pos);
 			int plant_num = std::stoi(line.substr(pos+1));
 			tmp_require_plants.insert( std::pair<PlantType const*, int>(get_plant_type_by_name(tmp_name), plant_num));
@@ -135,7 +137,7 @@ Load< void > main_order_load_from_file(LoadTagLate, []() {
 			std::cout <<"num:"<< num_of_plants_type << std::endl;
 			new_order_count = 4;
 		}else if(new_order_count <= num_of_plants_type+3){
-			int pos = line.find(" ");
+			int pos = (int)line.find(" ");
 			std::string tmp_name = line.substr(0,pos);
 			int plant_num = std::stoi(line.substr(pos+1));
 			tmp_require_plants.insert( std::pair<PlantType const*, int>(get_plant_type_by_name(tmp_name), plant_num));

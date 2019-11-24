@@ -95,13 +95,19 @@ struct GroundTile
 	void update_plant_visuals( float percent_grown );
 	void apply_pending_update( float elapsed );
 	void update_aura_visuals( float elapsed, Scene::Transform* camera_transform );
+	
+	static bool try_swap_plants(GroundTile& tile_a, GroundTile& tile_b );
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
+	
 	bool is_tile_harvestable();
 	bool is_plant_dead();
+	
 	bool can_be_cleared(const TileGrid& grid) const;
 	bool try_clear_tile();
 	bool is_cleared() const;
+	
+	void change_health( float change );
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -114,11 +120,12 @@ struct GroundTile
 	int grid_y = 0;
 
 	const float plant_health_restore_rate = 1.0f / 5.0f;
-	float plant_health = 1.0f;
+	const float plant_health_fertilization_restore_rate = 1.0f / 3.0f;
 	const float moisture_dry_rate = 0.01f;
+
+	float plant_health = 1.0f;
 	float moisture = 1.0f;
-	const float fertility_consume_rate = 0.005f;
-	float fertility = 1.0f;
+	float fertilization = 0.0f;
 
 	float fire_aura_effect = 0.0f; // in range 0 - 1
 	float aqua_aura_effect = 0.0f;
@@ -150,6 +157,8 @@ struct TileGrid
 	bool is_in_grid( int x, int y ) const;
 };
 
+const int fertilization_cost = 10;
+const float fertilization_duration = 5.0f;
 extern const MeshBuffer* plant_mesh_buffer;
 extern Mesh const* sea_mesh;
 extern Load< SpriteAtlas > plants_atlas;
@@ -161,6 +170,10 @@ extern PlantType const* vampire_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
 extern PlantType const* corpseeater_plant;
+extern PlantType const* spreader_source_plant;
+extern PlantType const* spreader_child_plant;
+extern PlantType const* teleporter_plant;
+extern GroundTileType const* sea_tile;
 extern std::vector< PlantType const* > all_plants;
 extern GroundTileType const* ground_tile;
 extern GroundTileType const* grass_short_tile;
