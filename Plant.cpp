@@ -193,6 +193,7 @@ Load< GLuint > plant_meshes_for_firstpass_program( LoadTagDefault, [](){
 
 Load< Sound::Sample > plant_death_sound( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "PlantDeath.wav" ) );
+										 } );
 
 Load< GLuint > plant_meshes_for_water_program( LoadTagDefault, [](){
 	return new GLuint( plant_meshes->make_vao_for_program( water_program->program ) );
