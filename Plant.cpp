@@ -78,25 +78,19 @@ Mesh const* corpseeater_3_mesh = nullptr;
 Sprite const* corpseeater_seed_sprite = nullptr;
 Sprite const* corpseeater_harvest_sprite = nullptr;
 
-Load< SpriteAtlas > plants_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
-	std::cout << "----2D sprites loaded (plants):" << std::endl;
-	for( auto p : ret->sprites ) {
-		std::cout << p.first << std::endl;
-	}
-	fern_seed_sprite = &ret->lookup( "fernSeed" );
-	fern_harvest_sprite = &ret->lookup( "fern" );
-	friend_plant_seed_sprite = &ret->lookup( "carrotSeed" );
-	friend_plant_harvest_sprite = &ret->lookup( "carrot" );
-	vampire_plant_seed_sprite = &ret->lookup( "sapsuckerSeed" );
-	vampire_plant_harvest_sprite = &ret->lookup( "sapsucker" );
-	cactus_seed_sprite = &ret->lookup( "cactusSeed" );
-	cactus_harvest_sprite = &ret->lookup( "cactus" );
-	fireflower_seed_sprite = &ret->lookup( "fireflowerSeed" );
-	fireflower_harvest_sprite = &ret->lookup( "fireflower" );
-	corpseeater_seed_sprite = &ret->lookup( "corpseeaterSeed" );
-	corpseeater_harvest_sprite = &ret->lookup( "corpseeater" );
-	return ret;
+Load< void > plant_sprites(LoadTagDefault, [](){
+	fern_seed_sprite = &main_atlas->lookup( "fernSeed" );
+	fern_harvest_sprite = &main_atlas->lookup( "fern" );
+	friend_plant_seed_sprite = &main_atlas->lookup( "carrotSeed" );
+	friend_plant_harvest_sprite = &main_atlas->lookup( "carrot" );
+	vampire_plant_seed_sprite = &main_atlas->lookup( "sapsuckerSeed" );
+	vampire_plant_harvest_sprite = &main_atlas->lookup( "sapsucker" );
+	cactus_seed_sprite = &main_atlas->lookup( "cactusSeed" );
+	cactus_harvest_sprite = &main_atlas->lookup( "cactus" );
+	fireflower_seed_sprite = &main_atlas->lookup( "fireflowerSeed" );
+	fireflower_harvest_sprite = &main_atlas->lookup( "fireflower" );
+	corpseeater_seed_sprite = &main_atlas->lookup( "corpseeaterSeed" );
+	corpseeater_harvest_sprite = &main_atlas->lookup( "corpseeater" );
 });
 
 Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){

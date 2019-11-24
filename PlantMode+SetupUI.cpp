@@ -44,6 +44,10 @@ struct {
 		Sprite const* icon = nullptr;
 		Sprite const* background = nullptr;
 	} magicbook;
+	struct {
+		Sprite const* rolledup = nullptr;
+		Sprite const* expanded = nullptr;
+	} order;
 	Sprite const* close = nullptr;
 	Sprite const* coins = nullptr;
 } ui_sprites;
@@ -64,6 +68,9 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	// magicbook
 	ui_sprites.magicbook.icon = &ret->lookup("magicbookIcon");
 	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	// order
+	ui_sprites.order.rolledup = &ret->lookup("orderRolledup");
+	ui_sprites.order.expanded = &ret->lookup("orderExpanded");
 	// other
 	ui_sprites.coins = &ret->lookup("coins");
 	ui_sprites.close = &ret->lookup("magicbookClose");
@@ -71,15 +78,7 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 
 void PlantMode::setup_UI() {
 	// root
-	UI.root = new UIElem(
-		nullptr, // parent
-		glm::vec2(0, 0), // anchor
-		glm::vec2(200, 100), // position
-		glm::vec2(200, 150), // size
-		nullptr, // sprite
-		"", // text
-		glm::vec2(0,0), // sprite pos
-		0.0f); // sprite scale
+	UI.root = new UIElem(nullptr);
 
 	//---------------- money ------------------
 	UIElem* money_icon = new UIElem(
@@ -92,7 +91,7 @@ void PlantMode::setup_UI() {
 		0.4f);
 	UI.coins_text = new UIElem(money_icon);
 	UI.coins_text->set_scale(0.68f);
-	UI.coins_text->set_text("hoofda");
+	UI.coins_text->set_text("");
 	UI.coins_text->set_position(glm::vec2(76, 6), glm::vec2(0, 0));
 
 	//---------------- toolbar ------------------
@@ -609,12 +608,12 @@ void PlantMode::setup_UI() {
 				inventory.change_seeds_num( plant, 1 );
 			}
 		});
-		entry->set_tint(glm::u8vec4(92, 76, 53, 255));
-		entry->set_on_mouse_enter([entry](){
-			entry->set_tint(glm::u8vec4(145, 127, 100, 255));
+		entry->set_tint(text_tint);
+		entry->set_on_mouse_enter([entry, this](){
+			entry->set_tint(text_highlight_tint);
 		});
-		entry->set_on_mouse_leave([entry](){
-			entry->set_tint(glm::u8vec4(92, 76, 53, 255));
+		entry->set_on_mouse_leave([entry, this](){
+			entry->set_tint(text_tint);
 		});
 	};
 	add_buy_choice( test_plant );
@@ -625,4 +624,272 @@ void PlantMode::setup_UI() {
 	add_buy_choice( corpseeater_plant );
 
 	all_choices->layout_children();
+	
+	//---------------- orders ------------------
+	
+	// main order container
+	UIElem* order1 = new UIElem(
+		UI.root,
+		glm::vec2(1, 0), // anchor
+		glm::vec2(0, 100), // pos
+		glm::vec2(0, 0), // size
+		nullptr, "", glm::vec2(0, 0), 1.0f);
+
+	// daily order container
+	UIElem* order2 = new UIElem(
+		UI.root,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(0, 280), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "", glm::vec2(0, 0), 1.0f);
+
+	float order_w1 = 168.0f;
+	float order_w2 = 350.0f;
+	float order_h = 158.0f;
+
+	// MAIN ORDER ---------
+	
+	UIElem* order1_rolledup = new UIElem(
+		order1,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w1, 0), //pos
+		glm::vec2(order_w1, order_h), //size
+		ui_sprites.order.rolledup, "",
+		glm::vec2(order_w1, -12), //sprite pos
+		0.4f, true, false, false);
+
+	UIElem* order1_expanded = new UIElem(
+		order1,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w2, 0), //pos
+		glm::vec2(order_w2, order_h), //size
+		ui_sprites.order.expanded, "",
+		glm::vec2(order_w2, -12), //sprite pos
+		0.4f, true, true, false);
+
+	order1_rolledup->set_on_mouse_enter([order1_rolledup, order1_expanded](){
+		order1_rolledup->hide();
+		order1_expanded->show();
+	});
+	order1_expanded->set_on_mouse_leave([order1_rolledup, order1_expanded](){
+		order1_rolledup->show();
+		order1_expanded->hide();
+	});
+
+	UI.main_order.description = new UIElem(
+		order1_expanded,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(16, 10), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default description",
+		glm::vec2(0, 0), 0.36f);
+	UI.main_order.description->set_tint(text_tint);
+	UI.main_order.description->set_max_text_width(198.0f);
+
+	UIElem* complete_btn = new UIElem(
+		order1_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(64, -38), //pos
+		glm::vec2(72, 20), //size
+		nullptr, "COMPLETE",
+		glm::vec2(0, 0), 0.38f, true);
+	complete_btn->set_tint(text_tint);
+	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
+	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
+	complete_btn->set_on_mouse_down([this](){
+		std::cout << "Submit Main Order Button Click!" << std::endl;
+		std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
+		bool orderFinished = true;
+		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+		while( iter != require_plants.end() ) {
+			PlantType const* require_type = iter->first;
+			int needed_num = iter->second;
+			if( inventory.get_harvest_num(require_type) < needed_num ){
+				orderFinished = false;
+				break;
+			}
+			iter++;
+		}
+		std::cout << orderFinished << std::endl;
+		if( orderFinished == true ){
+			iter = require_plants.begin();
+			while( iter != require_plants.end() ) {
+				PlantType const* require_type = iter->first;
+				int needed_num = iter->second;
+				inventory.change_harvest_num(require_type, -needed_num);
+				iter++;
+			}
+			change_num_coins( current_main_order->get_bonus_cash() );
+			current_main_order_idx += 1;
+			if( current_main_order_idx >= main_orders.size() ){
+				current_main_order_idx =  (int)main_orders.size()-1;
+			}
+			std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
+			set_main_order(current_main_order_idx);
+		}
+	});
+
+	UI.main_order.unlock_plant = new UIElem(
+		order1,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-134, 18), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default unlock plant text",
+		glm::vec2(0, 0), 0.44f);
+	UI.main_order.unlock_plant->set_tint(text_tint);
+	UI.main_order.unlock_plant->set_max_text_width(180.0f);
+
+	UI.main_order.requirements = new UIElem(
+		order1,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-126, 68), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "",
+		glm::vec2(0, 0), 1.0f);
+	UI.main_order.requirements->set_layout_children_fn([this](){
+		UIElem* reqs = UI.main_order.requirements;
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), screen_size, screen_size, DrawSprites::AlignSloppy );
+		glm::vec2 tmin, size;
+		glm::vec2 moving_anchor = glm::vec2(0, 0);
+		for (int i=0; i<reqs->children.size(); i++) {
+			// make sure this part is in sync with where the requirement labels are created (in set_main_order())
+			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			moving_anchor.y += size.y + 4.0f;
+		}
+	});
+	
+	// DAILY ORDER ---------
+	
+	UIElem* order2_rolledup = new UIElem(
+		order2,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w1, 0), //pos
+		glm::vec2(order_w1, order_h), //size
+		ui_sprites.order.rolledup, "",
+		glm::vec2(order_w1, -12), //sprite pos
+		0.4f, true, false, false);
+
+	UIElem* order2_expanded = new UIElem(
+		order2,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w2, 0), //pos
+		glm::vec2(order_w2, order_h), //size
+		ui_sprites.order.expanded, "",
+		glm::vec2(order_w2, -12), //sprite pos
+		0.4f, true, true, false);
+
+	order2_rolledup->set_on_mouse_enter([order2_rolledup, order2_expanded](){
+		order2_rolledup->hide();
+		order2_expanded->show();
+	});
+	order2_expanded->set_on_mouse_leave([order2_rolledup, order2_expanded](){
+		order2_rolledup->show();
+		order2_expanded->hide();
+	});
+
+	UI.daily_order.description = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(16, 10), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default description",
+		glm::vec2(0, 0), 0.36f);
+	UI.daily_order.description->set_tint(text_tint);
+	UI.daily_order.description->set_max_text_width(198.0f);
+
+	complete_btn = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(24, -38), //pos
+		glm::vec2(72, 20), //size
+		nullptr, "COMPLETE",
+		glm::vec2(0, 0), 0.38f, true);
+	complete_btn->set_tint(text_tint);
+	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
+	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
+	complete_btn->set_on_mouse_down([this](){
+		std::cout << "Submit Button Click!" << std::endl;
+		std::map< PlantType const*, int > require_plants = current_daily_order->get_required_plants();
+		bool orderFinished = true;
+		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+		while( iter != require_plants.end() ) {
+			PlantType const* require_type = iter->first;
+			int needed_num = iter->second;
+			if( inventory.get_harvest_num(require_type) < needed_num ){
+				orderFinished = false;
+				break;
+			}
+			iter++;
+		}
+		std::cout << orderFinished << std::endl;
+		if( orderFinished == true ){
+			iter = require_plants.begin();
+			while( iter != require_plants.end() ) {
+				PlantType const* require_type = iter->first;
+				int needed_num = iter->second;
+				inventory.change_harvest_num(require_type, -needed_num);
+				iter++;
+			}
+			change_num_coins( current_daily_order->get_bonus_cash() );
+			current_daily_order_idx += 1;
+			if( current_daily_order_idx >= daily_orders.size() ){
+				current_daily_order_idx = 0;
+			}
+			current_daily_order = daily_orders[current_daily_order_idx];
+		}
+	});
+
+	UIElem* cancel_btn = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(114, -38), //pos
+		glm::vec2(62, 20), //size
+		nullptr, "CANCEL",
+		glm::vec2(0, 0), 0.38f, true);
+	cancel_btn->set_tint(text_tint);
+	cancel_btn->set_on_mouse_enter([this, cancel_btn](){ cancel_btn->set_tint(text_highlight_tint); });
+	cancel_btn->set_on_mouse_leave([this, cancel_btn](){ cancel_btn->set_tint(text_tint); });
+	cancel_btn->set_on_mouse_down([this](){
+		if(cancel_order_state==true){
+			current_daily_order_idx += 1;
+			if(current_daily_order_idx >= daily_orders.size()){
+				current_daily_order_idx = 0;
+			}
+			current_daily_order = daily_orders[current_daily_order_idx];
+			cancel_order_freeze_time = 10;
+		}else{
+			std::cout << "Cannot cancel this order!" << std::endl;
+		}				
+	});
+
+	UI.daily_order.reward = new UIElem(
+		order2,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-128, 28), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default reward text",
+		glm::vec2(0, 0), 0.44f);
+	UI.daily_order.reward->set_tint(text_tint);
+	UI.daily_order.reward->set_max_text_width(180.0f);
+
+	UI.daily_order.requirements = new UIElem(
+		order2,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-126, 58), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "",
+		glm::vec2(0, 0), 1.0f);
+	UI.daily_order.requirements->set_layout_children_fn([this](){
+		UIElem* reqs = UI.daily_order.requirements;
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), screen_size, screen_size, DrawSprites::AlignSloppy );
+		glm::vec2 tmin, size;
+		glm::vec2 moving_anchor = glm::vec2(0, 0);
+		for (int i=0; i<reqs->children.size(); i++) {
+			// make sure this part is in sync with where the requirement labels are created (in set_daily_order())
+			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			moving_anchor.y += size.y + 4.0f;
+		}
+	});
 }

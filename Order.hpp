@@ -41,14 +41,5 @@ private:
 	glm::u8vec4 text_col = glm::u8vec4(92, 76, 53, 255);
 };
 
-// extern OrderType const* order1;
-// extern OrderType const* order2;
-// extern OrderType const* order3;
-// extern OrderType const* order4;
-// extern OrderType const* order5;
-// extern OrderType const* order6;
-// extern OrderType const* order7;
 extern std::vector< OrderType const* > main_orders;
-extern std::vector< OrderType const* > all_orders;
-PlantType const* get_plant_type_by_name(std::string plant_type_name);
-OrderType const* generate_random_daily_order();
+extern std::vector< OrderType const* > daily_orders;
