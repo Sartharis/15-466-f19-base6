@@ -51,6 +51,18 @@ Load< Sound::Sample > land_ambience( LoadTagDefault, []() -> Sound::Sample const
 	return new Sound::Sample( data_path( "LandAmbience.wav" ) );
 } );
 
+Load< Sound::Sample > harvest_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "Harvest1.wav" ) );
+} );
+
+Load< Sound::Sample > dig_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "DigRice2.wav" ) );
+} );
+
+Load< Sound::Sample > plant_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "HitRice1.wav" ) );
+} );
+
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
@@ -319,7 +331,7 @@ PlantMode::PlantMode()
 					change_num_coins( current_main_order->get_bonus_cash() );
 					current_main_order_idx += 1;
 					if( current_main_order_idx >= main_orders.size() ){
-						current_main_order_idx =  main_orders.size()-1;
+						current_main_order_idx =  (int)main_orders.size()-1;
 					}
 					std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
 					current_main_order = main_orders[current_main_order_idx];
@@ -350,7 +362,6 @@ void PlantMode::on_click( int x, int y )
 	//---- first detect click on UI. If UI handled the click, return.
 	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
 	if( action == UIElem::mouseDown ) return;
-	
 	// old UI
 	for( int i = 0; i < UI.all_buttons.size(); i++ )
 	{
@@ -368,24 +379,31 @@ void PlantMode::on_click( int x, int y )
 				if( collided_tile->is_tile_harvestable() ) {
 					PlantType const* plant = collided_tile->plant_type;
 					if( collided_tile->try_remove_plant() ) {
+						Sound::play( *harvest_sound, 0.0f, 2.0f );
 						assert( plant );
 						inventory.change_harvest_num( plant, 1 );
 					}
+				}
+
+				// Removing  dead plant
+				if( collided_tile->is_plant_dead() ) {
+					Sound::play( *harvest_sound, 0.0f, 2.0f );
+					collided_tile->try_remove_plant();
 				}
 			}
 
 		} else if( current_tool == watering_can ) {
 			collided_tile->moisture = 1.0f;
-		} else if( current_tool == fertilizer ) {
-			collided_tile->fertility = 1.0f;
+		} else if( current_tool == fertilizer && fertilization_cost <= num_coins && collided_tile->is_cleared()) {
+			change_num_coins( -fertilization_cost );
+			collided_tile->fertilization = fertilization_duration;
 		} else if( current_tool == shovel ) {
 			// Removing dead plant
-			if( collided_tile->plant_type && collided_tile->is_plant_dead() ) {
-				collided_tile->try_remove_plant();
-			}
+
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
 				if( cost <= num_coins && collided_tile->try_clear_tile() ) {
+					Sound::play( *dig_sound, 0.0f, 2.0f );
 					change_num_coins( -cost );
 				}
 			}
@@ -395,6 +413,7 @@ void PlantMode::on_click( int x, int y )
 			if(selectedPlant && inventory.get_seeds_num( selectedPlant ) > 0) {
 				if( collided_tile->try_add_plant( selectedPlant ) ) {
 					inventory.change_seeds_num( selectedPlant, -1 );
+					Sound::play( *plant_sound, 0.0f, 2.0f );
 				}
 			}
 			if( inventory.get_seeds_num( selectedPlant ) <= 0 ){
@@ -621,6 +640,10 @@ void PlantMode::update(float elapsed)
 				{
 					action_description = "Growing ";
 				}
+				else
+				{
+					action_description = "Remove ";
+				}
 			}
 
 		} else if( current_tool == watering_can ) {
@@ -629,18 +652,12 @@ void PlantMode::update(float elapsed)
 			}
 
 		} else if( current_tool == fertilizer ) {
-			if( hovered_tile->fertility < 1.0f ) {
-				action_description = "Fertilize";
-			}
-
+			if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string(fertilization_cost);
 		} else if( current_tool == shovel ) {
 			if( hovered_tile->can_be_cleared(grid) ) {
-				action_description = "Dig -" + std::to_string(hovered_tile->tile_type->get_clear_cost());
+				action_description = "Dig -$" + std::to_string(hovered_tile->tile_type->get_clear_cost());
 			}
-			else if( hovered_tile->is_plant_dead() )
-			{
-				action_description = "Remove ";
-			}
+
 
 		} else if( current_tool == seed ) {
 			if( selectedPlant 
@@ -805,8 +822,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-		draw.draw_text( tool_name, glm::vec2( 20.0f, drawable_size.y - 20.0f ), 0.8f);
-		draw.draw_text(tool_description, glm::vec2( 20.0f, drawable_size.y - 60.0f ), 0.6f );
+		//draw.draw_text( tool_name, glm::vec2( 20.0f, 170.0f ), 0.8f);
+		draw.draw_text(tool_description, glm::vec2( 20.0f, 140.0f ), 0.6f );
 		// draw.draw_text( "Energy: " + std::to_string( num_coins ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
@@ -1062,22 +1079,27 @@ void PlantMode::change_num_coins(int change) {
 
 void PlantMode::set_current_tool(Tool tool) {
 	current_tool = tool;
-	switch (current_tool){
+	set_current_tool_tooltip( tool );
+}
+
+void PlantMode::set_current_tool_tooltip( Tool tool )
+{
+	switch( tool ){
 	case default_hand:
 		tool_name = "Glove:";
-		tool_description = "Harvest Plants";
+		tool_description = "Harvest grown plants or remove dead plants";
 		break;
 	case watering_can:
 		tool_name = "Watering Can: ";
-		tool_description = "Water soil";
+		tool_description = "Water soil to boost growth speed";
 		break;
 	case fertilizer:
-		tool_name = "Fertilizer:";
-		tool_description = "Fertilize soil";
+		tool_name = "Fertilizer: ";
+		tool_description = "Quickly heals plants at a cost";
 		break;
 	case shovel:
 		tool_name = "Shovel:";
-		tool_description = "Remove dead plant or dig up soil for planting";
+		tool_description = "Remove grass for planting new plants";
 		break;
 	case seed:
 		tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
