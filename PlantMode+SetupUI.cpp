@@ -512,12 +512,11 @@ void PlantMode::setup_UI() {
 		inventory.set_seed_item(plant, seed);
 		inventory.set_harvest_item(plant, harvest);
 	};
-	add_plant_buttons( test_plant );
-	add_plant_buttons( friend_plant );
-	add_plant_buttons( vampire_plant );
-	add_plant_buttons( cactus_plant );
-	add_plant_buttons( fireflower_plant );
-	add_plant_buttons( corpseeater_plant );
+
+	for( auto plant : all_plants )
+	{
+		add_plant_buttons( plant );
+	}
 	
 	//---------------- magic book ------------------
 	UIElem* magicbook_icon = new UIElem(
@@ -616,12 +615,14 @@ void PlantMode::setup_UI() {
 			entry->set_tint(text_tint);
 		});
 	};
-	add_buy_choice( test_plant );
-	add_buy_choice( friend_plant );
-	add_buy_choice( cactus_plant );
-	add_buy_choice( vampire_plant );
-	add_buy_choice( fireflower_plant );
-	add_buy_choice( corpseeater_plant );
+
+	for( auto plant : all_plants )
+	{
+		if( plant != spreader_child_plant )
+		{
+			add_buy_choice( plant );
+		}
+	}
 
 	all_choices->layout_children();
 	

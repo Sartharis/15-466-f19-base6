@@ -177,6 +177,19 @@ int main(int argc, char **argv) {
 					}
 					save_png(filename, glm::uvec2(w,h), data.data(), LowerLeftOrigin);
 				}
+				else if( evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_f)
+				{
+					Uint32 flags = SDL_GetWindowFlags( window );
+					if( flags & SDL_WINDOW_FULLSCREEN_DESKTOP )
+					{ 
+						SDL_SetWindowFullscreen( window, 0 );
+					}
+					else
+					{
+						SDL_SetWindowFullscreen( window, SDL_WINDOW_FULLSCREEN_DESKTOP );
+					}
+					
+				}
 			}
 			if (!Mode::current) break;
 		}

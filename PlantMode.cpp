@@ -112,6 +112,9 @@ PlantMode::PlantMode()
 		inventory.change_seeds_num( cactus_plant, 5 );
 		inventory.change_seeds_num( fireflower_plant, 5 );
 		inventory.change_seeds_num( corpseeater_plant, 5 );
+		inventory.change_seeds_num( spreader_source_plant, 5 );
+		inventory.change_seeds_num( spreader_child_plant, 0 );
+		inventory.change_seeds_num( teleporter_plant, 5 );
 
 		inventory.change_harvest_num( test_plant, 0 );
 		inventory.change_harvest_num( friend_plant, 0 );
@@ -119,6 +122,9 @@ PlantMode::PlantMode()
 		inventory.change_harvest_num( cactus_plant, 0 );
 		inventory.change_harvest_num( fireflower_plant, 0 );
 		inventory.change_harvest_num( corpseeater_plant, 0 );
+		inventory.change_harvest_num( spreader_source_plant, 0 );
+		inventory.change_harvest_num( spreader_child_plant, 0 );
+		inventory.change_harvest_num( teleporter_plant, 0 );
 	}
 
 	{

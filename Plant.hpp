@@ -92,7 +92,7 @@ struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
 	void update( float elapsed, Scene::Transform* camera_transform, const TileGrid& grid );
-	void update_plant_visuals( float percent_grown );
+	void update_plant_visuals();
 	void apply_pending_update( float elapsed );
 	void update_aura_visuals( float elapsed, Scene::Transform* camera_transform );
 	
