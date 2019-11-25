@@ -88,6 +88,8 @@ struct PlantMode : public Mode {
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
 	Scene::Drawable* sea = nullptr;
+	std::vector<Tool> scroll_tool_order;
+	float scroll_delay = 0.0f;
 	
 	Inventory inventory = Inventory(this);
 	int num_coins = 30;
