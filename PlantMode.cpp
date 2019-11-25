@@ -548,6 +548,10 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		{
 			on_click( evt.motion.x, evt.motion.y );
 		}
+		else if( evt.button.button == SDL_BUTTON_RIGHT )
+		{
+			set_current_tool( default_hand );
+		}
 		return false;
 	}
 
