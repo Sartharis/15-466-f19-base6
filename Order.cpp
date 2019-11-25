@@ -8,7 +8,6 @@
 #include "Sprite.hpp"
 #include "DrawSprites.hpp"
 #include "Order.hpp"
-#include "Button.hpp"
 #include <cstddef>
 #include <algorithm>
 #include <iostream>

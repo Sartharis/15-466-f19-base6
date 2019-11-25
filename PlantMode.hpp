@@ -6,7 +6,6 @@
 #include "GL.hpp"
 #include "Scene.hpp"
 #include "Order.hpp"
-#include "Button.hpp"
 #include "UIElem.hpp"
 
 #include <SDL.h>
@@ -44,9 +43,6 @@ struct Inventory
 private:
 	std::unordered_map<PlantType const*, int> plant_to_seeds;
 	std::unordered_map<PlantType const*, int> plant_to_harvest;
-	std::unordered_map<PlantType const*, Button*> plant_to_seed_btn;
-	std::unordered_map<PlantType const*, Button*> plant_to_harvest_btn;
-
 	std::unordered_map<PlantType const*, UIElem*> plant_to_seed_item;
 	std::unordered_map<PlantType const*, UIElem*> plant_to_harvest_item;
 

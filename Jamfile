@@ -184,7 +184,6 @@ GAME_NAMES =
 	WaterProgram
 	Aura
 	Plant
-	Button
 	UIElem
 	;
 

@@ -270,7 +270,7 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 		if( tile_type->get_can_plant() ) {
 			GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
 			tile_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
-				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, fertilization);
+				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, 0.0f);
 			};
 		}
 	}

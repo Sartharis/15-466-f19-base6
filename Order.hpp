@@ -1,6 +1,5 @@
 #pragma once
 #include "Plant.hpp"
-#include "Button.hpp"
 #include <list>
 
 struct Inventory;

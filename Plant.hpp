@@ -2,7 +2,6 @@
 
 #include "Aura.hpp"
 #include "Sprite.hpp"
-#include "Button.hpp"
 #include "UIElem.hpp"
 #include "Load.hpp"
 #include <vector>
