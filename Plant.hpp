@@ -161,7 +161,6 @@ const int fertilization_cost = 10;
 const float fertilization_duration = 5.0f;
 extern const MeshBuffer* plant_mesh_buffer;
 extern Mesh const* sea_mesh;
-extern Load< SpriteAtlas > plants_atlas;
 extern glm::vec2 plant_grid_tile_size;
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y );
 extern PlantType const* test_plant;

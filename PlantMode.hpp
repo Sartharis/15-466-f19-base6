@@ -18,8 +18,12 @@
 #include <iostream>
 #include "Plant.hpp"
 
+struct PlantMode;
+
 struct Inventory
-{ // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
+{ 
+	Inventory(PlantMode* _game) : game(_game) { assert(game); }
+
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
@@ -45,6 +49,8 @@ private:
 
 	std::unordered_map<PlantType const*, UIElem*> plant_to_seed_item;
 	std::unordered_map<PlantType const*, UIElem*> plant_to_harvest_item;
+
+	PlantMode* game = nullptr;
 };
 
 // The 'PlantMode':
@@ -54,12 +60,16 @@ struct PlantMode : public Mode {
 
 	float timer = 0.0f;
 
-	int current_order_idx = 0;
-	OrderType const* current_order = nullptr;
+	//orders:
+	int current_daily_order_idx = 0;
+	OrderType const* current_daily_order = nullptr;
 	bool cancel_order_state = false;
 	float cancel_order_freeze_time = 10;
 	int current_main_order_idx = 0;
 	OrderType const* current_main_order = nullptr;
+	void set_main_order(int index);
+	void set_daily_order(int index);
+	std::string get_req_text(std::pair<PlantType const*, int> req);
 	
 	// init harvest_plant_map
 	// Harvest Plant Map
@@ -83,7 +93,7 @@ struct PlantMode : public Mode {
 	Scene::Drawable* selector = nullptr;
 	Scene::Drawable* sea = nullptr;
 	
-	Inventory inventory;
+	Inventory inventory = Inventory(this);
 	int num_coins = 30;
 	void change_num_coins(int change);
 
@@ -106,8 +116,10 @@ struct PlantMode : public Mode {
 	void set_current_tool(Tool tool);
 	void set_current_tool_tooltip( Tool tool );
 
-	// UI
+	//UI
 	void setup_UI();
+	glm::u8vec4 text_tint = glm::u8vec4(92, 76, 53, 255);
+	glm::u8vec4 text_highlight_tint = glm::u8vec4(145, 127, 100, 255);
 	struct {
 		UIElem* root;
 		UIElem* coins_text;
@@ -119,20 +131,24 @@ struct PlantMode : public Mode {
 		} toolbar;
 		// storage
 		int storage_current_tab = 0;
-
-		// NOTE: deprecated, to be removed
-		std::vector< Button* > all_buttons = {};
-		// order
+		// orders
 		struct {
-			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);
-		} order;
+			UIElem* description;
+			UIElem* requirements;
+			UIElem* unlock_plant;
+		} main_order;
+		struct {
+			UIElem* description;
+			UIElem* requirements;
+			UIElem* reward;
+		} daily_order;
 	} UI;
 
-	// cursor
+	//cursor
 	glm::vec2 get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size);
 	struct {
 		Sprite const* sprite = nullptr;
-		std::string text = "Some sample text that hovers around the cursor. I'm making it intentionally longer than needed."; 
+		std::string text = ""; 
 		float scale = 1.0f;
 		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
 	} cursor;

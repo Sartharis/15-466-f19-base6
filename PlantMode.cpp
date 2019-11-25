@@ -60,6 +60,10 @@ Load< Sound::Sample > plant_sound( LoadTagDefault, []() -> Sound::Sample const* 
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
+	std::cout << "----sprites loaded:" << std::endl;
+	for( auto p : ret->sprites ) {
+		std::cout << p.first << std::endl;
+	}
 	order_background_sprite = &ret->lookup("orderBackground");
 	return ret;
 });
@@ -84,9 +88,6 @@ PlantMode::PlantMode()
 
 	Sound::loop(*background_music, 0.0f, 1.0f);
 	Sound::loop( *land_ambience, 0.0f, 0.85f );
-	
-	current_main_order = main_orders[current_main_order_idx];
-	current_order = all_orders[current_order_idx];
 
 	{
 		selectedPlant = test_plant;
@@ -99,6 +100,10 @@ PlantMode::PlantMode()
 	//DEBUG - ADD ALL SEEDS & init harvest to all 0
 	{
 		change_num_coins( 0 );
+	
+		set_main_order(current_main_order_idx);
+		set_daily_order(current_daily_order_idx);
+		
 		set_current_tool( default_hand );
 
 		inventory.change_seeds_num( test_plant, 5 );
@@ -219,132 +224,6 @@ PlantMode::PlantMode()
 		sea->pipeline = sea_info;
 	}
 
-	{ // init UI (just left with orders for now)
-		Button* btn;
-
-		btn = new Button(
-			screen_size, Button::tr, glm::vec2( -360.0f, 150.0f ), // position
-			glm::vec2( 80, 20 ), // size
-			nullptr, // sprite
-			glm::vec2( 0, 0 ), // sprite anchor
-			0.0f, // sprite scale
-			Button::darken_text, // hover behavior
-			"COMPLETE", // text
-			glm::vec2( 0, 0 ), // text anchor
-			0.4f, // text scale
-			[this]() {
-				std::cout << "Submit Button Click!" << std::endl;
-				std::map< PlantType const*, int > require_plants = current_order->get_required_plants();
-				bool orderFinished = true;
-				std::map<PlantType const*, int>::iterator iter = require_plants.begin();
-				while( iter != require_plants.end() ) {
-					PlantType const* require_type = iter->first;
-					int needed_num = iter->second;
-					if( inventory.get_harvest_num(require_type) < needed_num ){
-						orderFinished = false;
-						break;
-					}
-					iter++;
-				}
-				std::cout << orderFinished << std::endl;
-				if( orderFinished == true ){
-					iter = require_plants.begin();
-					while( iter != require_plants.end() ) {
-						PlantType const* require_type = iter->first;
-						int needed_num = iter->second;
-						inventory.change_harvest_num(require_type, -needed_num);
-						iter++;
-					}
-					change_num_coins( current_order->get_bonus_cash() );
-					current_order_idx += 1;
-					if( current_order_idx >= all_orders.size() ){
-						current_order_idx = 0;
-					}
-					current_order = all_orders[current_order_idx];
-				}
-			}, false, glm::u8vec4(92, 76, 53, 255));
-
-		UI.all_buttons.push_back( btn );
-	}
-
-	// if(cancel_order_state == true){
-		{
-			Button* cancel_btn;
-			cancel_btn = new Button(
-			screen_size, Button::tr, glm::vec2( -270.0f, 150.0f ), // position
-			glm::vec2( 80, 20 ), // size
-			nullptr, // sprite
-			glm::vec2( 0, 0 ), // sprite anchor
-			0.0f, // sprite scale
-			Button::darken_text, // hover behavior
-			"CANCEL", // text
-			glm::vec2( 0, 0 ), // text anchor
-			0.4f, // text scale
-			[this]() {
-				if(cancel_order_state==true){
-					current_order_idx += 1;
-					if(current_order_idx >= all_orders.size()){
-						current_order_idx = 0;
-					}
-					current_order = all_orders[current_order_idx];
-					cancel_order_freeze_time = 10;
-					std::cout << "Cancel Button Click!" << std::endl;
-				}else{
-					std::cout << "Cannot cancel this order!" << std::endl;
-				}				
-			} );
-		
-		UI.all_buttons.push_back( cancel_btn );
-	}
-		
-	{ // init main order UI (just left with orders for now)
-		Button* main_order_btn;
-
-		main_order_btn = new Button(
-			screen_size, Button::tr, glm::vec2( -760.0f, 150.0f ), // position
-			glm::vec2( 80, 20 ), // size
-			nullptr, // sprite
-			glm::vec2( 0, 0 ), // sprite anchor
-			0.0f, // sprite scale
-			Button::darken_text, // hover behavior
-			"COMPLETE", // text
-			glm::vec2( 0, 0 ), // text anchor
-			0.4f, // text scale
-			[this]() {
-				std::cout << "Submit Main Order Button Click!" << std::endl;
-				std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
-				bool orderFinished = true;
-				std::map<PlantType const*, int>::iterator iter = require_plants.begin();
-				while( iter != require_plants.end() ) {
-					PlantType const* require_type = iter->first;
-					int needed_num = iter->second;
-					if( inventory.get_harvest_num(require_type) < needed_num ){
-						orderFinished = false;
-						break;
-					}
-					iter++;
-				}
-				std::cout << orderFinished << std::endl;
-				if( orderFinished == true ){
-					iter = require_plants.begin();
-					while( iter != require_plants.end() ) {
-						PlantType const* require_type = iter->first;
-						int needed_num = iter->second;
-						inventory.change_harvest_num(require_type, -needed_num);
-						iter++;
-					}
-					change_num_coins( current_main_order->get_bonus_cash() );
-					current_main_order_idx += 1;
-					if( current_main_order_idx >= main_orders.size() ){
-						current_main_order_idx =  (int)main_orders.size()-1;
-					}
-					std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
-					current_main_order = main_orders[current_main_order_idx];
-				}
-			}, false, glm::u8vec4(92, 76, 53, 255));
-		UI.all_buttons.push_back( main_order_btn );
-
-	}
 }
 
 PlantMode::~PlantMode() {
@@ -355,10 +234,6 @@ PlantMode::~PlantMode() {
 			if( tile.aqua_aura ) delete tile.aqua_aura;
 		}
 	}
-	for (int i=0; i<UI.all_buttons.size(); i++) {
-		if (UI.all_buttons[i]) delete UI.all_buttons[i];
-	}
-
 	if (UI.root) delete UI.root;
 }
 
@@ -367,11 +242,6 @@ void PlantMode::on_click( int x, int y )
 	//---- first detect click on UI. If UI handled the click, return.
 	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
 	if( action == UIElem::mouseDown ) return;
-	// old UI
-	for( int i = 0; i < UI.all_buttons.size(); i++ )
-	{
-		if( UI.all_buttons[i]->try_click( glm::vec2(x, y) ) ) return;
-	}
 
 	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
@@ -461,17 +331,10 @@ GroundTile* PlantMode::get_tile_under_mouse( int x, int y )
 			glm::vec3 sphere_sweep_from = from_camera_start;
 			glm::vec3 sphere_sweep_to = from_camera_start + col_check_dist * from_camera_dir;
 
-			glm::vec3 sphere_sweep_min = glm::min( sphere_sweep_from, sphere_sweep_to ) - glm::vec3( sphere_radius );
-			glm::vec3 sphere_sweep_max = glm::max( sphere_sweep_from, sphere_sweep_to ) + glm::vec3( sphere_radius );
-			(void)sphere_sweep_min;
-			(void)sphere_sweep_max;
-
 			float collision_t = 1.0f;
 			glm::vec3 collision_at = glm::vec3( 0.0f );
 			glm::vec3 collision_out = glm::vec3( 0.0f );
 
-			glm::vec3 center = grid.tiles[x][y].tile_drawable->transform->position;
-			(void)center;
 			float scale = plant_grid_tile_size.x / 2.0f;
 
 			glm::mat4x3 collider_to_world = grid.tiles[x][y].tile_drawable->transform->make_local_to_world();
@@ -711,11 +574,6 @@ void PlantMode::update(float elapsed)
 	sea->transform->position.z = -0.1f;
 
 	{ // update UI and cursor
-		// update buttons' hovered state
-		for( int i = 0; i < UI.all_buttons.size(); i++) {
-			UI.all_buttons[i]->update_hover( glm::vec2(x, y) );
-		}
-
 		if (UI.root) UI.root->update(elapsed);
 
 		// update cursor sprite depending on current tool
@@ -844,8 +702,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable( GL_DEPTH_TEST );
 
 	//test draw order
-	current_order->draw(screen_size, inventory);
-	current_main_order->draw_main_order(screen_size, inventory);
+	// current_daily_order->draw(screen_size, inventory);
+	// current_main_order->draw_main_order(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -870,40 +728,36 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		
 	}
 
-	{ //draw UI
-		{ //text (old UI)
-			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			for (int i=0; i<UI.all_buttons.size(); i++) {
-				UI.all_buttons[i]->draw_text( draw_text );
-			}
-		}
+	int mouse_x, mouse_y;
+	SDL_GetMouseState(&mouse_x, &mouse_y);
+
+	{//draw UI
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		{
-			DrawSprites draw_text( neucha_font, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-			{
-				DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
-				// UI elements
-				std::vector<UIElem*> elems = std::vector<UIElem*>();
-				UI.root->gather(elems);
-				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
-				// text for UI elements
-				for( int i=0; i<elems.size(); i++ ){
-					elems[i]->draw_self( draw_sprites, draw_text );
-				}
-				// cursor
-				int mouse_x, mouse_y;
-				SDL_GetMouseState(&mouse_x, &mouse_y);
-				draw_sprites.draw(*cursor.sprite, 
-						glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
-						cursor.scale);
-				// cursor text
-				glm::vec2 tmin, size;
-				draw_text.get_text_extents(cursor.text, glm::vec2(0.0f, 0.0f), 0.4f, &tmin, &size, 250.0f);
-				glm::vec2 anchor = get_hover_loc(glm::vec2(mouse_x, mouse_y), size);
-				anchor.y = screen_size.y - anchor.y;
-				draw_text.draw_text( cursor.text, anchor, 0.4f, glm::u8vec4(255,255,255,255), 250.0f );
+			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+			// UI elements
+			std::vector<UIElem*> elems = std::vector<UIElem*>();
+			UI.root->gather(elems);
+			std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
+			// text for UI elements
+			for( int i=0; i<elems.size(); i++ ){
+				elems[i]->draw_self( draw_sprites, draw_text );
 			}
-		}
-	}
+			// cursor text
+			glm::vec2 tmin, size;
+			draw_text.get_text_extents(cursor.text, glm::vec2(0.0f, 0.0f), 0.4f, &tmin, &size, 250.0f);
+			glm::vec2 anchor = get_hover_loc(glm::vec2(mouse_x, mouse_y), size);
+			anchor.y = screen_size.y - anchor.y;
+			draw_text.draw_text( cursor.text, anchor, 0.4f, glm::u8vec4(255,255,255,255), 250.0f );
+		}//<-- all sprites
+	}//<-- all text
+	
+	{ //draw cursor
+		DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
+		draw_sprites.draw(*cursor.sprite, 
+				glm::vec2(mouse_x + cursor.offset.x, screen_size.y - mouse_y - cursor.offset.y),
+				cursor.scale);
+	}//<-- cursor
    
 }
 
@@ -1012,11 +866,6 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 		}
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	}
-	{// re-position buttons
-		for( int i = 0; i < UI.all_buttons.size(); i++ ) {
-			UI.all_buttons[i]->update_position( screen_size );
-		}
-	}
 	if (UI.root) {
 		UI.root->set_size( screen_size );
 		UI.root->update_absolute_position();
@@ -1071,7 +920,6 @@ int Inventory::get_harvest_num( const PlantType* plant ) {
 
 void Inventory::change_harvest_num( const PlantType* plant, int harvest_change ) {
 	assert( plant );
-	UIElem* btn = get_harvest_item( plant );
 	int harvest_num = 0;
 	std::unordered_map<PlantType const*, int>::iterator it = plant_to_harvest.find( plant );
 	if( it != plant_to_harvest.end() ) 
@@ -1084,10 +932,15 @@ void Inventory::change_harvest_num( const PlantType* plant, int harvest_change )
 		plant_to_harvest.insert( std::make_pair( plant, harvest_change ) );
 		harvest_num = harvest_change;
 	}
+	// update storage UI
+	UIElem* btn = get_harvest_item( plant );
 	if( harvest_num > 0)btn->set_text( std::to_string( harvest_num ) );
 	else btn->set_text("");
 	assert( btn->get_parent() );
 	btn->get_parent()->layout_children();
+	// update orders. TODO: slightly too inefficient bc it's resetting everything including descriptions, etc.?
+	game->set_main_order(game->current_main_order_idx);
+	game->set_daily_order(game->current_daily_order_idx);
 }
 
 UIElem* Inventory::get_seed_item( const PlantType* plant ) {
@@ -1110,6 +963,44 @@ void PlantMode::change_num_coins(int change) {
 void PlantMode::set_current_tool(Tool tool) {
 	current_tool = tool;
 	set_current_tool_tooltip( tool );
+}
+
+void PlantMode::set_main_order(int index) {
+	current_main_order = main_orders[index];
+	UI.main_order.description->set_text( current_main_order->get_description() );
+	UI.main_order.unlock_plant->set_text( "@ " + current_main_order->get_bonus_plant()->get_name() );
+	UI.main_order.requirements->clear_children();
+	auto reqs = current_main_order->get_required_plants();
+	for (auto it=reqs.begin(); it!=reqs.end(); it++) {
+		UIElem* req = new UIElem(UI.main_order.requirements);
+		req->set_text(get_req_text(*it));
+		req->set_scale(0.36f);
+		req->set_tint(text_tint);
+		req->set_max_text_width(140.0f);
+	}
+	UI.main_order.requirements->layout_children();
+}
+
+void PlantMode::set_daily_order(int index) {
+	current_daily_order = daily_orders[index];
+	UI.daily_order.description->set_text( current_daily_order->get_description() );
+	UI.daily_order.reward->set_text( "For $" + std::to_string(current_daily_order->get_bonus_cash()) );
+	UI.daily_order.requirements->clear_children();
+	auto reqs = current_daily_order->get_required_plants();
+	for (auto it=reqs.begin(); it!=reqs.end(); it++) {
+		UIElem* req = new UIElem(UI.daily_order.requirements);
+		req->set_text(get_req_text(*it));
+		req->set_scale(0.36f);
+		req->set_tint(text_tint);
+		req->set_max_text_width(140.0f);
+	}
+	UI.daily_order.requirements->layout_children();
+}
+
+std::string PlantMode::get_req_text(std::pair<PlantType const*, int> req) {
+	int num_harvest = inventory.get_harvest_num(req.first);
+	return "- " + req.first->get_name() + " " + 
+		std::to_string(num_harvest) + "/" + std::to_string(req.second);
 }
 
 void PlantMode::set_current_tool_tooltip( Tool tool )

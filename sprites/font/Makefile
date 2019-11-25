@@ -6,3 +6,7 @@ all:
 	./extract.py $(FONT_NAME) chars
 	mv "$(FONT_NAME).kern" ../../dist
 	../pack-sprites "../../dist/$(FONT_NAME)-font" chars/*
+
+pack:
+	../pack-sprites "../../dist/$(FONT_NAME)-font" chars/*
+

@@ -144,6 +144,13 @@ int UIElem::get_absolute_z_index() {
 	return parent->get_absolute_z_index() + z_index;
 }
 
+void UIElem::clear_children() {
+	for (int i=0; i<children.size(); i++) {
+		delete children[i];
+	}
+	children = {};
+}
+
 glm::vec2 ease_out(glm::vec2 start, glm::vec2 end, float t) {
 	// a list of easing functions: https://gist.github.com/gre/1650294
 	float ease_param = 1.0f - std::pow( 1.0f - t, 3 ); // cubic
@@ -176,7 +183,7 @@ void UIElem::draw(DrawSprites& draw_sprites, DrawSprites& draw_text){
 		draw_sprites.draw(*sprite, draw_sprite_anchor, scale, tint);
 	} else {
 		assert(draw_text.font);
-		draw_text.draw_text(text, draw_sprite_anchor, scale, tint);
+		draw_text.draw_text(text, draw_sprite_anchor, scale, tint, max_text_width);
 	}
 	// draw children
 	for (int i=0; i<children.size(); i++) {
@@ -194,7 +201,7 @@ void UIElem::draw_self(DrawSprites& draw_sprites, DrawSprites& draw_text) {
 		draw_sprites.draw(*sprite, draw_sprite_anchor, scale, tint);
 	} else {
 		assert(draw_text.font);
-		draw_text.draw_text(text, draw_sprite_anchor, scale, tint);
+		draw_text.draw_text(text, draw_sprite_anchor, scale, tint, max_text_width);
 	}
 }
 
