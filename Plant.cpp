@@ -19,6 +19,7 @@ PlantType const* friend_plant = nullptr;
 PlantType const* vampire_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
+PlantType const* waterflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
 PlantType const* spreader_source_plant = nullptr;
 PlantType const* spreader_child_plant = nullptr;
@@ -71,12 +72,26 @@ Mesh const* fireflower_2_mesh = nullptr;
 Mesh const* fireflower_3_mesh = nullptr;
 Sprite const* fireflower_seed_sprite = nullptr;
 Sprite const* fireflower_harvest_sprite = nullptr;
+// waterflower
+Mesh const* waterflower_1_mesh = nullptr;
+Mesh const* waterflower_2_mesh = nullptr;
+Mesh const* waterflower_3_mesh = nullptr;
+Sprite const* waterflower_seed_sprite = nullptr;
+Sprite const* waterflower_harvest_sprite = nullptr;
+// beaconflower
 // corpse eater
 Mesh const* corpseeater_1_mesh = nullptr;
 Mesh const* corpseeater_2_mesh = nullptr;
 Mesh const* corpseeater_3_mesh = nullptr;
 Sprite const* corpseeater_seed_sprite = nullptr;
 Sprite const* corpseeater_harvest_sprite = nullptr;
+// burst pod
+// skitterplant
+Mesh const* skitterplant_1_mesh = nullptr;
+Mesh const* skitterplant_2_mesh = nullptr;
+Mesh const* skitterplant_3_mesh = nullptr;
+Sprite const* skitterplant_seed_sprite = nullptr;
+Sprite const* skitterplant_harvest_sprite = nullptr;
 
 Load< void > plant_sprites(LoadTagDefault, [](){
 	fern_seed_sprite = &main_atlas->lookup( "fernSeed" );
@@ -101,7 +116,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	}
 
 	// TILE MESHES --------------------------------------------------
-	sea_mesh = &ret->lookup( "empty" );
+	sea_mesh = &ret->lookup( "sea" );
 	ground_tile_mesh = &ret->lookup( "soil" );
 	dirt_tile_mesh = &ret->lookup( "unoccupied" );
 	grass_short_tile_mesh = &ret->lookup( "shortgrass" );
@@ -130,9 +145,15 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_1_mesh = &ret->lookup( "fireflower1" );
 	fireflower_2_mesh = &ret->lookup( "fireflower2" );
 	fireflower_3_mesh = &ret->lookup( "fireflower3" );
+	waterflower_1_mesh = &ret->lookup( "waterflower1" );
+	waterflower_2_mesh = &ret->lookup( "waterflower2" );
+	waterflower_3_mesh = &ret->lookup( "waterflower3" );
 	corpseeater_1_mesh = &ret->lookup( "corpseeater1" );
 	corpseeater_2_mesh = &ret->lookup( "corpseeater2" );
 	corpseeater_3_mesh = &ret->lookup( "corpseeater3" );
+	skitterplant_1_mesh = &ret->lookup( "skitterplant1" );
+	skitterplant_2_mesh = &ret->lookup( "skitterplant2" );
+	skitterplant_3_mesh = &ret->lookup( "skitterplant3" );
 
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, 
 								  Aura::none, 5, 10, 20.0f, "Familiar Fern", 
@@ -149,6 +170,9 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
 									  Aura::fire, 5, 0, 20.0f, "Fire Flower", 
 									  "Gives off fire aura." );
+	waterflower_plant = new PlantType( { waterflower_1_mesh, waterflower_2_mesh, waterflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
+									  Aura::aqua, 5, 0, 20.0f, "Sieve Flower", 
+									  "Gives off aqua aura." );							  
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
 									   "Feeds off a neighboring dead plant." );
@@ -158,7 +182,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	spreader_child_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 										  Aura::none, 5, 50, 3.0f, "Spreading Sage Child", 
 										  "Offshoot of the Spreading Sage" );
-	teleporter_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+	teleporter_plant = new PlantType( { skitterplant_1_mesh, skitterplant_2_mesh, skitterplant_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									  Aura::none, 5, 50, 40.0f, "Teleporting Twinleaf", 
 									  "Teleports around the field while growing." );
 
@@ -167,6 +191,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	all_plants.push_back(vampire_plant);
 	all_plants.push_back(cactus_plant);
 	all_plants.push_back(fireflower_plant);
+	all_plants.push_back(waterflower_plant);
 	all_plants.push_back(corpseeater_plant);
 	all_plants.push_back(spreader_source_plant);
 	all_plants.push_back( spreader_child_plant );
@@ -393,6 +418,10 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				}
 			}
 			else if( plant_type == fireflower_plant )
+			{
+				current_grow_time += grow_power + elapsed;
+			}
+			else if( plant_type == waterflower_plant )
 			{
 				current_grow_time += grow_power + elapsed;
 			}
@@ -623,7 +652,7 @@ void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_tr
 		fire_aura = new Aura( tile_drawable->transform->position, Aura::fire );
 	}
 	if( aqua_aura_effect > 0 && (!aqua_aura) ) {
-		aqua_aura = new Aura( tile_drawable->transform->position, Aura::fire );
+		aqua_aura = new Aura( tile_drawable->transform->position, Aura::aqua );
 	}
 	// or delete if no longer has aura effect	
 	if( fire_aura_effect == 0 && fire_aura ) {

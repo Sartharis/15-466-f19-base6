@@ -118,6 +118,7 @@ PlantMode::PlantMode()
 		inventory.change_seeds_num( vampire_plant, 5 );
 		inventory.change_seeds_num( cactus_plant, 5 );
 		inventory.change_seeds_num( fireflower_plant, 5 );
+		inventory.change_seeds_num( waterflower_plant, 5 );
 		inventory.change_seeds_num( corpseeater_plant, 5 );
 		inventory.change_seeds_num( spreader_source_plant, 5 );
 		inventory.change_seeds_num( spreader_child_plant, 0 );
