@@ -62,10 +62,12 @@ struct UIElem {
 	void set_size(glm::vec2 _size) { size = _size; }
 	void set_scale(float _scale) { scale = _scale; }
 	void set_parent(UIElem* _parent); 
+	void set_sprite(Sprite const* _sprite) { sprite = _sprite; }
 	void set_text(std::string _text){ text = _text; }
 	void set_z_index(int _z_index){ z_index = _z_index; }
 	void set_tint(glm::u8vec4 _tint){ tint = _tint; }
 	void set_max_text_width(float _w){ max_text_width = _w; }
+	void make_interactive() { interactive = true; }
 
 	glm::vec2 get_position(){ return position; }
 	glm::vec2 get_anchor(){ return anchor; }

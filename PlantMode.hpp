@@ -143,6 +143,10 @@ struct PlantMode : public Mode {
 			UIElem* requirements;
 			UIElem* reward;
 		} daily_order;
+
+		int magicbook_page = 0;
+		int storage_tab_page = 0;
+		int harvest_tab_pate = 0;
 	} UI;
 
 	//cursor
