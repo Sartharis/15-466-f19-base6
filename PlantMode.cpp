@@ -508,7 +508,7 @@ void PlantMode::update(float elapsed)
 
 		//Sea positioning
 		sea->transform->position = camera->transform->position;
-		sea->transform->position.z = -0.1f;
+		sea->transform->position.z = -0.2f;
 	}
 
 	if( !paused )
