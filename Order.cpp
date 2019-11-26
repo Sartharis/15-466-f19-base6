@@ -37,7 +37,17 @@ PlantType const* get_plant_type_by_name(std::string plant_type_name){
 		return fireflower_plant;
 	}else if(plant_type_name=="corpseeater_plant"){
 		return corpseeater_plant;
-	}else{
+	}
+	else if( plant_type_name == "spreader_source_plant" ){
+		return spreader_source_plant;
+	}
+	else if( plant_type_name == "spreader_child_plant" ){
+		return spreader_child_plant;
+	}
+	else if( plant_type_name == "teleporter_plant" ){
+		return teleporter_plant;
+	}
+	else{
 		return nullptr;
 	}
 }

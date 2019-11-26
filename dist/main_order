@@ -1,18 +1,66 @@
 <
 title:main_order1
-description:This is your main order. For the purpose of testing linebreak, I'm writing a very long sentence here to see if things can be laid out as expected.
-number_of_required_plants_type:2
+description: Gimme those familiar ferns!
+number_of_required_plants_type:1
 test_plant 4
-friend_plant 2
-bonus_energy:100
+bonus_energy:110
 bonus_plant:friend_plant
 >
 <
 title:main_order2
-description:This is your main order
+description: I need companions to accompany me!
 number_of_required_plants_type:2
 test_plant 2
-cactus_plant 1
-bonus_energy:105
-bonus_plant:friend_plant
+friend_plant 2
+bonus_energy:120
+bonus_plant:fireflower_plant
+>
+<
+title:main_order3
+description: Time to expand the farm to farm these ones quickly!
+number_of_required_plants_type:2
+test_plant 4
+friend_plant 2
+bonus_energy:150
+bonus_plant:cactus_plant
+>
+<
+title:main_order4
+description: Fire flowers are costly, but you need them to farm cacti. Be careful about their placement!
+number_of_required_plants_type:1
+cactus_plant 4
+bonus_energy:200
+bonus_plant:vampire_plant
+>
+<
+title:main_order5
+description: Fire flowers are costly, but you need them to farm cacti. Be careful about their placement!
+number_of_required_plants_type:3
+friend_plant 2
+vampire_plant 2
+test_plant 6
+bonus_energy:300
+bonus_plant:corpseeater_plant
+>
+<
+title:main_order6
+description: Hopefully you didn't remove your dead plants, cause now you need em!
+number_of_required_plants_type:3
+corpseeater_plant 4
+cactus_plant 8
+friend_plant 2
+bonus_energy:400
+bonus_plant:teleporter_plant
+>
+<
+title:main_order7
+description: Ha ha ha! Teleporter plants will mess up everything! Alas, we need them. 
+number_of_required_plants_type:5
+teleporter_plant 2
+cactus_plant 4
+friend_plant 1
+vampire_plant 2
+test_plant 6
+bonus_energy:400
+bonus_plant:teleporter_plant
 >
