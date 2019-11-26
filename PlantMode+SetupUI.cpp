@@ -46,6 +46,7 @@ struct {
 	} storage;
 	struct {
 		Sprite const* icon = nullptr;
+		Sprite const* lock = nullptr;
 		Sprite const* background = nullptr;
 		Sprite const* prev = nullptr;
 		Sprite const* next = nullptr;
@@ -76,6 +77,7 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
 	ui_sprites.magicbook.prev = &ret->lookup("pagePrev");
 	ui_sprites.magicbook.next = &ret->lookup("pageNext");
+	ui_sprites.magicbook.lock = &ret->lookup( "plantLocked" );
 	// order
 	ui_sprites.order.rolledup = &ret->lookup("orderRolledup");
 	ui_sprites.order.expanded = &ret->lookup("orderExpanded");
@@ -692,9 +694,9 @@ void PlantMode::setup_UI() {
 		plant_to_magicbook_entry.insert( std::make_pair( plant, entry ) ); //used for unlocking plants
 
 		UIElem* lock = new UIElem( entry ); 
-		lock->set_sprite( plant->get_harvest_sprite() );
-		lock->set_scale( 1.5f );
-		lock->set_position( glm::vec2( 150, 50 ), glm::vec2( 0, 0 ) );
+		lock->set_sprite( ui_sprites.magicbook.lock );
+		lock->set_scale( 0.5f );
+		lock->set_position( glm::vec2( 0, 0 ), glm::vec2( 0, 0 ) );
 
 		// icon
 		UIElem* icon = new UIElem(entry);
