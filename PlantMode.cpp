@@ -96,7 +96,14 @@ PlantMode::PlantMode()
 	{//init UI
 		setup_UI();
 	}
-
+	
+	{
+		scroll_tool_order.push_back( default_hand );
+		scroll_tool_order.push_back( watering_can );
+		scroll_tool_order.push_back( fertilizer );
+		scroll_tool_order.push_back( shovel );
+	}
+	
 	//DEBUG - ADD ALL SEEDS & init harvest to all 0
 	{
 		change_num_coins( 0 );
@@ -389,25 +396,39 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 	{
 		switch( evt.key.keysym.sym ){
 		case SDLK_1:
-			selectedPlant = test_plant;
+			set_current_tool( default_hand );
 			break;
 		case SDLK_2:
-			selectedPlant = friend_plant;
+			set_current_tool( watering_can );
 			break;
 		case SDLK_3:
-			selectedPlant = vampire_plant;
+			set_current_tool( fertilizer );
 			break;
 		case SDLK_4:
-			selectedPlant = fireflower_plant;
-			break;
-		case SDLK_5:
-			selectedPlant = cactus_plant;
-			break;
-		case SDLK_6:
-			selectedPlant = corpseeater_plant;
+			set_current_tool( shovel );
 			break;
 		default:
 			break;
+		}
+	}
+
+	if( evt.type == SDL_MOUSEWHEEL )
+	{
+		if( evt.wheel.y < 0  && scroll_delay <= 0.0f) // scroll up
+		{
+			std::vector<Tool>::iterator it = std::find(scroll_tool_order.begin(), scroll_tool_order.end(), current_tool );
+			int index = (int)std::distance( scroll_tool_order.begin(), it );
+			index = ( index - 1 + (int)scroll_tool_order.size() ) % scroll_tool_order.size();
+			set_current_tool( scroll_tool_order[index] );
+			scroll_delay = 0.08f;
+		}
+		else if( evt.wheel.y > 0 && scroll_delay <= 0.0f ) // scroll down
+		{
+			std::vector<Tool>::iterator it = std::find( scroll_tool_order.begin(), scroll_tool_order.end(), current_tool );
+			int index = (int)std::distance( scroll_tool_order.begin(), it );
+			index = ( index + 1 ) % scroll_tool_order.size();
+			set_current_tool( scroll_tool_order[index] );
+			scroll_delay = 0.08f;
 		}
 	}
 
@@ -438,6 +459,9 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 void PlantMode::update(float elapsed) 
 {
 	timer += elapsed;
+
+	scroll_delay -= elapsed;
+	if( scroll_delay < 0.0f ) scroll_delay = 0.0f;
 
 	// update order cancel state
 	cancel_order_freeze_time -= elapsed;
