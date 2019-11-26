@@ -22,6 +22,10 @@ Load< Sound::Sample > magic_book_purchase_sound( LoadTagDefault, []() -> Sound::
 	return new Sound::Sample( data_path( "COINS_Rattle_01_mono.wav" ) );
 } );
 
+Load< Sound::Sample > order_completed_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "OrderComplete.wav" ) );
+} );
+
 struct {
 	struct {
 		Sprite const* background = nullptr;
@@ -42,6 +46,7 @@ struct {
 	} storage;
 	struct {
 		Sprite const* icon = nullptr;
+		Sprite const* lock = nullptr;
 		Sprite const* background = nullptr;
 		Sprite const* prev = nullptr;
 		Sprite const* next = nullptr;
@@ -72,6 +77,7 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
 	ui_sprites.magicbook.prev = &ret->lookup("pagePrev");
 	ui_sprites.magicbook.next = &ret->lookup("pageNext");
+	ui_sprites.magicbook.lock = &ret->lookup( "plantLocked" );
 	// order
 	ui_sprites.order.rolledup = &ret->lookup("orderRolledup");
 	ui_sprites.order.expanded = &ret->lookup("orderExpanded");
@@ -94,6 +100,7 @@ void PlantMode::setup_UI() {
 		nullptr, "PAUSED",
 		glm::vec2( 0, 0 ), // sprite pos
 		1.5f );
+	(void)pause_text;
 
 	UIElem* how_to_play_text = new UIElem(
 		UI.root_pause,
@@ -642,7 +649,7 @@ void PlantMode::setup_UI() {
 			if (page == UI.magicbook_page || page == UI.magicbook_page + 1) {
 				all_choices->children[i]->show();
 				page = page % 2;
-				glm::vec2 pos = glm::vec2(105, 70) + glm::vec2(page * 420, row * 240);
+				glm::vec2 pos = glm::vec2(135, 70) + glm::vec2(page * 400, row * 255);
 				all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
 			}
 		}	
@@ -684,21 +691,34 @@ void PlantMode::setup_UI() {
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
 		UIElem* entry = new UIElem(all_choices); // will get automatically laid out anyway
+		plant_to_magicbook_entry.insert( std::make_pair( plant, entry ) ); //used for unlocking plants
+
+		UIElem* lock = new UIElem( entry ); 
+		lock->set_sprite( ui_sprites.magicbook.lock );
+		lock->set_scale( 0.5f );
+		lock->set_position( glm::vec2( 0, 0 ), glm::vec2( 0, 0 ) );
+
 		// icon
 		UIElem* icon = new UIElem(entry);
 		icon->set_sprite(plant->get_harvest_sprite());
 		icon->set_scale(0.5f);
+		icon->hide();
+
 		// seed
 		UIElem* seed = new UIElem(entry);
 		seed->set_sprite(plant->get_seed_sprite());
 		seed->set_scale(0.25f);
 		seed->set_position(glm::vec2(0, 60), glm::vec2(0, 0));
+		seed->hide();
+
 		// price
 		UIElem* price = new UIElem(entry);
 		price->set_text("$" + std::to_string( plant->get_cost() ));
 		price->set_scale(0.6f);
 		price->set_position(glm::vec2(40, 0), glm::vec2(0, 0));
 		price->set_tint(text_tint);
+		price->hide();
+
 		// name
 		UIElem* name = new UIElem(entry);
 		name->make_interactive();
@@ -721,13 +741,16 @@ void PlantMode::setup_UI() {
 		name->set_on_mouse_leave([name, this](){
 			name->set_tint(text_tint);
 		});
+		name->hide();
+
 		// description
 		UIElem* description = new UIElem(entry);
 		description->set_text(plant->get_description());
 		description->set_scale(0.45f);
 		description->set_position(glm::vec2(0, 85), glm::vec2(0, 0));
 		description->set_tint(text_tint);
-		description->set_max_text_width(350.0f);
+		description->set_max_text_width(300.0f);
+		description->hide();
 	};
 
 	for( auto plant : all_plants )
@@ -834,6 +857,10 @@ void PlantMode::setup_UI() {
 				inventory.change_harvest_num(require_type, -needed_num);
 				iter++;
 			}
+
+			if( current_main_order->get_bonus_plant() ) unlock_plant( current_main_order->get_bonus_plant() );
+
+			Sound::play( *order_completed_sound, 0.0f, 1.0f );
 			change_num_coins( current_main_order->get_bonus_cash() );
 			current_main_order_idx += 1;
 			if( current_main_order_idx >= main_orders.size() ){
@@ -946,6 +973,7 @@ void PlantMode::setup_UI() {
 				inventory.change_harvest_num(require_type, -needed_num);
 				iter++;
 			}
+			Sound::play( *order_completed_sound, 0.0f, 1.0f );
 			change_num_coins( current_daily_order->get_bonus_cash() );
 			current_daily_order_idx += 1;
 			if( current_daily_order_idx >= daily_orders.size() ){

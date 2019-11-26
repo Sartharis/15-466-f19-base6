@@ -95,6 +95,7 @@ PlantMode::PlantMode()
 
 	{//init UI
 		setup_UI();
+		unlock_plant( test_plant );
 	}
 	
 	{
@@ -114,15 +115,14 @@ PlantMode::PlantMode()
 		set_current_tool( default_hand );
 
 		inventory.change_seeds_num( test_plant, 5 );
-		inventory.change_seeds_num( friend_plant, 5 );
-		inventory.change_seeds_num( vampire_plant, 5 );
-		inventory.change_seeds_num( cactus_plant, 5 );
-		inventory.change_seeds_num( fireflower_plant, 5 );
-		inventory.change_seeds_num( waterflower_plant, 5 );
-		inventory.change_seeds_num( corpseeater_plant, 5 );
-		inventory.change_seeds_num( spreader_source_plant, 5 );
+		inventory.change_seeds_num( friend_plant, 0 );
+		inventory.change_seeds_num( vampire_plant, 0 );
+		inventory.change_seeds_num( cactus_plant, 0 );
+		inventory.change_seeds_num( fireflower_plant, 0 );
+		inventory.change_seeds_num( corpseeater_plant, 0 );
+		inventory.change_seeds_num( spreader_source_plant, 0 );
 		inventory.change_seeds_num( spreader_child_plant, 0 );
-		inventory.change_seeds_num( teleporter_plant, 5 );
+		inventory.change_seeds_num( teleporter_plant, 0 );
 
 		inventory.change_harvest_num( test_plant, 0 );
 		inventory.change_harvest_num( friend_plant, 0 );
@@ -508,7 +508,7 @@ void PlantMode::update(float elapsed)
 
 		//Sea positioning
 		sea->transform->position = camera->transform->position;
-		sea->transform->position.z = -0.1f;
+		sea->transform->position.z = -0.2f;
 	}
 
 	if( !paused )
@@ -1052,6 +1052,24 @@ UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
 	std::unordered_map<PlantType const*, UIElem*>::iterator it = plant_to_harvest_item.find( plant );
 	assert( it != plant_to_harvest_item.end() );
 	return it->second;
+}
+
+void PlantMode::unlock_plant( const PlantType* plant )
+{
+	auto it = plant_to_magicbook_entry.find( plant );
+	assert( it != plant_to_magicbook_entry.end() );
+	UIElem* entry = it->second;
+	for( UIElem* c : entry->children )
+	{
+		if( c->get_hidden() )
+		{
+			c->show();
+		}
+		else
+		{
+			c->hide();
+		}
+	}
 }
 
 void PlantMode::change_num_coins(int change) {

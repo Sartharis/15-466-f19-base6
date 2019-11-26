@@ -85,13 +85,20 @@ Mesh const* corpseeater_2_mesh = nullptr;
 Mesh const* corpseeater_3_mesh = nullptr;
 Sprite const* corpseeater_seed_sprite = nullptr;
 Sprite const* corpseeater_harvest_sprite = nullptr;
-// burst pod
-// skitterplant
-Mesh const* skitterplant_1_mesh = nullptr;
-Mesh const* skitterplant_2_mesh = nullptr;
-Mesh const* skitterplant_3_mesh = nullptr;
-Sprite const* skitterplant_seed_sprite = nullptr;
-Sprite const* skitterplant_harvest_sprite = nullptr;
+// spreader
+Mesh const* spreader_source_1_mesh = nullptr;
+Mesh const* spreader_source_2_mesh = nullptr;
+Mesh const* spreader_child_1_mesh = nullptr;
+Mesh const* spreader_child_2_mesh = nullptr;
+Sprite const* spreader_seed_sprite = nullptr;
+Sprite const* spreader_source_harvest_sprite = nullptr;
+Sprite const* spreader_child_harvest_sprite = nullptr;
+// teleporter
+Mesh const* teleporter_1_mesh = nullptr;
+Mesh const* teleporter_2_mesh = nullptr;
+Mesh const* teleporter_3_mesh = nullptr;
+Sprite const* teleporter_seed_sprite = nullptr;
+Sprite const* teleporter_harvest_sprite = nullptr;
 
 Load< void > plant_sprites(LoadTagDefault, [](){
 	fern_seed_sprite = &main_atlas->lookup( "fernSeed" );
@@ -106,6 +113,11 @@ Load< void > plant_sprites(LoadTagDefault, [](){
 	fireflower_harvest_sprite = &main_atlas->lookup( "fireflower" );
 	corpseeater_seed_sprite = &main_atlas->lookup( "corpseeaterSeed" );
 	corpseeater_harvest_sprite = &main_atlas->lookup( "corpseeater" );
+	spreader_seed_sprite = &main_atlas->lookup( "spreaderSeed" );
+	spreader_source_harvest_sprite = &main_atlas->lookup( "spreaderSource" );
+	spreader_child_harvest_sprite = &main_atlas->lookup( "spreaderChild" );
+	teleporter_seed_sprite = &main_atlas->lookup( "teleporterSeed" );
+	teleporter_harvest_sprite = &main_atlas->lookup( "teleporter" );
 });
 
 Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
@@ -151,9 +163,13 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	corpseeater_1_mesh = &ret->lookup( "corpseeater1" );
 	corpseeater_2_mesh = &ret->lookup( "corpseeater2" );
 	corpseeater_3_mesh = &ret->lookup( "corpseeater3" );
-	skitterplant_1_mesh = &ret->lookup( "skitterplant1" );
-	skitterplant_2_mesh = &ret->lookup( "skitterplant2" );
-	skitterplant_3_mesh = &ret->lookup( "skitterplant3" );
+	spreader_source_1_mesh = &ret->lookup( "spreader_source1" );
+	spreader_source_2_mesh = &ret->lookup( "spreader_source2" );
+	spreader_child_1_mesh = &ret->lookup( "spreader_child1" );
+	spreader_child_2_mesh = &ret->lookup( "spreader_child2" );
+	teleporter_1_mesh = &ret->lookup( "teleporter1" );
+	teleporter_2_mesh = &ret->lookup( "teleporter2" );
+	teleporter_3_mesh = &ret->lookup( "teleporter3" );
 
 	test_plant = new PlantType( { test_plant_1_mesh, test_plant_2_mesh }, fern_seed_sprite, fern_harvest_sprite, 
 								  Aura::none, 5, 10, 20.0f, "Familiar Fern", 
@@ -176,13 +192,13 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
 									   "Feeds off a neighboring dead plant." );
-	spreader_source_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh }, vampire_plant_seed_sprite, vampire_plant_harvest_sprite,
+	spreader_source_plant = new PlantType( { spreader_source_1_mesh, spreader_source_2_mesh }, spreader_seed_sprite, spreader_source_harvest_sprite,
 										   Aura::none, 5, 50, 10.0f, "Spreading Sage", 
 										   "Once fully grown tries to spread all over the farm." );
-	spreader_child_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+	spreader_child_plant = new PlantType( { spreader_child_1_mesh, spreader_child_2_mesh }, spreader_seed_sprite, spreader_child_harvest_sprite, 
 										  Aura::none, 5, 50, 3.0f, "Spreading Sage Child", 
 										  "Offshoot of the Spreading Sage" );
-	teleporter_plant = new PlantType( { skitterplant_1_mesh, skitterplant_2_mesh, skitterplant_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
+	teleporter_plant = new PlantType( { teleporter_1_mesh, teleporter_2_mesh, teleporter_3_mesh }, teleporter_seed_sprite, teleporter_harvest_sprite, 
 									  Aura::none, 5, 50, 40.0f, "Teleporting Twinleaf", 
 									  "Teleports around the field while growing." );
 
