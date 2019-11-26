@@ -591,7 +591,7 @@ void PlantMode::setup_UI() {
 			if (page == UI.magicbook_page || page == UI.magicbook_page + 1) {
 				all_choices->children[i]->show();
 				page = page % 2;
-				glm::vec2 pos = glm::vec2(95, 70) + glm::vec2(page * 425, row * 180);
+				glm::vec2 pos = glm::vec2(105, 70) + glm::vec2(page * 420, row * 240);
 				all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
 			}
 		}	
@@ -632,17 +632,31 @@ void PlantMode::setup_UI() {
 
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
-		std::string text = plant->get_name() + " Seed - $" + std::to_string( plant->get_cost() );
-		UIElem* entry = new UIElem( // will get laid out automatically anyway.
-			all_choices,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(0, 0), // pos
-			glm::vec2(270, 32), // size
-			nullptr, text,
-			glm::vec2(6.0f, 1.0f), // text anchor
-			0.54f, true);
-		entry->set_on_mouse_down([this, plant](){
-
+		UIElem* entry = new UIElem(all_choices); // will get automatically laid out anyway
+		// icon
+		UIElem* icon = new UIElem(entry);
+		icon->set_sprite(plant->get_harvest_sprite());
+		icon->set_scale(0.5f);
+		// seed
+		UIElem* seed = new UIElem(entry);
+		seed->set_sprite(plant->get_seed_sprite());
+		seed->set_scale(0.25f);
+		seed->set_position(glm::vec2(0, 60), glm::vec2(0, 0));
+		// price
+		UIElem* price = new UIElem(entry);
+		price->set_text("$" + std::to_string( plant->get_cost() ));
+		price->set_scale(0.6f);
+		price->set_position(glm::vec2(40, 0), glm::vec2(0, 0));
+		price->set_tint(text_tint);
+		// name
+		UIElem* name = new UIElem(entry);
+		name->make_interactive();
+		name->set_position(glm::vec2(40, 40), glm::vec2(0, 0));
+		name->set_size(glm::vec2(300, 40));
+		name->set_text(plant->get_name() + " Seed");
+		name->set_tint(text_tint);
+		name->set_scale(0.6f);
+		name->set_on_mouse_down([this, plant](){
 			if( num_coins >= plant->get_cost() ){
 				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				change_num_coins( -plant->get_cost() );
@@ -650,13 +664,19 @@ void PlantMode::setup_UI() {
 				inventory.change_seeds_num( plant, 1 );
 			}
 		});
-		entry->set_tint(text_tint);
-		entry->set_on_mouse_enter([entry, this](){
-			entry->set_tint(text_highlight_tint);
+		name->set_on_mouse_enter([name, this](){
+			name->set_tint(text_highlight_tint);
 		});
-		entry->set_on_mouse_leave([entry, this](){
-			entry->set_tint(text_tint);
+		name->set_on_mouse_leave([name, this](){
+			name->set_tint(text_tint);
 		});
+		// description
+		UIElem* description = new UIElem(entry);
+		description->set_text(plant->get_description());
+		description->set_scale(0.45f);
+		description->set_position(glm::vec2(0, 85), glm::vec2(0, 0));
+		description->set_tint(text_tint);
+		description->set_max_text_width(350.0f);
 	};
 
 	for( auto plant : all_plants )

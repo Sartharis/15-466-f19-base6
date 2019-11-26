@@ -56,6 +56,7 @@ struct PlantType
 	std::string get_name() const { return name; }
 	std::string get_description() const { return description; };
 	Sprite const* get_seed_sprite() const { return seed_sprite; };
+	Sprite const* get_harvest_sprite() const { return harvest_sprite; };
 	void make_menu_items(const PlantType** selectedPlant, Tool* current_tool,
 			UIElem** seed_item, UIElem** harvest_item ) const;
 
