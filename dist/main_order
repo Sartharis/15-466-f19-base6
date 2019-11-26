@@ -1,10 +1,11 @@
 <
 title:main_order1
-description:This is your main order
-number_of_required_plants_type:1
+description:This is your main order. For the purpose of testing linebreak, I'm writing a very long sentence here to see if things can be laid out as expected.
+number_of_required_plants_type:2
 test_plant 4
+friend_plant 2
 bonus_energy:100
-bonus_plant:cactus_plant
+bonus_plant:friend_plant
 >
 <
 title:main_order2

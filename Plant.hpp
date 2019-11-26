@@ -2,7 +2,6 @@
 
 #include "Aura.hpp"
 #include "Sprite.hpp"
-#include "Button.hpp"
 #include "UIElem.hpp"
 #include "Load.hpp"
 #include <vector>
@@ -57,6 +56,7 @@ struct PlantType
 	std::string get_name() const { return name; }
 	std::string get_description() const { return description; };
 	Sprite const* get_seed_sprite() const { return seed_sprite; };
+	Sprite const* get_harvest_sprite() const { return harvest_sprite; };
 	void make_menu_items(const PlantType** selectedPlant, Tool* current_tool,
 			UIElem** seed_item, UIElem** harvest_item ) const;
 
@@ -92,16 +92,22 @@ struct GroundTile
 {
 	void change_tile_type( const GroundTileType* tile_type_in );
 	void update( float elapsed, Scene::Transform* camera_transform, const TileGrid& grid );
-	void update_plant_visuals( float percent_grown );
+	void update_plant_visuals();
 	void apply_pending_update( float elapsed );
 	void update_aura_visuals( float elapsed, Scene::Transform* camera_transform );
+	
+	static bool try_swap_plants(GroundTile& tile_a, GroundTile& tile_b );
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
+	
 	bool is_tile_harvestable();
 	bool is_plant_dead();
+	
 	bool can_be_cleared(const TileGrid& grid) const;
 	bool try_clear_tile();
 	bool is_cleared() const;
+	
+	void change_health( float change );
 
 	// Tile and plant types
 	const GroundTileType* tile_type = nullptr;
@@ -114,11 +120,12 @@ struct GroundTile
 	int grid_y = 0;
 
 	const float plant_health_restore_rate = 1.0f / 5.0f;
-	float plant_health = 1.0f;
+	const float plant_health_fertilization_restore_rate = 1.0f / 3.0f;
 	const float moisture_dry_rate = 0.01f;
+
+	float plant_health = 1.0f;
 	float moisture = 1.0f;
-	const float fertility_consume_rate = 0.005f;
-	float fertility = 1.0f;
+	float fertilization = 0.0f;
 
 	float fire_aura_effect = 0.0f; // in range 0 - 1
 	float aqua_aura_effect = 0.0f;
@@ -150,8 +157,10 @@ struct TileGrid
 	bool is_in_grid( int x, int y ) const;
 };
 
+const int fertilization_cost = 10;
+const float fertilization_duration = 5.0f;
 extern const MeshBuffer* plant_mesh_buffer;
-extern Load< SpriteAtlas > plants_atlas;
+extern Mesh const* sea_mesh;
 extern glm::vec2 plant_grid_tile_size;
 TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y );
 extern PlantType const* test_plant;
@@ -160,9 +169,15 @@ extern PlantType const* vampire_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
 extern PlantType const* corpseeater_plant;
-extern std::vector< PlantType const* > all_plants;
+extern PlantType const* spreader_source_plant;
+extern PlantType const* spreader_child_plant;
+extern PlantType const* teleporter_plant;
 extern GroundTileType const* sea_tile;
+extern std::vector< PlantType const* > all_plants;
 extern GroundTileType const* ground_tile;
 extern GroundTileType const* grass_short_tile;
 extern GroundTileType const* grass_tall_tile;
 extern GroundTileType const* dirt_tile;
+extern GroundTileType const* empty_tile;
+extern Load< GLuint > plant_meshes_for_firstpass_program;
+extern Load< GLuint > plant_meshes_for_water_program;

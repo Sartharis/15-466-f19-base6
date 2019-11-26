@@ -6,7 +6,6 @@
 #include "GL.hpp"
 #include "Scene.hpp"
 #include "Order.hpp"
-#include "Button.hpp"
 #include "UIElem.hpp"
 
 #include <SDL.h>
@@ -18,9 +17,12 @@
 #include <iostream>
 #include "Plant.hpp"
 
+struct PlantMode;
+
 struct Inventory
-{ // NOTE: should make sure to NEVER INSERT NULL INTO THE MAP!!! AAAAAAHHHH
-	// TODO: when seed / harvest number changes, update UI by changing corresponding elem text and re-layout all plant elems.
+{ 
+	Inventory(PlantMode* _game) : game(_game) { assert(game); }
+
 	int get_seeds_num( const PlantType* plant );
 	void change_seeds_num(const PlantType* plant, int seed_change );
 	int get_harvest_num( const PlantType* plant );
@@ -41,11 +43,10 @@ struct Inventory
 private:
 	std::unordered_map<PlantType const*, int> plant_to_seeds;
 	std::unordered_map<PlantType const*, int> plant_to_harvest;
-	std::unordered_map<PlantType const*, Button*> plant_to_seed_btn;
-	std::unordered_map<PlantType const*, Button*> plant_to_harvest_btn;
-
 	std::unordered_map<PlantType const*, UIElem*> plant_to_seed_item;
 	std::unordered_map<PlantType const*, UIElem*> plant_to_harvest_item;
+
+	PlantMode* game = nullptr;
 };
 
 // The 'PlantMode':
@@ -53,12 +54,18 @@ struct PlantMode : public Mode {
 	PlantMode();
 	virtual ~PlantMode();
 
-	int current_order_idx = 0;
-	OrderType const* current_order = nullptr;
+	float timer = 0.0f;
+
+	//orders:
+	int current_daily_order_idx = 0;
+	OrderType const* current_daily_order = nullptr;
 	bool cancel_order_state = false;
 	float cancel_order_freeze_time = 10;
 	int current_main_order_idx = 0;
 	OrderType const* current_main_order = nullptr;
+	void set_main_order(int index);
+	void set_daily_order(int index);
+	std::string get_req_text(std::pair<PlantType const*, int> req);
 	
 	// init harvest_plant_map
 	// Harvest Plant Map
@@ -70,6 +77,8 @@ struct PlantMode : public Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
+	virtual void on_paused() override;
+	virtual void on_unpaused() override;
 	
 	//scene:
 	std::string tool_name = "";
@@ -80,8 +89,11 @@ struct PlantMode : public Mode {
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
+	Scene::Drawable* sea = nullptr;
+	std::vector<Tool> scroll_tool_order;
+	float scroll_delay = 0.0f;
 	
-	Inventory inventory;
+	Inventory inventory = Inventory(this);
 	int num_coins = 30;
 	void change_num_coins(int change);
 
@@ -102,11 +114,15 @@ struct PlantMode : public Mode {
 	//tool selection
 	Tool current_tool = default_hand;
 	void set_current_tool(Tool tool);
+	void set_current_tool_tooltip( Tool tool );
 
-	//UI states:
+	//UI
 	void setup_UI();
+	glm::u8vec4 text_tint = glm::u8vec4(92, 76, 53, 255);
+	glm::u8vec4 text_highlight_tint = glm::u8vec4(145, 127, 100, 255);
 	struct {
 		UIElem* root;
+		UIElem* root_pause;
 		UIElem* coins_text;
 		struct {
 			UIElem* glove;
@@ -116,25 +132,33 @@ struct PlantMode : public Mode {
 		} toolbar;
 		// storage
 		int storage_current_tab = 0;
-
-		// NOTE: deprecated, to be removed
-		std::vector< Button* > all_buttons = {};
-		// order
+		// orders
 		struct {
-			glm::vec2 tr_offset = glm::vec2(-360.0f, 150.0f);
-		} order;
+			UIElem* description;
+			UIElem* requirements;
+			UIElem* unlock_plant;
+		} main_order;
+		struct {
+			UIElem* description;
+			UIElem* requirements;
+			UIElem* reward;
+		} daily_order;
+
+		int magicbook_page = 0;
+		int storage_tab_page = 0;
+		int harvest_tab_pate = 0;
 	} UI;
 
-	UIElem* UI_root = nullptr;
-
+	//cursor
+	glm::vec2 get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size);
 	struct {
 		Sprite const* sprite = nullptr;
-		std::string text = ""; // TODO: text that floats around cursor?
+		std::string text = ""; 
 		float scale = 1.0f;
 		glm::vec2 offset = glm::vec2(0, 0);// applied to cursor sprite _before_ scaling
 	} cursor;
 
-	//-------- opengl stuff 
+	//-------- opengl stuff
 
 	glm::vec2 screen_size = glm::vec2(960, 600); 
 	GLuint color_attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -161,7 +185,6 @@ struct PlantMode : public Mode {
 	GLuint trivial_vao = 0;
 	GLuint trivial_vbo = 0;
 
-	//--------
 };
 
 extern Load< SpriteAtlas > main_atlas;

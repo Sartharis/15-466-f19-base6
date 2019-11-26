@@ -7,6 +7,7 @@
 
 struct Mode : std::enable_shared_from_this< Mode > {
 	virtual ~Mode() { }
+	bool paused = false;
 
 	//handle_event is called when new mouse or keyboard events are received:
 	// (note that this might be many times per frame or never)
@@ -18,6 +19,8 @@ struct Mode : std::enable_shared_from_this< Mode > {
 	virtual void update(float elapsed) { }
 
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) {}
+	virtual void on_paused(){}
+	virtual void on_unpaused(){}
 
 	//draw is called after update:
 	virtual void draw(glm::uvec2 const &drawable_size) = 0;

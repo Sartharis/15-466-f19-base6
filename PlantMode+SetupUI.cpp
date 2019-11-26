@@ -43,43 +43,97 @@ struct {
 	struct {
 		Sprite const* icon = nullptr;
 		Sprite const* background = nullptr;
+		Sprite const* prev = nullptr;
+		Sprite const* next = nullptr;
 	} magicbook;
+	struct {
+		Sprite const* rolledup = nullptr;
+		Sprite const* expanded = nullptr;
+	} order;
 	Sprite const* close = nullptr;
 	Sprite const* coins = nullptr;
-} sprites;
+} ui_sprites;
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
 	// tools
-	sprites.tools.background = &ret->lookup("toolsBackground");
-	sprites.tools.hand = &ret->lookup("hand");
-	sprites.tools.watering_can = &ret->lookup("wateringCan");
-	sprites.tools.shovel = &ret->lookup("shovel");
-	sprites.tools.fertilizer = &ret->lookup("fertilizer");
+	ui_sprites.tools.background = &ret->lookup("toolsBackground");
+	ui_sprites.tools.hand = &ret->lookup("hand");
+	ui_sprites.tools.watering_can = &ret->lookup("wateringCan");
+	ui_sprites.tools.shovel = &ret->lookup("shovel");
+	ui_sprites.tools.fertilizer = &ret->lookup("fertilizer");
 	// storage
-	sprites.storage.icon = &ret->lookup("seedBagClosed");
-	sprites.storage.background = &ret->lookup("seedMenuBackground");
-	sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
-	sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
+	ui_sprites.storage.icon = &ret->lookup("seedBagClosed");
+	ui_sprites.storage.background = &ret->lookup("seedMenuBackground");
+	ui_sprites.storage.seeds_tab = &ret->lookup("seedBagOpen");
+	ui_sprites.storage.harvest_tab = &ret->lookup("harvestBasket");
 	// magicbook
-	sprites.magicbook.icon = &ret->lookup("magicbookIcon");
-	sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	ui_sprites.magicbook.icon = &ret->lookup("magicbookIcon");
+	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	ui_sprites.magicbook.prev = &ret->lookup("pagePrev");
+	ui_sprites.magicbook.next = &ret->lookup("pageNext");
+	// order
+	ui_sprites.order.rolledup = &ret->lookup("orderRolledup");
+	ui_sprites.order.expanded = &ret->lookup("orderExpanded");
 	// other
-	sprites.coins = &ret->lookup("coins");
-	sprites.close = &ret->lookup("magicbookClose");
+	ui_sprites.coins = &ret->lookup("coins");
+	ui_sprites.close = &ret->lookup("magicbookClose");
 });
 
 void PlantMode::setup_UI() {
 	// root
-	UI.root = new UIElem(
-		nullptr, // parent
-		glm::vec2(0, 0), // anchor
-		glm::vec2(200, 100), // position
-		glm::vec2(200, 150), // size
-		nullptr, // sprite
-		"", // text
-		glm::vec2(0,0), // sprite pos
-		0.0f); // sprite scale
+	UI.root = new UIElem(nullptr);
+	UI.root_pause = new UIElem( nullptr );
+
+	//---------------- pause ------------------
+	UIElem* pause_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f), // anchor
+		glm::vec2( -150, -300 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "PAUSED",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.5f );
+
+	UIElem* how_to_play_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, -200 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "HOW TO PLAY: Your goal is to unlock all of the plants. To do this, fulfill the orders on the right side of the screen by harvesting different plants.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	how_to_play_text->set_max_text_width( 600.0f );
+
+	UIElem* controls_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, -100.0f ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "Move camera with WASD and interact with the left mouse button. Press f for fullscreen.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	controls_text->set_max_text_width( 600.0f );
+
+	UIElem* seed_buy_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, 0.0f ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "To buy seeds for planting, use the magic book in the bottom right corner. Some seeds are locked until you unlock them by fulfilling orders.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	seed_buy_text->set_max_text_width( 600.0f );
+
+	UIElem* seed_use_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, 100 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "Your bought seeds will be available in the storage tab (left of the magic book in bottom right corner).",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	seed_use_text->set_max_text_width( 600.0f );
 
 	//---------------- money ------------------
 	UIElem* money_icon = new UIElem(
@@ -87,12 +141,12 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 0), // anchor
 		glm::vec2(-160, 20), // pos
 		glm::vec2(0, 0), // size
-		sprites.coins, "coins",
+		ui_sprites.coins, "coins",
 		glm::vec2(0, 0), // sprite pos
 		0.4f);
 	UI.coins_text = new UIElem(money_icon);
 	UI.coins_text->set_scale(0.68f);
-	UI.coins_text->set_text("hoofda");
+	UI.coins_text->set_text("");
 	UI.coins_text->set_position(glm::vec2(76, 6), glm::vec2(0, 0));
 
 	//---------------- toolbar ------------------
@@ -103,7 +157,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(0, 0), // position
 		glm::vec2(0, 0), // size
-		sprites.tools.background, // sprite
+		ui_sprites.tools.background, // sprite
 		"tools background", // text
 		glm::vec2(-270,0), // sprite pos
 		0.4f); // sprite scale
@@ -114,17 +168,19 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(60, -84), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.hand, // sprite
+		ui_sprites.tools.hand, // sprite
 		"glove", // text
 		glm::vec2(0, 0), // sprite pos
 		0.3f, // sprite scale
 		true); 
-	UI.toolbar.glove->set_on_mouse_enter([this](){
-		for (auto c : UI.toolbar.glove->children) c->show();
-	});
-	UI.toolbar.glove->set_on_mouse_leave([this](){
-		for (auto c : UI.toolbar.glove->children) c->hide();
-	});
+	UI.toolbar.glove->set_on_mouse_enter( [this](){
+		for( auto c : UI.toolbar.glove->children ) c->show();
+		set_current_tool_tooltip( default_hand );
+	 } );
+	UI.toolbar.glove->set_on_mouse_leave( [this](){
+		for( auto c : UI.toolbar.glove->children ) c->hide();
+		set_current_tool_tooltip( current_tool );
+	} );
 	UI.toolbar.glove->set_on_mouse_down([this](){
 		set_current_tool( default_hand );
 	});
@@ -144,17 +200,19 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(142, -79), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.watering_can, // sprite
+		ui_sprites.tools.watering_can, // sprite
 		"watering can", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
 		true); 
-	UI.toolbar.watering_can->set_on_mouse_enter([this](){
-		for (auto c : UI.toolbar.watering_can->children) c->show();
-	});
-	UI.toolbar.watering_can->set_on_mouse_leave([this](){
-		for (auto c : UI.toolbar.watering_can->children) c->hide();
-	});
+	UI.toolbar.watering_can->set_on_mouse_enter( [this](){
+		for( auto c : UI.toolbar.watering_can->children ) c->show();
+		set_current_tool_tooltip( watering_can );
+	 } );
+	UI.toolbar.watering_can->set_on_mouse_leave( [this](){
+		for( auto c : UI.toolbar.watering_can->children ) c->hide();
+		set_current_tool_tooltip( current_tool );
+	} );
 	UI.toolbar.watering_can->set_on_mouse_down([this](){
 		if( current_tool == watering_can ) set_current_tool( default_hand );
 		else set_current_tool( watering_can );
@@ -175,17 +233,19 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(230, -94), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.fertilizer, // sprite
+		ui_sprites.tools.fertilizer, // sprite
 		"fertilizer", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
 		true); 
-	UI.toolbar.fertilizer->set_on_mouse_enter([this](){
-		for (auto c : UI.toolbar.fertilizer->children) c->show();
-	});
-	UI.toolbar.fertilizer->set_on_mouse_leave([this](){
-		for (auto c : UI.toolbar.fertilizer->children) c->hide();
-	});
+	UI.toolbar.fertilizer->set_on_mouse_enter( [this](){
+		for( auto c : UI.toolbar.fertilizer->children ) c->show();
+		set_current_tool_tooltip( fertilizer );
+	} );
+	UI.toolbar.fertilizer->set_on_mouse_leave( [this](){
+		for( auto c : UI.toolbar.fertilizer->children ) c->hide();
+		set_current_tool_tooltip( current_tool );
+	} );
 	UI.toolbar.fertilizer->set_on_mouse_down([this](){
 		if( current_tool == fertilizer ) set_current_tool( default_hand );
 		else set_current_tool( fertilizer );
@@ -206,16 +266,18 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(315, -87), // position
 		glm::vec2(64, 64), // size
-		sprites.tools.shovel, // sprite
+		ui_sprites.tools.shovel, // sprite
 		"shovel", // text
 		glm::vec2(32, 32), // sprite pos
 		0.3f, // sprite scale
 		true); 
 	UI.toolbar.shovel->set_on_mouse_enter([this](){
 		for (auto c : UI.toolbar.shovel->children) c->show();
+		set_current_tool_tooltip( shovel );
 	});
 	UI.toolbar.shovel->set_on_mouse_leave([this](){
 		for (auto c : UI.toolbar.shovel->children) c->hide();
+		set_current_tool_tooltip( current_tool );
 	});
 	UI.toolbar.shovel->set_on_mouse_down([this](){
 		if( current_tool == shovel ) set_current_tool( default_hand );
@@ -245,7 +307,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-565, 306), // position
 		glm::vec2(0, 0), // size
-		sprites.storage.background,
+		ui_sprites.storage.background,
 		"storage background",
 		glm::vec2(0, 0), // sprite anchor
 		0.5f);
@@ -256,7 +318,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0),
 		glm::vec2(375, -350),
 		glm::vec2(40, 40),
-		sprites.close, "close storage",
+		ui_sprites.close, "close storage",
 		glm::vec2(20, 20),
 		0.3f, true, true, false);
 
@@ -265,7 +327,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-190, -80), // position
 		glm::vec2(64, 64), //size
-		sprites.storage.icon, // sprite
+		ui_sprites.storage.icon, // sprite
 		"storage icon",
 		glm::vec2(32, 32),
 		0.3f, true, false, false);
@@ -284,7 +346,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(215, -374), // pos
 		glm::vec2(64, 64),
-		sprites.storage.seeds_tab,
+		ui_sprites.storage.seeds_tab,
 		"seeds tab",
 		glm::vec2(32, 32),
 		0.6f, true, true, false);
@@ -298,6 +360,26 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0),
 		0.4f, false, true); // ..interactive, hidden
 
+	UIElem* seed_name_text = new UIElem(
+		seed_tab,
+		glm::vec2( 0, 0 ), // anchor
+		glm::vec2( -200, -60 ), // pos
+		glm::vec2( 0, 0 ),
+		nullptr,
+		"",
+		glm::vec2( 0, 0 ),
+		0.8f, false, false );
+
+	UIElem* seed_description_text = new UIElem(
+		seed_tab,
+		glm::vec2( 0, 0 ), // anchor
+		glm::vec2( -200, -20 ), // pos
+		glm::vec2( 0, 0 ),
+		nullptr,
+		"",
+		glm::vec2( 0, 0 ),
+		0.4f, false, false );
+
 	// a dummy node just so that all its children are items to be laid out.
 	seed_tab_items = new UIElem(storage_bg);
 
@@ -306,7 +388,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(295, -374), // pos
 		glm::vec2(64, 64),
-		sprites.storage.harvest_tab,
+		ui_sprites.storage.harvest_tab,
 		"harvest tab",
 		glm::vec2(32, 32),
 		0.5f, true, true, false);
@@ -445,17 +527,26 @@ void PlantMode::setup_UI() {
 		}
 	});
 
-	auto add_plant_buttons = [this, seed_tab_items, harvest_tab_items](PlantType const* plant) {
+	auto add_plant_buttons = [this, seed_tab_items, harvest_tab_items, seed_name_text, seed_description_text](PlantType const* plant) {
 		UIElem* seed_icon = nullptr;
 		UIElem* harvest_icon = nullptr;
 		plant->make_menu_items(&selectedPlant, &current_tool, &seed_icon, &harvest_icon);
 		assert(seed_icon); assert(harvest_icon);
-		seed_icon->set_on_mouse_enter([this, plant](){
-			tool_name = plant->get_name() + " x" + std::to_string( inventory.get_seeds_num( plant ) ) + " :";
-			tool_description = plant->get_description();
+		seed_icon->set_on_mouse_enter([plant, seed_name_text, seed_description_text](){
+			seed_name_text->set_text( plant->get_name() + " :" );
+			seed_description_text->set_text( plant->get_description() );
 		});
-		seed_icon->set_on_mouse_leave([this](){
-			set_current_tool(current_tool);
+		seed_icon->set_on_mouse_leave([this, seed_name_text, seed_description_text](){
+			if( current_tool == seed )
+			{
+				seed_name_text->set_text( selectedPlant->get_name() + " :" );
+				seed_description_text->set_text( selectedPlant->get_description() );
+			}
+			else
+			{
+				seed_name_text->set_text( "" );
+				seed_description_text->set_text( "" );
+			}
 		});
 
 		// the small number on top left of seed / harvest
@@ -476,12 +567,11 @@ void PlantMode::setup_UI() {
 		inventory.set_seed_item(plant, seed);
 		inventory.set_harvest_item(plant, harvest);
 	};
-	add_plant_buttons( test_plant );
-	add_plant_buttons( friend_plant );
-	add_plant_buttons( vampire_plant );
-	add_plant_buttons( cactus_plant );
-	add_plant_buttons( fireflower_plant );
-	add_plant_buttons( corpseeater_plant );
+
+	for( auto plant : all_plants )
+	{
+		add_plant_buttons( plant );
+	}
 	
 	//---------------- magic book ------------------
 	UIElem* magicbook_icon = new UIElem(
@@ -489,7 +579,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(1, 1), // anchor
 		glm::vec2(-110, -80), // pos
 		glm::vec2(64, 64), // size
-		sprites.magicbook.icon,
+		ui_sprites.magicbook.icon,
 		"magic book icon",
 		glm::vec2(32, 32),
 		0.3f, true);
@@ -513,7 +603,7 @@ void PlantMode::setup_UI() {
 		glm::vec2(0.5f, 0.5f), // anchor
 		glm::vec2(-459, -310), // pos
 		glm::vec2(0, 0), // size
-		sprites.magicbook.background, "magicbook background",
+		ui_sprites.magicbook.background, "magicbook background",
 		glm::vec2(0, 0),
 		0.9f, false, true);
 	magicbook_icon->set_on_mouse_down([magicbook_bg](){
@@ -534,37 +624,90 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 0), // anchor
 		glm::vec2(830, 30), // pos
 		glm::vec2(40, 40), // size
-		sprites.close, "close magicbook",
+		ui_sprites.close, "close magicbook",
 		glm::vec2(20, 20),
 		0.35f, true, false, false);
-	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
+	magicbook_close_btn->set_on_mouse_down([magicbook_bg, this](){
 		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
+		UI.magicbook_page = 0;
 	});
 
 	UIElem* all_choices = new UIElem(magicbook_bg);
-	all_choices->set_layout_children_fn([all_choices](){
+	all_choices->set_layout_children_fn([this, all_choices](){
 		for (int i=0; i<all_choices->children.size(); i++) {
-			int page = i / 4;
-			int row = i % 4;
-			glm::vec2 pos = glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
-			all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
+			all_choices->children[i]->hide();
+			int page = i / 2;
+			int row = i % 2;
+			if (page == UI.magicbook_page || page == UI.magicbook_page + 1) {
+				all_choices->children[i]->show();
+				page = page % 2;
+				glm::vec2 pos = glm::vec2(105, 70) + glm::vec2(page * 420, row * 240);
+				all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
+			}
 		}	
 	});
+
+	UIElem* magicbook_prev_page = new UIElem(
+		magicbook_bg,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(60, 570), //pos
+		glm::vec2(26, 26), //size
+		ui_sprites.magicbook.prev, "magic book prev page",
+		glm::vec2(0, 0),
+		0.45f, true);
+	magicbook_prev_page->set_on_mouse_down([this, all_choices](){
+		if (UI.magicbook_page >= 2 ) {
+			Sound::play( *magic_book_flip_sound, 0.0f, 1.0f );
+			UI.magicbook_page -= 2;
+			all_choices->layout_children();
+		}
+	});
 	
+	UIElem* magicbook_next_page = new UIElem(
+		magicbook_bg,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(842, 570), //pos
+		glm::vec2(26, 26), //size
+		ui_sprites.magicbook.next, "magic book next page",
+		glm::vec2(0, 0),
+		0.45f, true);
+	magicbook_next_page->set_on_mouse_down([this, all_choices](){
+		int max_pages = (int)std::ceil(all_choices->children.size() / 2.0f) - 1;
+		if (UI.magicbook_page + 2 <= max_pages) {
+			Sound::play( *magic_book_flip_sound, 0.0f, 1.0f );
+			UI.magicbook_page += 2;
+			all_choices->layout_children();
+		}
+	});
+
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
-		std::string text = plant->get_name() + " Seed - $" + std::to_string( plant->get_cost() );
-		UIElem* entry = new UIElem( // will get laid out automatically anyway.
-			all_choices,
-			glm::vec2(0, 0), // anchor
-			glm::vec2(0, 0), // pos
-			glm::vec2(270, 32), // size
-			nullptr, text,
-			glm::vec2(6.0f, 1.0f), // text anchor
-			0.54f, true);
-		entry->set_on_mouse_down([this, plant](){
-
+		UIElem* entry = new UIElem(all_choices); // will get automatically laid out anyway
+		// icon
+		UIElem* icon = new UIElem(entry);
+		icon->set_sprite(plant->get_harvest_sprite());
+		icon->set_scale(0.5f);
+		// seed
+		UIElem* seed = new UIElem(entry);
+		seed->set_sprite(plant->get_seed_sprite());
+		seed->set_scale(0.25f);
+		seed->set_position(glm::vec2(0, 60), glm::vec2(0, 0));
+		// price
+		UIElem* price = new UIElem(entry);
+		price->set_text("$" + std::to_string( plant->get_cost() ));
+		price->set_scale(0.6f);
+		price->set_position(glm::vec2(40, 0), glm::vec2(0, 0));
+		price->set_tint(text_tint);
+		// name
+		UIElem* name = new UIElem(entry);
+		name->make_interactive();
+		name->set_position(glm::vec2(40, 40), glm::vec2(0, 0));
+		name->set_size(glm::vec2(300, 40));
+		name->set_text(plant->get_name() + " Seed");
+		name->set_tint(text_tint);
+		name->set_scale(0.6f);
+		name->set_on_mouse_down([this, plant](){
 			if( num_coins >= plant->get_cost() ){
 				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				change_num_coins( -plant->get_cost() );
@@ -572,20 +715,296 @@ void PlantMode::setup_UI() {
 				inventory.change_seeds_num( plant, 1 );
 			}
 		});
-		entry->set_tint(glm::u8vec4(92, 76, 53, 255));
-		entry->set_on_mouse_enter([entry](){
-			entry->set_tint(glm::u8vec4(145, 127, 100, 255));
+		name->set_on_mouse_enter([name, this](){
+			name->set_tint(text_highlight_tint);
 		});
-		entry->set_on_mouse_leave([entry](){
-			entry->set_tint(glm::u8vec4(92, 76, 53, 255));
+		name->set_on_mouse_leave([name, this](){
+			name->set_tint(text_tint);
 		});
+		// description
+		UIElem* description = new UIElem(entry);
+		description->set_text(plant->get_description());
+		description->set_scale(0.45f);
+		description->set_position(glm::vec2(0, 85), glm::vec2(0, 0));
+		description->set_tint(text_tint);
+		description->set_max_text_width(350.0f);
 	};
-	add_buy_choice( test_plant );
-	add_buy_choice( friend_plant );
-	add_buy_choice( cactus_plant );
-	add_buy_choice( vampire_plant );
-	add_buy_choice( fireflower_plant );
-	add_buy_choice( corpseeater_plant );
+
+	for( auto plant : all_plants )
+	{
+		if( plant != spreader_child_plant )
+		{
+			add_buy_choice( plant );
+		}
+	}
 
 	all_choices->layout_children();
+	
+	//---------------- orders ------------------
+	
+	// main order container
+	UIElem* order1 = new UIElem(
+		UI.root,
+		glm::vec2(1, 0), // anchor
+		glm::vec2(0, 100), // pos
+		glm::vec2(0, 0), // size
+		nullptr, "", glm::vec2(0, 0), 1.0f);
+
+	// daily order container
+	UIElem* order2 = new UIElem(
+		UI.root,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(0, 280), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "", glm::vec2(0, 0), 1.0f);
+
+	float order_w1 = 168.0f;
+	float order_w2 = 350.0f;
+	float order_h = 158.0f;
+
+	// MAIN ORDER ---------
+	
+	UIElem* order1_rolledup = new UIElem(
+		order1,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w1, 0), //pos
+		glm::vec2(order_w1, order_h), //size
+		ui_sprites.order.rolledup, "",
+		glm::vec2(order_w1, -12), //sprite pos
+		0.4f, true, false, false);
+
+	UIElem* order1_expanded = new UIElem(
+		order1,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w2, 0), //pos
+		glm::vec2(order_w2, order_h), //size
+		ui_sprites.order.expanded, "",
+		glm::vec2(order_w2, -12), //sprite pos
+		0.4f, true, true, false);
+
+	order1_rolledup->set_on_mouse_enter([order1_rolledup, order1_expanded](){
+		order1_rolledup->hide();
+		order1_expanded->show();
+	});
+	order1_expanded->set_on_mouse_leave([order1_rolledup, order1_expanded](){
+		order1_rolledup->show();
+		order1_expanded->hide();
+	});
+
+	UI.main_order.description = new UIElem(
+		order1_expanded,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(16, 10), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default description",
+		glm::vec2(0, 0), 0.36f);
+	UI.main_order.description->set_tint(text_tint);
+	UI.main_order.description->set_max_text_width(198.0f);
+
+	UIElem* complete_btn = new UIElem(
+		order1_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(64, -38), //pos
+		glm::vec2(72, 20), //size
+		nullptr, "COMPLETE",
+		glm::vec2(0, 0), 0.38f, true);
+	complete_btn->set_tint(text_tint);
+	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
+	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
+	complete_btn->set_on_mouse_down([this](){
+		std::cout << "Submit Main Order Button Click!" << std::endl;
+		std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
+		bool orderFinished = true;
+		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+		while( iter != require_plants.end() ) {
+			PlantType const* require_type = iter->first;
+			int needed_num = iter->second;
+			if( inventory.get_harvest_num(require_type) < needed_num ){
+				orderFinished = false;
+				break;
+			}
+			iter++;
+		}
+		std::cout << orderFinished << std::endl;
+		if( orderFinished == true ){
+			iter = require_plants.begin();
+			while( iter != require_plants.end() ) {
+				PlantType const* require_type = iter->first;
+				int needed_num = iter->second;
+				inventory.change_harvest_num(require_type, -needed_num);
+				iter++;
+			}
+			change_num_coins( current_main_order->get_bonus_cash() );
+			current_main_order_idx += 1;
+			if( current_main_order_idx >= main_orders.size() ){
+				current_main_order_idx =  (int)main_orders.size()-1;
+			}
+			std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
+			set_main_order(current_main_order_idx);
+		}
+	});
+
+	UI.main_order.unlock_plant = new UIElem(
+		order1,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-134, 18), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default unlock plant text",
+		glm::vec2(0, 0), 0.44f);
+	UI.main_order.unlock_plant->set_tint(text_tint);
+	UI.main_order.unlock_plant->set_max_text_width(180.0f);
+
+	UI.main_order.requirements = new UIElem(
+		order1,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-126, 68), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "",
+		glm::vec2(0, 0), 1.0f);
+	UI.main_order.requirements->set_layout_children_fn([this](){
+		UIElem* reqs = UI.main_order.requirements;
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), screen_size, screen_size, DrawSprites::AlignSloppy );
+		glm::vec2 tmin, size;
+		glm::vec2 moving_anchor = glm::vec2(0, 0);
+		for (int i=0; i<reqs->children.size(); i++) {
+			// make sure this part is in sync with where the requirement labels are created (in set_main_order())
+			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			moving_anchor.y += size.y + 4.0f;
+		}
+	});
+	
+	// DAILY ORDER ---------
+	
+	UIElem* order2_rolledup = new UIElem(
+		order2,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w1, 0), //pos
+		glm::vec2(order_w1, order_h), //size
+		ui_sprites.order.rolledup, "",
+		glm::vec2(order_w1, -12), //sprite pos
+		0.4f, true, false, false);
+
+	UIElem* order2_expanded = new UIElem(
+		order2,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(-order_w2, 0), //pos
+		glm::vec2(order_w2, order_h), //size
+		ui_sprites.order.expanded, "",
+		glm::vec2(order_w2, -12), //sprite pos
+		0.4f, true, true, false);
+
+	order2_rolledup->set_on_mouse_enter([order2_rolledup, order2_expanded](){
+		order2_rolledup->hide();
+		order2_expanded->show();
+	});
+	order2_expanded->set_on_mouse_leave([order2_rolledup, order2_expanded](){
+		order2_rolledup->show();
+		order2_expanded->hide();
+	});
+
+	UI.daily_order.description = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(16, 10), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default description",
+		glm::vec2(0, 0), 0.36f);
+	UI.daily_order.description->set_tint(text_tint);
+	UI.daily_order.description->set_max_text_width(198.0f);
+
+	complete_btn = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(24, -38), //pos
+		glm::vec2(72, 20), //size
+		nullptr, "COMPLETE",
+		glm::vec2(0, 0), 0.38f, true);
+	complete_btn->set_tint(text_tint);
+	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
+	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
+	complete_btn->set_on_mouse_down([this](){
+		std::cout << "Submit Button Click!" << std::endl;
+		std::map< PlantType const*, int > require_plants = current_daily_order->get_required_plants();
+		bool orderFinished = true;
+		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
+		while( iter != require_plants.end() ) {
+			PlantType const* require_type = iter->first;
+			int needed_num = iter->second;
+			if( inventory.get_harvest_num(require_type) < needed_num ){
+				orderFinished = false;
+				break;
+			}
+			iter++;
+		}
+		std::cout << orderFinished << std::endl;
+		if( orderFinished == true ){
+			iter = require_plants.begin();
+			while( iter != require_plants.end() ) {
+				PlantType const* require_type = iter->first;
+				int needed_num = iter->second;
+				inventory.change_harvest_num(require_type, -needed_num);
+				iter++;
+			}
+			change_num_coins( current_daily_order->get_bonus_cash() );
+			current_daily_order_idx += 1;
+			if( current_daily_order_idx >= daily_orders.size() ){
+				current_daily_order_idx = 0;
+			}
+			current_daily_order = daily_orders[current_daily_order_idx];
+		}
+	});
+
+	UIElem* cancel_btn = new UIElem(
+		order2_expanded,
+		glm::vec2(0, 1), //anchor
+		glm::vec2(114, -38), //pos
+		glm::vec2(62, 20), //size
+		nullptr, "CANCEL",
+		glm::vec2(0, 0), 0.38f, true);
+	cancel_btn->set_tint(text_tint);
+	cancel_btn->set_on_mouse_enter([this, cancel_btn](){ cancel_btn->set_tint(text_highlight_tint); });
+	cancel_btn->set_on_mouse_leave([this, cancel_btn](){ cancel_btn->set_tint(text_tint); });
+	cancel_btn->set_on_mouse_down([this](){
+		if(cancel_order_state==true){
+			current_daily_order_idx += 1;
+			if(current_daily_order_idx >= daily_orders.size()){
+				current_daily_order_idx = 0;
+			}
+			current_daily_order = daily_orders[current_daily_order_idx];
+			cancel_order_freeze_time = 10;
+		}else{
+			std::cout << "Cannot cancel this order!" << std::endl;
+		}				
+	});
+
+	UI.daily_order.reward = new UIElem(
+		order2,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-128, 28), //pos
+		glm::vec2(0, 0), //size doesn't matter
+		nullptr, "default reward text",
+		glm::vec2(0, 0), 0.44f);
+	UI.daily_order.reward->set_tint(text_tint);
+	UI.daily_order.reward->set_max_text_width(180.0f);
+
+	UI.daily_order.requirements = new UIElem(
+		order2,
+		glm::vec2(1, 0), //anchor
+		glm::vec2(-126, 58), //pos
+		glm::vec2(0, 0), //size
+		nullptr, "",
+		glm::vec2(0, 0), 1.0f);
+	UI.daily_order.requirements->set_layout_children_fn([this](){
+		UIElem* reqs = UI.daily_order.requirements;
+		DrawSprites draw_text( neucha_font, glm::vec2(0, 0), screen_size, screen_size, DrawSprites::AlignSloppy );
+		glm::vec2 tmin, size;
+		glm::vec2 moving_anchor = glm::vec2(0, 0);
+		for (int i=0; i<reqs->children.size(); i++) {
+			// make sure this part is in sync with where the requirement labels are created (in set_daily_order())
+			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			moving_anchor.y += size.y + 4.0f;
+		}
+	});
 }

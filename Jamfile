@@ -181,9 +181,9 @@ GAME_NAMES =
 	collide
 	FirstpassProgram
 	PostprocessingProgram
+	WaterProgram
 	Aura
 	Plant
-	Button
 	UIElem
 	;
 

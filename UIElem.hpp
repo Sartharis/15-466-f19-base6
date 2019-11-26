@@ -62,9 +62,12 @@ struct UIElem {
 	void set_size(glm::vec2 _size) { size = _size; }
 	void set_scale(float _scale) { scale = _scale; }
 	void set_parent(UIElem* _parent); 
+	void set_sprite(Sprite const* _sprite) { sprite = _sprite; }
 	void set_text(std::string _text){ text = _text; }
 	void set_z_index(int _z_index){ z_index = _z_index; }
 	void set_tint(glm::u8vec4 _tint){ tint = _tint; }
+	void set_max_text_width(float _w){ max_text_width = _w; }
+	void make_interactive() { interactive = true; }
 
 	glm::vec2 get_position(){ return position; }
 	glm::vec2 get_anchor(){ return anchor; }
@@ -76,6 +79,7 @@ struct UIElem {
 
 	void update_absolute_position();
 	void add_child(UIElem* child){ children.push_back(child); }
+	void clear_children();
 	void layout_children();
 
 	void set_on_mouse_down(std::function<void()> fn){ on_mouse_down = fn; }
@@ -88,7 +92,7 @@ struct UIElem {
 	
 	std::vector<UIElem*> children = std::vector<UIElem*>();
 
-// private:
+private:
 
 	// content
 	std::string text = "";
@@ -127,6 +131,9 @@ struct UIElem {
 	bool default_sound = true;
 
 	bool hovered = false;
+
+	// others
+	float max_text_width = 10000.0f;
 
 	// helpers
 	int get_absolute_z_index();

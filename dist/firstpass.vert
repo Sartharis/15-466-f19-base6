@@ -44,25 +44,19 @@ vec4 color_from_health(vec4 col, float health) {
 	return mix(unhealthy, col, health);
 }
 
-vec4 soil_color(vec4 col, float moisture, float fertility) {
-	if (moisture == 0.0f && fertility == 0.0f) return col;
-	vec4 wet_fertile_col = vec4(51.0f/255.0f, 39.0f/255.0f, 28.0f/255.0f, 1.0f);
-	vec4 dry_barren_col = vec4(151.0f/255.0f, 137.0f/255.0f, 115.0f/255.0f, 1.0f);
-	vec4 wet_barren_col = vec4(99.0f/255.0f, 92.0f/255.0f, 82.0f/255.0f, 1.0f);
-	vec4 all_wet = mix(wet_barren_col, wet_fertile_col, fertility);
-	vec4 all_dry = mix(dry_barren_col, col, fertility);
-	return mix(all_dry, all_wet, moisture);
+vec4 soil_color(vec4 dry_col, float moisture) {
+	vec4 wet_col = vec4(51.0f/255.0f, 39.0f/255.0f, 28.0f/255.0f, 1.0f);
+	return mix(dry_col, wet_col, moisture);
 }
 
 void main() {
 	float health = PROPERTIES.x;
 	float moisture = PROPERTIES.y;
-	float fertility = PROPERTIES.z;
 
 	gl_Position = OBJECT_TO_CLIP * Position;
 	position = OBJECT_TO_LIGHT * Position;
 	normal = NORMAL_TO_LIGHT * Normal;
   color = color_from_health(Color, health);
-	color = soil_color(color, moisture, fertility);
+	color = soil_color(color, moisture);
 	texCoord = TexCoord;
 }
