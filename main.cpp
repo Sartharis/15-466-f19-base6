@@ -142,10 +142,24 @@ int main(int argc, char **argv) {
 				//handle input:
 				if (Mode::current && Mode::current->handle_event(evt, window_size)) {
 					// mode handled it; great
-				} else if (evt.type == SDL_QUIT || (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE)) {
-					Mode::set_current(nullptr);
+				}
+				else if( evt.type == SDL_QUIT) {
+					Mode::set_current( nullptr );
 					break;
-				} else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F4) {
+				}
+				else if( evt.type == SDL_KEYDOWN && (evt.key.keysym.sym == SDLK_p || evt.key.keysym.sym == SDLK_ESCAPE ) )
+				{
+					Mode::current->paused = !Mode::current->paused;
+					if( Mode::current->paused )
+					{
+						Mode::current->on_paused();
+					}
+					else
+					{
+						Mode::current->on_unpaused();
+					}
+				}
+				else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F4) {
 					// --- report draw timing key ---
 					glFinish();
 					auto start_time = std::chrono::high_resolution_clock::now();

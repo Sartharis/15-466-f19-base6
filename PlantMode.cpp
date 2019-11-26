@@ -449,8 +449,17 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 	{
 		int x, y;
 		SDL_GetMouseState( &x, &y );
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseEnter);
-		if (UI.root) UI.root->test_event(glm::vec2(x, y), UIElem::mouseLeave);
+
+		if( paused )
+		{
+			if( UI.root_pause ) UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseEnter );
+			if( UI.root_pause ) UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseLeave );
+		}
+		else
+		{
+			if( UI.root ) UI.root->test_event( glm::vec2( x, y ), UIElem::mouseEnter );
+			if( UI.root ) UI.root->test_event( glm::vec2( x, y ), UIElem::mouseLeave );
+		}
 	}
 
 	return false;
@@ -458,42 +467,32 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	timer += elapsed;
 
-	scroll_delay -= elapsed;
-	if( scroll_delay < 0.0f ) scroll_delay = 0.0f;
-
-	// update order cancel state
-	cancel_order_freeze_time -= elapsed;
-	if(cancel_order_freeze_time<=0){
-		cancel_order_state = true;
-	}else{
-		cancel_order_state = false;
-	}
-	const Uint8* state = SDL_GetKeyboardState( NULL );
-
-	if( state[SDL_SCANCODE_A] )
-	{
-		camera_offset.x -= camera_move_speed * elapsed;
-	}
-	if( state[SDL_SCANCODE_D] )
-	{
-		camera_offset.x += camera_move_speed * elapsed;
-	}
-	if( state[SDL_SCANCODE_W] )
-	{
-		camera_offset.y += camera_move_speed * elapsed;
-	}
-	if( state[SDL_SCANCODE_S] )
-	{
-		camera_offset.y -= camera_move_speed * elapsed;
-	}
-
-	camera_offset = glm::clamp( camera_offset, camera_bounds_min, camera_bounds_max );
-	glm::vec3 real_camera_offset = forward_dir * camera_offset.y + side_dir * camera_offset.x;
 
 	// Update Camera Position
 	{
+		const Uint8* state = SDL_GetKeyboardState( NULL );
+
+		if( state[SDL_SCANCODE_A] )
+		{
+			camera_offset.x -= camera_move_speed * elapsed;
+		}
+		if( state[SDL_SCANCODE_D] )
+		{
+			camera_offset.x += camera_move_speed * elapsed;
+		}
+		if( state[SDL_SCANCODE_W] )
+		{
+			camera_offset.y += camera_move_speed * elapsed;
+		}
+		if( state[SDL_SCANCODE_S] )
+		{
+			camera_offset.y -= camera_move_speed * elapsed;
+		}
+
+		camera_offset = glm::clamp( camera_offset, camera_bounds_min, camera_bounds_max );
+		glm::vec3 real_camera_offset = forward_dir * camera_offset.y + side_dir * camera_offset.x;
+
 		float ce = std::cos( camera_elevation );
 		float se = std::sin( camera_elevation );
 		float ca = std::cos( camera_azimuth );
@@ -505,133 +504,175 @@ void PlantMode::update(float elapsed)
 			real_camera_offset,
 			glm::vec3( 0.0f, 0.0f, 1.0f )
 			) ) ) );
+
+		//Sea positioning
+		sea->transform->position = camera->transform->position;
+		sea->transform->position.z = -0.1f;
 	}
 
-	// update tiles
+	if( !paused )
 	{
-		// initial update for grids themselves
-		for( int32_t x = 0; x < grid.size_x; ++x )
+		// update timer
 		{
-			for( int32_t y = 0; y < grid.size_y; ++y )
-			{
-				grid.tiles[x][y].update( elapsed, camera->transform, grid );
-			}
+			timer += elapsed;
 		}
-		// apply pending update from neighboring tiles
-		for( int32_t x = 0; x < plant_grid_x; ++x )
-		{
-			for( int32_t y = 0; y < plant_grid_y; ++y )
-			{
-				grid.tiles[x][y].apply_pending_update( elapsed );
-			}
-		}
-		// other visuals
-		for( int32_t x = 0; x < plant_grid_x; ++x )
-		{
-			for( int32_t y = 0; y < plant_grid_y; ++y )
-			{
-				grid.tiles[x][y].update_aura_visuals( elapsed, camera->transform );
-			}
-		}
-	}
 
-	int x, y;
-	SDL_GetMouseState( &x, &y );
-	
-	// Query for hovered tile
-	GroundTile* hovered_tile = get_tile_under_mouse( x, y );
-	if( hovered_tile ) {
-		//---- update action description
-		action_description = "";
+		// update scroll delay (so that we don't scroll too fast)
+		{
+			scroll_delay -= elapsed;
+			if( scroll_delay < 0.0f ) scroll_delay = 0.0f;
+		}
 
-		if( current_tool == default_hand ) {
-			if( hovered_tile->plant_type ) 
+		// update order cancel state
+		{
+			cancel_order_freeze_time -= elapsed;
+			if( cancel_order_freeze_time <= 0 ){
+				cancel_order_state = true;
+			}
+			else{
+				cancel_order_state = false;
+			}
+		}
+
+		// update tiles
+		{
+			// initial update for grids themselves
+			for( int32_t x = 0; x < grid.size_x; ++x )
 			{
-				if( hovered_tile->is_tile_harvestable() )
+				for( int32_t y = 0; y < grid.size_y; ++y )
 				{
-					action_description = "Harvest";
+					grid.tiles[x][y].update( elapsed, camera->transform, grid );
 				}
-				else if( !hovered_tile->is_plant_dead() )
+			}
+			// apply pending update from neighboring tiles
+			for( int32_t x = 0; x < plant_grid_x; ++x )
+			{
+				for( int32_t y = 0; y < plant_grid_y; ++y )
 				{
-					action_description = "Growing";
+					grid.tiles[x][y].apply_pending_update( elapsed );
+				}
+			}
+			// other visuals
+			for( int32_t x = 0; x < plant_grid_x; ++x )
+			{
+				for( int32_t y = 0; y < plant_grid_y; ++y )
+				{
+					grid.tiles[x][y].update_aura_visuals( elapsed, camera->transform );
+				}
+			}
+		}
+
+		// Query for hovered tile
+		{
+			int x, y;
+			SDL_GetMouseState( &x, &y );
+
+			GroundTile* hovered_tile = get_tile_under_mouse( x, y );
+			if( hovered_tile ) {
+				//---- update action description
+				action_description = "";
+
+				if( current_tool == default_hand ) {
+					if( hovered_tile->plant_type )
+					{
+						if( hovered_tile->is_tile_harvestable() )
+						{
+							action_description = "Harvest";
+						}
+						else if( !hovered_tile->is_plant_dead() )
+						{
+							action_description = "Growing";
+						}
+						else
+						{
+							action_description = "Remove ";
+						}
+					}
+
+				}
+				else if( current_tool == watering_can ) {
+					if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
+						action_description = "Water";
+					}
+
+				}
+				else if( current_tool == fertilizer ) {
+					if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string( fertilization_cost );
+				}
+				else if( current_tool == shovel ) {
+					if( hovered_tile->can_be_cleared( grid ) ) {
+						action_description = "Dig -$" + std::to_string( hovered_tile->tile_type->get_clear_cost() );
+					}
+
+
+				}
+				else if( current_tool == seed ) {
+					if( selectedPlant
+						&& hovered_tile->tile_type->get_can_plant()
+						&& !hovered_tile->plant_type ) {
+						action_description = "Plant";
+					}
 				}
 				else
 				{
-					action_description = "Remove ";
+					tool_name = "";
+					tool_description = "";
+				}
+
+			}
+
+			//Selector positioning
+			{
+				if( hovered_tile && hovered_tile->tile_type != empty_tile )
+				{
+					selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.03f );
+				}
+				else
+				{
+					selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 				}
 			}
-
-		} else if( current_tool == watering_can ) {
-			if( hovered_tile->tile_type->get_can_plant() && hovered_tile->moisture < 1.0f ) {
-				action_description = "Water";
-			}
-
-		} else if( current_tool == fertilizer ) {
-			if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string(fertilization_cost);
-		} else if( current_tool == shovel ) {
-			if( hovered_tile->can_be_cleared(grid) ) {
-				action_description = "Dig -$" + std::to_string(hovered_tile->tile_type->get_clear_cost());
-			}
-
-
-		} else if( current_tool == seed ) {
-			if( selectedPlant 
-					&& hovered_tile->tile_type->get_can_plant()
-					&& !hovered_tile->plant_type ) {
-				action_description = "Plant";
-			}
-		}
-		else
-		{
-			tool_name = "";
-			tool_description = "";
 		}
 
-	} 
-
-	//Selector positioning
-	if( hovered_tile && hovered_tile->tile_type != empty_tile )
-	{
-		selector->transform->position = hovered_tile->tile_drawable->transform->position + glm::vec3( 0.0f, 0.0f, -0.03f );
+		// update UI
+		{ 
+			if( UI.root ) UI.root->update( elapsed );
+		}
 	}
 	else
 	{
+		if( UI.root_pause ) UI.root_pause->update( elapsed );
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
+		set_current_tool( default_hand );
 	}
 
-	//Sea positioning
-	sea->transform->position = camera->transform->position;
-	sea->transform->position.z = -0.1f;
-
-	{ // update UI and cursor
-		if (UI.root) UI.root->update(elapsed);
-
-		// update cursor sprite depending on current tool
+	// update cursor sprite depending on current tool
+	{
 		switch( current_tool ) {
 		case default_hand:
 			cursor.sprite = UI.toolbar.glove->get_sprite();
 			cursor.scale = 0.2f;
-			cursor.offset = glm::vec2(0, 0);
+			cursor.offset = glm::vec2( 0, 0 );
 			break;
 		case seed: //TODO
 			cursor.sprite = selectedPlant->get_seed_sprite();
 			cursor.scale = 0.3f;
-			cursor.offset = glm::vec2(0, 0);
+			cursor.offset = glm::vec2( 0, 0 );
 			break;
 		case watering_can:
 			cursor.sprite = UI.toolbar.watering_can->get_sprite();
 			cursor.scale = 0.24f;
-			cursor.offset = glm::vec2(0, 0);
+			cursor.offset = glm::vec2( 0, 0 );
 			break;
 		case fertilizer:
 			cursor.sprite = UI.toolbar.fertilizer->get_sprite();
 			cursor.scale = 0.24f;
-			cursor.offset = glm::vec2(0, 0);
+			cursor.offset = glm::vec2( 0, 0 );
 			break;
 		case shovel:
 			cursor.sprite = UI.toolbar.shovel->get_sprite();
 			cursor.scale = 0.24f;
-			cursor.offset = glm::vec2(0, 0);
+			cursor.offset = glm::vec2( 0, 0 );
 			break;
 		}
 	}
@@ -738,7 +779,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		//draw.draw_text( tool_name, glm::vec2( 20.0f, 170.0f ), 0.8f);
-		draw.draw_text(tool_description, glm::vec2( 20.0f, 140.0f ), 0.6f );
+		if(!paused) draw.draw_text(tool_description, glm::vec2( 20.0f, 140.0f ), 0.6f );
 		// draw.draw_text( "Energy: " + std::to_string( num_coins ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
@@ -767,18 +808,30 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			// UI elements
 			std::vector<UIElem*> elems = std::vector<UIElem*>();
-			UI.root->gather(elems);
-			std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
-			// text for UI elements
-			for( int i=0; i<elems.size(); i++ ){
-				elems[i]->draw_self( draw_sprites, draw_text );
+			if( paused )
+			{
+				UI.root_pause->gather( elems );
+				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
+				// text for UI elements
+				for( int i = 0; i < elems.size(); i++ ){
+					elems[i]->draw_self( draw_sprites, draw_text );
+				}
 			}
-			// cursor text
-			glm::vec2 tmin, size;
-			draw_text.get_text_extents(cursor.text, glm::vec2(0.0f, 0.0f), 0.4f, &tmin, &size, 250.0f);
-			glm::vec2 anchor = get_hover_loc(glm::vec2(mouse_x, mouse_y), size);
-			anchor.y = screen_size.y - anchor.y;
-			draw_text.draw_text( cursor.text, anchor, 0.4f, glm::u8vec4(255,255,255,255), 250.0f );
+			else
+			{
+				UI.root->gather( elems );
+				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
+				// text for UI elements
+				for( int i = 0; i < elems.size(); i++ ){
+					elems[i]->draw_self( draw_sprites, draw_text );
+				}
+				// cursor text
+				glm::vec2 tmin, size;
+				draw_text.get_text_extents( cursor.text, glm::vec2( 0.0f, 0.0f ), 0.4f, &tmin, &size, 250.0f );
+				glm::vec2 anchor = get_hover_loc( glm::vec2( mouse_x, mouse_y ), size );
+				anchor.y = screen_size.y - anchor.y;
+				draw_text.draw_text( cursor.text, anchor, 0.4f, glm::u8vec4( 255, 255, 255, 255 ), 250.0f );
+			}
 		}//<-- all sprites
 	}//<-- all text
 	
@@ -900,6 +953,21 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 		UI.root->set_size( screen_size );
 		UI.root->update_absolute_position();
 	}
+
+	if( UI.root_pause ) {
+		UI.root_pause->set_size( screen_size );
+		UI.root_pause->update_absolute_position();
+	}
+}
+
+void PlantMode::on_paused()
+{
+
+}
+
+void PlantMode::on_unpaused()
+{
+
 }
 
 int Inventory::get_seeds_num(const PlantType* plant ) 

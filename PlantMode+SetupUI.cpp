@@ -79,6 +79,57 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 void PlantMode::setup_UI() {
 	// root
 	UI.root = new UIElem(nullptr);
+	UI.root_pause = new UIElem( nullptr );
+
+	//---------------- pause ------------------
+	UIElem* pause_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f), // anchor
+		glm::vec2( -150, -300 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "PAUSED",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.5f );
+
+	UIElem* how_to_play_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, -200 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "HOW TO PLAY: Your goal is to unlock all of the plants. To do this, fulfill the orders on the right side of the screen by harvesting different plants.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	how_to_play_text->set_max_text_width( 600.0f );
+
+	UIElem* controls_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, -100.0f ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "Move camera with WASD and interact with the left mouse button. Press f for fullscreen.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	controls_text->set_max_text_width( 600.0f );
+
+	UIElem* seed_buy_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, 0.0f ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "To buy seeds for planting, use the magic book in the bottom right corner. Some seeds are locked until you unlock them by fulfilling orders.",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	seed_buy_text->set_max_text_width( 600.0f );
+
+	UIElem* seed_use_text = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, 100 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "Your bought seeds will be available in the storage tab (left of the magic book in bottom right corner).",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	seed_use_text->set_max_text_width( 600.0f );
 
 	//---------------- money ------------------
 	UIElem* money_icon = new UIElem(
@@ -311,7 +362,7 @@ void PlantMode::setup_UI() {
 		glm::vec2( -200, -60 ), // pos
 		glm::vec2( 0, 0 ),
 		nullptr,
-		"Name",
+		"",
 		glm::vec2( 0, 0 ),
 		0.8f, false, false );
 
@@ -321,7 +372,7 @@ void PlantMode::setup_UI() {
 		glm::vec2( -200, -20 ), // pos
 		glm::vec2( 0, 0 ),
 		nullptr,
-		"Description",
+		"",
 		glm::vec2( 0, 0 ),
 		0.4f, false, false );
 

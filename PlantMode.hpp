@@ -77,6 +77,8 @@ struct PlantMode : public Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
+	virtual void on_paused() override;
+	virtual void on_unpaused() override;
 	
 	//scene:
 	std::string tool_name = "";
@@ -120,6 +122,7 @@ struct PlantMode : public Mode {
 	glm::u8vec4 text_highlight_tint = glm::u8vec4(145, 127, 100, 255);
 	struct {
 		UIElem* root;
+		UIElem* root_pause;
 		UIElem* coins_text;
 		struct {
 			UIElem* glove;
