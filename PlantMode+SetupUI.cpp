@@ -649,7 +649,7 @@ void PlantMode::setup_UI() {
 			if (page == UI.magicbook_page || page == UI.magicbook_page + 1) {
 				all_choices->children[i]->show();
 				page = page % 2;
-				glm::vec2 pos = glm::vec2(105, 70) + glm::vec2(page * 420, row * 240);
+				glm::vec2 pos = glm::vec2(135, 70) + glm::vec2(page * 400, row * 255);
 				all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
 			}
 		}	
@@ -749,7 +749,7 @@ void PlantMode::setup_UI() {
 		description->set_scale(0.45f);
 		description->set_position(glm::vec2(0, 85), glm::vec2(0, 0));
 		description->set_tint(text_tint);
-		description->set_max_text_width(350.0f);
+		description->set_max_text_width(300.0f);
 		description->hide();
 	};
 
