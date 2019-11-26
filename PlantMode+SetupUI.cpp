@@ -98,6 +98,7 @@ void PlantMode::setup_UI() {
 		nullptr, "PAUSED",
 		glm::vec2( 0, 0 ), // sprite pos
 		1.5f );
+	(void)pause_text;
 
 	UIElem* how_to_play_text = new UIElem(
 		UI.root_pause,
