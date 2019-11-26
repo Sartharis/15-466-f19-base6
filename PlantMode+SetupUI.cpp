@@ -43,6 +43,8 @@ struct {
 	struct {
 		Sprite const* icon = nullptr;
 		Sprite const* background = nullptr;
+		Sprite const* prev = nullptr;
+		Sprite const* next = nullptr;
 	} magicbook;
 	struct {
 		Sprite const* rolledup = nullptr;
@@ -68,6 +70,8 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	// magicbook
 	ui_sprites.magicbook.icon = &ret->lookup("magicbookIcon");
 	ui_sprites.magicbook.background = &ret->lookup("magicbookBackground");
+	ui_sprites.magicbook.prev = &ret->lookup("pagePrev");
+	ui_sprites.magicbook.next = &ret->lookup("pageNext");
 	// order
 	ui_sprites.order.rolledup = &ret->lookup("orderRolledup");
 	ui_sprites.order.expanded = &ret->lookup("orderExpanded");
@@ -572,21 +576,60 @@ void PlantMode::setup_UI() {
 		ui_sprites.close, "close magicbook",
 		glm::vec2(20, 20),
 		0.35f, true, false, false);
-	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
+	magicbook_close_btn->set_on_mouse_down([magicbook_bg, this](){
 		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
+		UI.magicbook_page = 0;
 	});
 
 	UIElem* all_choices = new UIElem(magicbook_bg);
-	all_choices->set_layout_children_fn([all_choices](){
+	all_choices->set_layout_children_fn([this, all_choices](){
 		for (int i=0; i<all_choices->children.size(); i++) {
-			int page = i / 4;
-			int row = i % 4;
-			glm::vec2 pos = glm::vec2(95, 70) + glm::vec2(page * 425, row * 60);
-			all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
+			all_choices->children[i]->hide();
+			int page = i / 2;
+			int row = i % 2;
+			if (page == UI.magicbook_page || page == UI.magicbook_page + 1) {
+				all_choices->children[i]->show();
+				page = page % 2;
+				glm::vec2 pos = glm::vec2(95, 70) + glm::vec2(page * 425, row * 180);
+				all_choices->children[i]->set_position(pos, glm::vec2(0, 0));
+			}
 		}	
 	});
+
+	UIElem* magicbook_prev_page = new UIElem(
+		magicbook_bg,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(60, 570), //pos
+		glm::vec2(26, 26), //size
+		ui_sprites.magicbook.prev, "magic book prev page",
+		glm::vec2(0, 0),
+		0.45f, true);
+	magicbook_prev_page->set_on_mouse_down([this, all_choices](){
+		if (UI.magicbook_page >= 2 ) {
+			Sound::play( *magic_book_flip_sound, 0.0f, 1.0f );
+			UI.magicbook_page -= 2;
+			all_choices->layout_children();
+		}
+	});
 	
+	UIElem* magicbook_next_page = new UIElem(
+		magicbook_bg,
+		glm::vec2(0, 0), //anchor
+		glm::vec2(842, 570), //pos
+		glm::vec2(26, 26), //size
+		ui_sprites.magicbook.next, "magic book next page",
+		glm::vec2(0, 0),
+		0.45f, true);
+	magicbook_next_page->set_on_mouse_down([this, all_choices](){
+		int max_pages = (int)std::ceil(all_choices->children.size() / 2.0f) - 1;
+		if (UI.magicbook_page + 2 <= max_pages) {
+			Sound::play( *magic_book_flip_sound, 0.0f, 1.0f );
+			UI.magicbook_page += 2;
+			all_choices->layout_children();
+		}
+	});
+
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
 		std::string text = plant->get_name() + " Seed - $" + std::to_string( plant->get_cost() );
