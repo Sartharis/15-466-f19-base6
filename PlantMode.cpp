@@ -95,6 +95,7 @@ PlantMode::PlantMode()
 
 	{//init UI
 		setup_UI();
+		unlock_plant( test_plant );
 	}
 	
 	{
@@ -1051,6 +1052,24 @@ UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
 	std::unordered_map<PlantType const*, UIElem*>::iterator it = plant_to_harvest_item.find( plant );
 	assert( it != plant_to_harvest_item.end() );
 	return it->second;
+}
+
+void PlantMode::unlock_plant( const PlantType* plant )
+{
+	auto it = plant_to_magicbook_entry.find( plant );
+	assert( it != plant_to_magicbook_entry.end() );
+	UIElem* entry = it->second;
+	for( UIElem* c : entry->children )
+	{
+		if( c->get_hidden() )
+		{
+			c->show();
+		}
+		else
+		{
+			c->hide();
+		}
+	}
 }
 
 void PlantMode::change_num_coins(int change) {

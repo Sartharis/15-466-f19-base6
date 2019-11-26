@@ -91,6 +91,11 @@ struct PlantMode : public Mode {
 	Scene::Drawable* selector = nullptr;
 	Scene::Drawable* sea = nullptr;
 	std::vector<Tool> scroll_tool_order;
+
+	// Magicbook unlocking
+	void unlock_plant(const PlantType *plant);
+	std::unordered_map<PlantType const*, UIElem*> plant_to_magicbook_entry;
+
 	float scroll_delay = 0.0f;
 	
 	Inventory inventory = Inventory(this);
