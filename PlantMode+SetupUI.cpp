@@ -91,6 +91,33 @@ void PlantMode::setup_UI() {
 	UI.root = new UIElem(nullptr);
 	UI.root_pause = new UIElem( nullptr );
 
+
+	UIElem* instructions_button = new UIElem(
+		UI.root,
+		glm::vec2( 0.0f, 0.0f ), // anchor
+		glm::vec2( 20, 20 ), // pos
+		glm::vec2( 200, 200 ), // size
+		ui_sprites.magicbook.lock, "",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.1f,true );
+
+	instructions_button->set_on_mouse_down( [this](){
+		paused = true;
+	} );
+
+	UIElem* close_instructions_button = new UIElem(
+		UI.root_pause,
+		glm::vec2( 0.0f, 0.0f ), // anchor
+		glm::vec2( 20, 20 ), // pos
+		glm::vec2( 200, 200 ), // size
+		ui_sprites.magicbook.lock, "",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.1f, true );
+
+	close_instructions_button->set_on_mouse_down( [this](){
+		paused = false;
+	} );
+
 	//---------------- pause ------------------
 	UIElem* pause_text = new UIElem(
 		UI.root_pause,
@@ -721,27 +748,36 @@ void PlantMode::setup_UI() {
 
 		// name
 		UIElem* name = new UIElem(entry);
-		name->make_interactive();
 		name->set_position(glm::vec2(40, 40), glm::vec2(0, 0));
 		name->set_size(glm::vec2(300, 40));
 		name->set_text(plant->get_name() + " Seed");
 		name->set_tint(text_tint);
 		name->set_scale(0.6f);
-		name->set_on_mouse_down([this, plant](){
+		name->hide();
+
+		// name
+		UIElem* buy = new UIElem( entry );
+		buy->make_interactive();
+		buy->set_position( glm::vec2( 100, 0 ), glm::vec2( 0, 0 ) );
+		buy->set_size( glm::vec2( 300, 40 ) );
+		buy->set_text( "BUY" );
+		buy->set_tint( text_tint );
+		buy->set_scale( 0.6f );
+		buy->set_on_mouse_down( [this, plant](){
 			if( num_coins >= plant->get_cost() ){
 				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				change_num_coins( -plant->get_cost() );
 
 				inventory.change_seeds_num( plant, 1 );
 			}
-		});
-		name->set_on_mouse_enter([name, this](){
-			name->set_tint(text_highlight_tint);
-		});
-		name->set_on_mouse_leave([name, this](){
-			name->set_tint(text_tint);
-		});
-		name->hide();
+								 } );
+		buy->set_on_mouse_enter( [buy, this](){
+			buy->set_tint( text_highlight_tint );
+								  } );
+		buy->set_on_mouse_leave( [buy, this](){
+			buy->set_tint( text_tint );
+								  } );
+		buy->hide();
 
 		// description
 		UIElem* description = new UIElem(entry);

@@ -57,6 +57,10 @@ Load< Sound::Sample > plant_sound( LoadTagDefault, []() -> Sound::Sample const* 
 	return new Sound::Sample( data_path( "HitRice1.wav" ) );
 } );
 
+Load< Sound::Sample > fertilize_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "COINS_Rattle_01_mono.wav" ) );
+												 } );
+
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
@@ -249,14 +253,22 @@ PlantMode::~PlantMode() {
 		}
 	}
 	if (UI.root) delete UI.root;
+	if( UI.root_pause ) delete UI.root_pause;
 }
 
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
-	if( action == UIElem::mouseDown ) return;
-
+	if( paused )
+	{
+		UIElem::Action action = UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseDown );
+		if( action == UIElem::mouseDown ) return;
+	}
+	else
+	{
+		UIElem::Action action = UI.root->test_event( glm::vec2( x, y ), UIElem::mouseDown );
+		if( action == UIElem::mouseDown ) return;
+	}
 	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
 
@@ -286,6 +298,7 @@ void PlantMode::on_click( int x, int y )
 		} else if( current_tool == fertilizer && fertilization_cost <= num_coins && collided_tile->is_cleared()) {
 			change_num_coins( -fertilization_cost );
 			collided_tile->fertilization = fertilization_duration;
+			Sound::play( *fertilize_sound, 0.0f, 1.0f );
 		} else if( current_tool == shovel ) {
 			// Removing dead plant
 
