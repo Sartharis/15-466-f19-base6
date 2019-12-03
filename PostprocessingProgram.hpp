@@ -19,6 +19,7 @@ struct PostprocessingProgram {
 
   // frag input locations:
   GLuint TASK_int = -1U;
+	GLuint FILTER_int = -1U;
   GLuint TEX0_tex = -1U;
   GLuint TEX1_tex = -1U;
   GLuint TEX2_tex = -1U;

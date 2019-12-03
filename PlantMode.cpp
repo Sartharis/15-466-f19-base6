@@ -633,7 +633,7 @@ void PlantMode::update(float elapsed)
 
 		//Sea positioning
 		sea->transform->position = camera->transform->position;
-		sea->transform->position.z = -0.2f;
+		sea->transform->position.z = -0.15f;
 	}
 
 	if( !paused )
@@ -723,7 +723,7 @@ void PlantMode::update(float elapsed)
 
 				}
 				else if( current_tool == fertilizer ) {
-					if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string( fertilization_cost );
+					if( hovered_tile->is_cleared() ) action_description = "Spray -$" + std::to_string( fertilization_cost );
 				}
 				else if( current_tool == shovel ) {
 					if( hovered_tile->can_be_cleared( grid ) ) {
@@ -834,6 +834,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			for (int j=0; j<grid.size_y; j++) {
 				if (grid.tiles[i][j].fire_aura) grid.tiles[i][j].fire_aura->draw( draw_aura );
 				if (grid.tiles[i][j].aqua_aura) grid.tiles[i][j].aqua_aura->draw( draw_aura );
+				if (grid.tiles[i][j].beacon_aura) grid.tiles[i][j].beacon_aura->draw( draw_aura );
 				if (grid.tiles[i][j].help_aura) grid.tiles[i][j].help_aura->draw( draw_aura );
 				if (grid.tiles[i][j].suck_aura) grid.tiles[i][j].suck_aura->draw( draw_aura );
 			}
@@ -874,6 +875,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
 		postprocessing_program->pixel_size / drawable_size.x,
 		postprocessing_program->pixel_size / drawable_size.y);
+	// set uniform for filter
+	glUniform1i(postprocessing_program->FILTER_int, (int)paused);
 	// bind inputs
 	glUniform1i(postprocessing_program->TEX0_tex, 0);
 	glUniform1i(postprocessing_program->TEX1_tex, 1);
@@ -897,10 +900,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable( GL_BLEND );
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_DEPTH_TEST );
-
-	//test draw order
-	// current_daily_order->draw(screen_size, inventory);
-	// current_main_order->draw_main_order(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
@@ -1224,7 +1223,11 @@ void PlantMode::set_main_order(int index) {
 }
 
 void PlantMode::set_daily_order(int index) {
-	current_daily_order = daily_orders[index];
+	if(index>daily_orders.size()){
+		current_daily_order = generate_random_daily_order();
+	}else{
+		current_daily_order = daily_orders[index];
+	}	
 	UI.daily_order.description->set_text( current_daily_order->get_description() );
 	UI.daily_order.reward->set_text( "For $" + std::to_string(current_daily_order->get_bonus_cash()) );
 	UI.daily_order.requirements->clear_children();

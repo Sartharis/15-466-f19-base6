@@ -32,7 +32,7 @@ struct {
 		Sprite const* hand = nullptr;
 		Sprite const* watering_can = nullptr;
 		Sprite const* shovel = nullptr;
-		Sprite const* fertilizer = nullptr;
+		Sprite const* healer = nullptr;
 	} tools;
 	struct {
 		Sprite const* regular = nullptr;
@@ -57,6 +57,7 @@ struct {
 	} order;
 	Sprite const* close = nullptr;
 	Sprite const* coins = nullptr;
+	Sprite const* instructions_icon = nullptr;
 } ui_sprites;
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
@@ -66,7 +67,7 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	ui_sprites.tools.hand = &ret->lookup("hand");
 	ui_sprites.tools.watering_can = &ret->lookup("wateringCan");
 	ui_sprites.tools.shovel = &ret->lookup("shovel");
-	ui_sprites.tools.fertilizer = &ret->lookup("fertilizer");
+	ui_sprites.tools.healer = &ret->lookup("healer");
 	// storage
 	ui_sprites.storage.icon = &ret->lookup("seedBagClosed");
 	ui_sprites.storage.background = &ret->lookup("seedMenuBackground");
@@ -84,6 +85,7 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	// other
 	ui_sprites.coins = &ret->lookup("coins");
 	ui_sprites.close = &ret->lookup("magicbookClose");
+	ui_sprites.instructions_icon = &ret->lookup("helpIcon");
 });
 
 void PlantMode::setup_UI() {
@@ -116,10 +118,10 @@ void PlantMode::setup_UI() {
 		UI.root,
 		glm::vec2( 0.0f, 0.0f ), // anchor
 		glm::vec2( 20, 20 ), // pos
-		glm::vec2( 200, 200 ), // size
-		ui_sprites.magicbook.lock, "",
+		glm::vec2( 40, 40 ), // size
+		ui_sprites.instructions_icon, "",
 		glm::vec2( 0, 0 ), // sprite pos
-		0.1f,true );
+		0.2f,true );
 
 	instructions_button->set_on_mouse_down( [this](){
 		paused = true;
@@ -129,10 +131,10 @@ void PlantMode::setup_UI() {
 		UI.root_pause,
 		glm::vec2( 0.0f, 0.0f ), // anchor
 		glm::vec2( 20, 20 ), // pos
-		glm::vec2( 200, 200 ), // size
-		ui_sprites.magicbook.lock, "",
+		glm::vec2( 40, 40 ), // size
+		ui_sprites.instructions_icon, "",
 		glm::vec2( 0, 0 ), // sprite pos
-		0.1f, true );
+		0.2f, true );
 
 	close_instructions_button->set_on_mouse_down( [this](){
 		paused = false;
@@ -287,10 +289,10 @@ void PlantMode::setup_UI() {
 		glm::vec2(0, 1), // anchor
 		glm::vec2(230, -94), // position
 		glm::vec2(64, 64), // size
-		ui_sprites.tools.fertilizer, // sprite
-		"fertilizer", // text
-		glm::vec2(32, 32), // sprite pos
-		0.3f, // sprite scale
+		ui_sprites.tools.healer, // sprite
+		"healer", // text
+		glm::vec2(7, 20), // sprite pos
+		0.34f, // sprite scale
 		true); 
 	UI.toolbar.fertilizer->set_on_mouse_enter( [this](){
 		for( auto c : UI.toolbar.fertilizer->children ) c->show();
@@ -307,10 +309,10 @@ void PlantMode::setup_UI() {
 	new UIElem(
 		UI.toolbar.fertilizer,
 		glm::vec2(0, 0), // anchor
-		glm::vec2(0, 65), // pos
+		glm::vec2(12, 65), // pos
 		glm::vec2(0, 0),
 		nullptr,
-		"fertilizer",
+		"healer",
 		glm::vec2(0, 0),
 		0.4f, false, true); // ..interactive, hidden
 
@@ -359,33 +361,33 @@ void PlantMode::setup_UI() {
 	storage_bg = new UIElem(
 		UI.root,
 		glm::vec2(1, 1), // anchor
-		glm::vec2(-565, 306), // position
-		glm::vec2(0, 0), // size
+		glm::vec2(-565, -44), // position
+		glm::vec2(416, 380), // size
 		ui_sprites.storage.background,
 		"storage background",
 		glm::vec2(0, 0), // sprite anchor
-		0.5f);
+		0.5f, true);
 	storage_bg->set_z_index(2);
 
 	storage_close = new UIElem(
 		storage_bg,
 		glm::vec2(0, 0),
-		glm::vec2(375, -350),
+		glm::vec2(375, 0),
 		glm::vec2(40, 40),
 		ui_sprites.close, "close storage",
 		glm::vec2(20, 20),
 		0.3f, true, true, false);
 
 	storage_icon = new UIElem(
-		UI.root,
-		glm::vec2(1, 1), // anchor
-		glm::vec2(-190, -80), // position
+		storage_bg,
+		glm::vec2(1, 0), // anchor
+		glm::vec2(-50, -30), // position
 		glm::vec2(64, 64), //size
 		ui_sprites.storage.icon, // sprite
 		"storage icon",
 		glm::vec2(32, 32),
 		0.3f, true, false, false);
-	storage_icon->set_z_index(3);
+	// storage_icon->set_z_index(3);
 	UIElem* storage_icon_text = new UIElem(
 		storage_icon,
 		glm::vec2(0, 0),
@@ -398,7 +400,7 @@ void PlantMode::setup_UI() {
 	seed_tab = new UIElem(
 		storage_bg,
 		glm::vec2(0, 0), // anchor
-		glm::vec2(215, -374), // pos
+		glm::vec2(215, -24), // pos
 		glm::vec2(64, 64),
 		ui_sprites.storage.seeds_tab,
 		"seeds tab",
@@ -440,7 +442,7 @@ void PlantMode::setup_UI() {
 	harvest_tab = new UIElem(
 		storage_bg,
 		glm::vec2(0, 0), // anchor
-		glm::vec2(295, -374), // pos
+		glm::vec2(295, -24), // pos
 		glm::vec2(64, 64),
 		ui_sprites.storage.harvest_tab,
 		"harvest tab",
@@ -532,7 +534,7 @@ void PlantMode::setup_UI() {
 			int row = i / 4;
 			int col = i % 4;
 			children_to_show[i]->set_position(
-					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
+					glm::vec2(40, 47) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
 		}
 	});
 	
@@ -577,7 +579,7 @@ void PlantMode::setup_UI() {
 			int row = i / 4;
 			int col = i % 4;
 			children_to_show[i]->set_position(
-					glm::vec2(40, -303) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
+					glm::vec2(40, 47) + glm::vec2(col * 93.5f, row * 89), glm::vec2(0, 0));
 		}
 	});
 
@@ -656,10 +658,10 @@ void PlantMode::setup_UI() {
 		UI.root,
 		glm::vec2(0.5f, 0.5f), // anchor
 		glm::vec2(-459, -310), // pos
-		glm::vec2(0, 0), // size
+		glm::vec2(914, 628), // size
 		ui_sprites.magicbook.background, "magicbook background",
 		glm::vec2(0, 0),
-		0.9f, false, true);
+		0.9f, true, true);
 	magicbook_icon->set_on_mouse_down([magicbook_bg](){
 		if (magicbook_bg->get_hidden()) 
 		{ 
@@ -1039,7 +1041,7 @@ void PlantMode::setup_UI() {
 			if( current_daily_order_idx >= daily_orders.size() ){
 				current_daily_order_idx = 0;
 			}
-			current_daily_order = daily_orders[current_daily_order_idx];
+			set_daily_order(current_daily_order_idx);
 		}
 	});
 
