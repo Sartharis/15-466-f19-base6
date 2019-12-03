@@ -1099,7 +1099,11 @@ void PlantMode::set_main_order(int index) {
 }
 
 void PlantMode::set_daily_order(int index) {
-	current_daily_order = daily_orders[index];
+	if(index>daily_orders.size()){
+		current_daily_order = generate_random_daily_order();
+	}else{
+		current_daily_order = daily_orders[index];
+	}	
 	UI.daily_order.description->set_text( current_daily_order->get_description() );
 	UI.daily_order.reward->set_text( "For $" + std::to_string(current_daily_order->get_bonus_cash()) );
 	UI.daily_order.requirements->clear_children();

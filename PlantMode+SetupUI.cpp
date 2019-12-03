@@ -979,7 +979,7 @@ void PlantMode::setup_UI() {
 			if( current_daily_order_idx >= daily_orders.size() ){
 				current_daily_order_idx = 0;
 			}
-			current_daily_order = daily_orders[current_daily_order_idx];
+			set_daily_order(current_daily_order_idx);
 		}
 	});
 
