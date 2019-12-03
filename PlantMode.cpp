@@ -762,6 +762,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
 		postprocessing_program->pixel_size / drawable_size.x,
 		postprocessing_program->pixel_size / drawable_size.y);
+	// set uniform for filter
+	glUniform1i(postprocessing_program->FILTER_int, (int)paused);
 	// bind inputs
 	glUniform1i(postprocessing_program->TEX0_tex, 0);
 	glUniform1i(postprocessing_program->TEX1_tex, 1);
@@ -785,10 +787,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable( GL_BLEND );
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_DEPTH_TEST );
-
-	//test draw order
-	// current_daily_order->draw(screen_size, inventory);
-	// current_main_order->draw_main_order(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
