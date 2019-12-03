@@ -57,6 +57,10 @@ Load< Sound::Sample > plant_sound( LoadTagDefault, []() -> Sound::Sample const* 
 	return new Sound::Sample( data_path( "HitRice1.wav" ) );
 } );
 
+Load< Sound::Sample > fertilize_sound( LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample( data_path( "COINS_Rattle_01_mono.wav" ) );
+												 } );
+
 // Sprites -------------------------------------------------------------------------------------------
 Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
@@ -249,14 +253,22 @@ PlantMode::~PlantMode() {
 		}
 	}
 	if (UI.root) delete UI.root;
+	if( UI.root_pause ) delete UI.root_pause;
 }
 
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	UIElem::Action action = UI.root->test_event( glm::vec2(x, y), UIElem::mouseDown );
-	if( action == UIElem::mouseDown ) return;
-
+	if( paused )
+	{
+		UIElem::Action action = UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseDown );
+		if( action == UIElem::mouseDown ) return;
+	}
+	else
+	{
+		UIElem::Action action = UI.root->test_event( glm::vec2( x, y ), UIElem::mouseDown );
+		if( action == UIElem::mouseDown ) return;
+	}
 	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
 
@@ -286,6 +298,7 @@ void PlantMode::on_click( int x, int y )
 		} else if( current_tool == fertilizer && fertilization_cost <= num_coins && collided_tile->is_cleared()) {
 			change_num_coins( -fertilization_cost );
 			collided_tile->fertilization = fertilization_duration;
+			Sound::play( *fertilize_sound, 0.0f, 1.0f );
 		} else if( current_tool == shovel ) {
 			// Removing dead plant
 
@@ -508,7 +521,7 @@ void PlantMode::update(float elapsed)
 
 		//Sea positioning
 		sea->transform->position = camera->transform->position;
-		sea->transform->position.z = -0.2f;
+		sea->transform->position.z = -0.15f;
 	}
 
 	if( !paused )
@@ -598,7 +611,7 @@ void PlantMode::update(float elapsed)
 
 				}
 				else if( current_tool == fertilizer ) {
-					if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string( fertilization_cost );
+					if( hovered_tile->is_cleared() ) action_description = "Spray -$" + std::to_string( fertilization_cost );
 				}
 				else if( current_tool == shovel ) {
 					if( hovered_tile->can_be_cleared( grid ) ) {
@@ -749,6 +762,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glUniform2f(postprocessing_program->TEX_OFFSET_vec2, 
 		postprocessing_program->pixel_size / drawable_size.x,
 		postprocessing_program->pixel_size / drawable_size.y);
+	// set uniform for filter
+	glUniform1i(postprocessing_program->FILTER_int, (int)paused);
 	// bind inputs
 	glUniform1i(postprocessing_program->TEX0_tex, 0);
 	glUniform1i(postprocessing_program->TEX1_tex, 1);
@@ -772,10 +787,6 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glEnable( GL_BLEND );
 	glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 	glDisable( GL_DEPTH_TEST );
-
-	//test draw order
-	// current_daily_order->draw(screen_size, inventory);
-	// current_main_order->draw_main_order(screen_size, inventory);
 
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
