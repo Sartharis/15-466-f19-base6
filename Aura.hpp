@@ -13,7 +13,7 @@ struct DrawAura;
 // manages aura dots for a tile location (TODO: manage aura for all tiles? Or make it AuraType instead?)
 struct Aura { 
 
-	enum Type { fire, aqua, help, suck, none };
+	enum Type { fire, aqua, beacon, help, suck, none };
 
 	struct Dot {
 		Dot(glm::vec3 _center, Aura::Type type);
@@ -37,6 +37,9 @@ struct Aura {
 					break;
 				case aqua:
 					color = glm::u8vec4(50, 135, 255, 255);
+					break;
+				case beacon:
+					color = glm::u8vec4(153, 89, 148, 255);
 					break;
 				case help:
 					color = glm::u8vec4(242, 236, 143, 255);

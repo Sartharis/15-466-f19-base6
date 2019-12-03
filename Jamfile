@@ -9,7 +9,8 @@ if $(OS) = NT { #Windows
 		#disable a few warnings:
 		/wd4146 #-1U is still unsigned
 		/wd4297 #unforunately SDLmain is nothrow
-		#/wd4267 #loss of precision warning is a bit too annoying sometimes
+		/wd4267 #loss of precision warning is a bit too annoying sometimes
+		/wd4996 #sscanf security warning
 	;
 	LINKFLAGS = /nologo /SUBSYSTEM:CONSOLE /DEBUG:FASTLINK
 	;

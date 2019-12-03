@@ -144,6 +144,7 @@ struct GroundTile
 	Aura* aqua_aura = nullptr;
 	Aura* help_aura = nullptr;
 	Aura* suck_aura = nullptr;
+	Aura* beacon_aura = nullptr;
 
 };
 
@@ -168,6 +169,8 @@ extern PlantType const* friend_plant;
 extern PlantType const* vampire_plant;
 extern PlantType const* cactus_plant;
 extern PlantType const* fireflower_plant;
+extern PlantType const* waterflower_plant;
+extern PlantType const* beaconflower_plant;
 extern PlantType const* corpseeater_plant;
 extern PlantType const* spreader_source_plant;
 extern PlantType const* spreader_child_plant;

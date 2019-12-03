@@ -122,7 +122,9 @@ PlantMode::PlantMode()
 		inventory.change_seeds_num( friend_plant, 0 );
 		inventory.change_seeds_num( vampire_plant, 0 );
 		inventory.change_seeds_num( cactus_plant, 0 );
-		inventory.change_seeds_num( fireflower_plant, 0 );
+		inventory.change_seeds_num( fireflower_plant, 5 );
+		inventory.change_seeds_num( waterflower_plant, 5 );
+		inventory.change_seeds_num( beaconflower_plant, 5 );
 		inventory.change_seeds_num( corpseeater_plant, 0 );
 		inventory.change_seeds_num( spreader_source_plant, 0 );
 		inventory.change_seeds_num( spreader_child_plant, 0 );
@@ -722,6 +724,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			for (int j=0; j<grid.size_y; j++) {
 				if (grid.tiles[i][j].fire_aura) grid.tiles[i][j].fire_aura->draw( draw_aura );
 				if (grid.tiles[i][j].aqua_aura) grid.tiles[i][j].aqua_aura->draw( draw_aura );
+				if (grid.tiles[i][j].beacon_aura) grid.tiles[i][j].beacon_aura->draw( draw_aura );
 				if (grid.tiles[i][j].help_aura) grid.tiles[i][j].help_aura->draw( draw_aura );
 				if (grid.tiles[i][j].suck_aura) grid.tiles[i][j].suck_aura->draw( draw_aura );
 			}
