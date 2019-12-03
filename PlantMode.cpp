@@ -521,7 +521,7 @@ void PlantMode::update(float elapsed)
 
 		//Sea positioning
 		sea->transform->position = camera->transform->position;
-		sea->transform->position.z = -0.2f;
+		sea->transform->position.z = -0.15f;
 	}
 
 	if( !paused )
@@ -611,7 +611,7 @@ void PlantMode::update(float elapsed)
 
 				}
 				else if( current_tool == fertilizer ) {
-					if( hovered_tile->is_cleared() ) action_description = "Fertilize -$" + std::to_string( fertilization_cost );
+					if( hovered_tile->is_cleared() ) action_description = "Spray -$" + std::to_string( fertilization_cost );
 				}
 				else if( current_tool == shovel ) {
 					if( hovered_tile->can_be_cleared( grid ) ) {
