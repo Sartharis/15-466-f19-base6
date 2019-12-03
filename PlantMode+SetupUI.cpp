@@ -91,7 +91,27 @@ void PlantMode::setup_UI() {
 	UI.root = new UIElem(nullptr);
 	UI.root_pause = new UIElem( nullptr );
 
+	//--------------- win / lose ----------------------
+	UI.lose_screen = new UIElem(
+		UI.root,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -500, 0 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "You ran out of money. Pause and press R to restart.",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.0f, false, true );
 
+	UI.win_screen = new UIElem(
+		UI.root,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -500, 0 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "You fulfilled all of the orders! Congratulations!",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.0f, false, true );
+
+
+	//----------------- instructions  -----------------
 	UIElem* instructions_button = new UIElem(
 		UI.root,
 		glm::vec2( 0.0f, 0.0f ), // anchor
@@ -901,9 +921,13 @@ void PlantMode::setup_UI() {
 			current_main_order_idx += 1;
 			if( current_main_order_idx >= main_orders.size() ){
 				current_main_order_idx =  (int)main_orders.size()-1;
+				UI.win_screen->show();
 			}
-			std::cout <<"main_order_idx "<< current_main_order_idx << std::endl;
-			set_main_order(current_main_order_idx);
+			else
+			{
+				std::cout << "main_order_idx " << current_main_order_idx << std::endl;
+				set_main_order( current_main_order_idx );
+			}
 		}
 	});
 

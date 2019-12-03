@@ -50,9 +50,11 @@ private:
 };
 
 // The 'PlantMode':
-struct PlantMode : public Mode {
+struct PlantMode : public Mode 
+{
 	PlantMode();
 	virtual ~PlantMode();
+	void reset_game();
 
 	float timer = 0.0f;
 
@@ -79,6 +81,7 @@ struct PlantMode : public Mode {
 	virtual void on_resize( glm::uvec2 const& new_drawable_size ) override;
 	virtual void on_paused() override;
 	virtual void on_unpaused() override;
+	
 	
 	//scene:
 	std::string tool_name = "";
@@ -129,6 +132,8 @@ struct PlantMode : public Mode {
 		UIElem* root;
 		UIElem* root_pause;
 		UIElem* coins_text;
+		UIElem* win_screen;
+		UIElem* lose_screen;
 		struct {
 			UIElem* glove;
 			UIElem* watering_can;

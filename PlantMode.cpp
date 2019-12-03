@@ -96,47 +96,12 @@ PlantMode::PlantMode()
 	{
 		selectedPlant = test_plant;
 	}
-
-	{//init UI
-		setup_UI();
-		unlock_plant( test_plant );
-	}
 	
 	{
 		scroll_tool_order.push_back( default_hand );
 		scroll_tool_order.push_back( watering_can );
 		scroll_tool_order.push_back( fertilizer );
 		scroll_tool_order.push_back( shovel );
-	}
-	
-	//DEBUG - ADD ALL SEEDS & init harvest to all 0
-	{
-		change_num_coins( 0 );
-	
-		set_main_order(current_main_order_idx);
-		set_daily_order(current_daily_order_idx);
-		
-		set_current_tool( default_hand );
-
-		inventory.change_seeds_num( test_plant, 5 );
-		inventory.change_seeds_num( friend_plant, 0 );
-		inventory.change_seeds_num( vampire_plant, 0 );
-		inventory.change_seeds_num( cactus_plant, 0 );
-		inventory.change_seeds_num( fireflower_plant, 0 );
-		inventory.change_seeds_num( corpseeater_plant, 0 );
-		inventory.change_seeds_num( spreader_source_plant, 0 );
-		inventory.change_seeds_num( spreader_child_plant, 0 );
-		inventory.change_seeds_num( teleporter_plant, 0 );
-
-		inventory.change_harvest_num( test_plant, 0 );
-		inventory.change_harvest_num( friend_plant, 0 );
-		inventory.change_harvest_num( vampire_plant, 0 );
-		inventory.change_harvest_num( cactus_plant, 0 );
-		inventory.change_harvest_num( fireflower_plant, 0 );
-		inventory.change_harvest_num( corpseeater_plant, 0 );
-		inventory.change_harvest_num( spreader_source_plant, 0 );
-		inventory.change_harvest_num( spreader_child_plant, 0 );
-		inventory.change_harvest_num( teleporter_plant, 0 );
 	}
 
 	{
@@ -153,46 +118,6 @@ PlantMode::PlantMode()
 		selector_info.start = selector_mesh->start;
 		selector_info.count = selector_mesh->count;
 		selector->pipeline = selector_info;
-	}
-	
-	std::string island =
-		"oodddddooo"
-		"oddxXxxddo"
-		"dxxXXXxxdo"
-		"odxxXxxxdd"
-		"dxxxCCxxxd"
-		"dxxxCCxxxd"
-		"dxxxxxxxdo"
-		"odxxXXxdoo"
-		"odxdxXXxdo"
-		"oododdddoo";
-
-	// Create a lil center island
-	{
-		for( int32_t x = 0; x < plant_grid_x; ++x )
-		{
-			for( int32_t y = 0; y < plant_grid_y; ++y )
-			{
-				const GroundTileType* type = empty_tile;
-				if( island[x + y * plant_grid_x] == 'x' )
-				{
-					type = grass_short_tile;
-				}
-				else if( island[x + y * plant_grid_x] == 'X' )
-				{
-					type = grass_tall_tile;
-				}
-				else if( island[x + y * plant_grid_x] == 'd' )
-				{
-					type = dirt_tile;
-				}
-				else if ( island[x + y * plant_grid_x] == 'C' )
-				{
-					type = ground_tile;
-				}
-				grid.tiles[x][y].change_tile_type( type );
-			}
-		}
 	}
 	
 	{ //make a camera:
@@ -242,6 +167,13 @@ PlantMode::PlantMode()
 		sea->pipeline = sea_info;
 	}
 
+	{//init UI
+		setup_UI();
+		unlock_plant( test_plant );
+	}
+
+	reset_game();
+
 }
 
 PlantMode::~PlantMode() {
@@ -254,6 +186,89 @@ PlantMode::~PlantMode() {
 	}
 	if (UI.root) delete UI.root;
 	if( UI.root_pause ) delete UI.root_pause;
+}
+
+void PlantMode::reset_game()
+{
+	set_current_tool( default_hand );
+
+	// Reset Inventory
+	{
+		num_coins = 30;
+		change_num_coins( 0 );
+		//inventory = Inventory( this );
+		inventory.change_seeds_num( test_plant, 5 );
+		inventory.change_seeds_num( friend_plant, 0 );
+		inventory.change_seeds_num( vampire_plant, 0 );
+		inventory.change_seeds_num( cactus_plant, 0 );
+		inventory.change_seeds_num( fireflower_plant, 0 );
+		inventory.change_seeds_num( corpseeater_plant, 0 );
+		inventory.change_seeds_num( spreader_source_plant, 0 );
+		inventory.change_seeds_num( spreader_child_plant, 0 );
+		inventory.change_seeds_num( teleporter_plant, 0 );
+
+		inventory.change_harvest_num( test_plant, 0 );
+		inventory.change_harvest_num( friend_plant, 0 );
+		inventory.change_harvest_num( vampire_plant, 0 );
+		inventory.change_harvest_num( cactus_plant, 0 );
+		inventory.change_harvest_num( fireflower_plant, 0 );
+		inventory.change_harvest_num( corpseeater_plant, 0 );
+		inventory.change_harvest_num( spreader_source_plant, 0 );
+		inventory.change_harvest_num( spreader_child_plant, 0 );
+		inventory.change_harvest_num( teleporter_plant, 0 );
+	}
+
+	// Reset Island
+	{
+		std::string island =
+			"oodddddooo"
+			"oddxXxxddo"
+			"dxxXXXxxdo"
+			"odxxXxxxdd"
+			"dxxxCCxxxd"
+			"dxxxCCxxxd"
+			"dxxxxxxxdo"
+			"odxxXXxdoo"
+			"odxdxXXxdo"
+			"oododdddoo";
+
+		// Create a lil center island
+		{
+			for( int32_t x = 0; x < plant_grid_x; ++x )
+			{
+				for( int32_t y = 0; y < plant_grid_y; ++y )
+				{
+					grid.tiles[x][y].try_remove_plant();
+					const GroundTileType* type = empty_tile;
+					if( island[x + y * plant_grid_x] == 'x' )
+					{
+						type = grass_short_tile;
+					}
+					else if( island[x + y * plant_grid_x] == 'X' )
+					{
+						type = grass_tall_tile;
+					}
+					else if( island[x + y * plant_grid_x] == 'd' )
+					{
+						type = dirt_tile;
+					}
+					else if( island[x + y * plant_grid_x] == 'C' )
+					{
+						type = ground_tile;
+					}
+					grid.tiles[x][y].change_tile_type( type );
+				}
+			}
+		}
+	}
+
+	// Reset Orders
+	{
+		current_main_order_idx = 0;
+		current_daily_order_idx = 0;
+		set_main_order( current_main_order_idx );
+		set_daily_order( current_daily_order_idx );
+	}
 }
 
 void PlantMode::on_click( int x, int y )
@@ -421,6 +436,9 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			set_current_tool( shovel );
 			break;
+		case SDLK_R:
+			if( paused ) reset_game();
+			break;
 		default:
 			break;
 		}
@@ -481,7 +499,101 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
+	// Lose check
+	if(current_main_order && current_daily_order )
+	{
+		std::unordered_map<PlantType const*, int> main_plant_count = std::unordered_map<PlantType const*, int>();
+		std::unordered_map<PlantType const*, int> daily_plant_count = std::unordered_map<PlantType const*, int>();
 
+		// Add in how many required plants we need to fulfill orders
+		{
+			auto it = current_main_order->get_required_plants().begin();
+			while( it != current_main_order->get_required_plants().end() )
+			{
+				main_plant_count.insert( std::make_pair( it->first, it->second ) );
+				it++;
+			}
+
+			it = current_daily_order->get_required_plants().begin();
+			while( it != current_daily_order->get_required_plants().end() )
+			{
+				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
+				it++;
+			}
+		}
+
+		// Remove all plants harvested, as seeds or on tiles to get remaining to buy amount
+		{
+			auto it = main_plant_count.begin();
+			while( it != main_plant_count.end() )
+			{
+				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
+				it++;
+			}
+
+			it = daily_plant_count.begin();
+			while( it != daily_plant_count.end() )
+			{
+				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
+				it++;
+			}
+
+			for( int32_t x = 0; x < grid.size_x; ++x )
+			{
+				for( int32_t y = 0; y < grid.size_y; ++y )
+				{
+					GroundTile& tile = grid.tiles[x][y];
+					if( tile.plant_type && !tile.is_plant_dead() )
+					{
+						auto plant_it = main_plant_count.find( tile.plant_type );
+						if( plant_it != main_plant_count.end() )
+						{
+							plant_it->second--;
+							plant_it++;
+						}
+
+						plant_it = daily_plant_count.find( tile.plant_type );
+						if( plant_it != daily_plant_count.end() )
+						{
+							plant_it->second--;
+							plant_it++;
+						}
+					}
+				}
+			}
+		}
+
+		// Calculate how much money we still need to fulfill the order
+		{
+			int total_main_order_cost = 0;
+			auto it = main_plant_count.begin();
+			while( it != main_plant_count.end() && it->first)
+			{
+				if( it->second > 0 ) total_main_order_cost += (it->first->get_cost() * it->second);
+				it++;
+			}
+
+			int total_daily_order_cost = 0;
+			it = daily_plant_count.begin();
+			while( it != daily_plant_count.end() && it->first )
+			{
+				if(it->second > 0 ) total_daily_order_cost += (it->first->get_cost() * it->second);
+				it++;
+			}
+
+			int debt = total_main_order_cost;
+			if( total_daily_order_cost <= num_coins)
+			{
+				debt -= current_daily_order->get_bonus_cash();
+			}
+
+			if( debt > num_coins && UI.lose_screen->get_hidden())
+			{
+				UI.lose_screen->show();
+			}
+		}
+
+	}
 
 	// Update Camera Position
 	{
