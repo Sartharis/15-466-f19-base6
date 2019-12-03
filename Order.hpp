@@ -42,3 +42,4 @@ private:
 
 extern std::vector< OrderType const* > main_orders;
 extern std::vector< OrderType const* > daily_orders;
+extern OrderType const* generate_random_daily_order();

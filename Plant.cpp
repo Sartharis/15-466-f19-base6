@@ -185,10 +185,10 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 								"Cheap plant. Grows anywhere." );
 	friend_plant = new PlantType( { friend_plant_1_mesh, friend_plant_2_mesh, friend_plant_3_mesh }, friend_plant_seed_sprite, friend_plant_harvest_sprite, 
 								  Aura::help, 10, 25, 30.0f, "Companion Carrot", 
-								  "Speeds up growth of neighbors. Needs 2 neighbors to grow." );
+								  "Speeds up growth of adjacent plants. Needs 2 neighbors to grow." );
 	vampire_plant = new PlantType( { vampire_plant_1_mesh, vampire_plant_2_mesh, vampire_plant_3_mesh },vampire_plant_seed_sprite, vampire_plant_harvest_sprite, 
 								   Aura::suck, 20, 60, 50.0f, "Sap Sucker", 
-								   "Grows by stealing life from neighbor plants. 3 plants sustain it." );
+								   "Grows by stealing life from adjacent plants. 3 plants sustain it." );
 	cactus_plant = new PlantType( { cactus_1_mesh, cactus_2_mesh, cactus_3_mesh }, cactus_seed_sprite, cactus_harvest_sprite, 
 								  Aura::none, 10, 20, 60.0f, "Crisp Cactus", 
 								  "Grows only in fire aura from fire flowers." );
@@ -203,7 +203,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 									  "Gives off whatever aura it is planted in." );								  
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
-									   "Feeds off a neighboring dead plant." );
+									   "Feeds off an adjacent dead plant." );
 	spreader_source_plant = new PlantType( { spreader_source_1_mesh, spreader_source_2_mesh }, spreader_seed_sprite, spreader_source_harvest_sprite,
 										   Aura::none, 5, 50, 10.0f, "Spreading Sage", 
 										   "Once fully grown tries to spread all over the farm." );

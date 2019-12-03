@@ -12,6 +12,7 @@ uniform vec2 TEX_OFFSET;
 // 3: copy to screen by combining albedo & shadow
 // 4: miscellaneous (debug use)
 uniform int TASK; 
+uniform int FILTER;
 out vec4 fragColor;
 
 bool is_light(vec4 col) {
@@ -86,6 +87,11 @@ void main() {
 				|| down_b - firstpass_b > brightness_dif_threshold || right_b - firstpass_b > brightness_dif_threshold
 			);
 		if (is_edge) fragColor -= vec4(0.2, 0.15, 0.1, 0);
+	
+		//---- dark overlay if filter on
+		if (FILTER == 1) {
+			fragColor = over(vec4(0, 0, 0, 0.5), fragColor);
+		}
 
   } else if (TASK == 4) { // debug use
     vec4 tex = texture(TEX0, TexCoords);
