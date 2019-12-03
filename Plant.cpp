@@ -20,6 +20,7 @@ PlantType const* vampire_plant = nullptr;
 PlantType const* cactus_plant = nullptr;
 PlantType const* fireflower_plant = nullptr;
 PlantType const* waterflower_plant = nullptr;
+PlantType const* beaconflower_plant = nullptr;
 PlantType const* corpseeater_plant = nullptr;
 PlantType const* spreader_source_plant = nullptr;
 PlantType const* spreader_child_plant = nullptr;
@@ -79,6 +80,11 @@ Mesh const* waterflower_3_mesh = nullptr;
 Sprite const* waterflower_seed_sprite = nullptr;
 Sprite const* waterflower_harvest_sprite = nullptr;
 // beaconflower
+Mesh const* beaconflower_1_mesh = nullptr;
+Mesh const* beaconflower_2_mesh = nullptr;
+Mesh const* beaconflower_3_mesh = nullptr;
+Sprite const* beaconflower_seed_sprite = nullptr;
+Sprite const* beaconflower_harvest_sprite = nullptr;
 // corpse eater
 Mesh const* corpseeater_1_mesh = nullptr;
 Mesh const* corpseeater_2_mesh = nullptr;
@@ -160,6 +166,9 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	waterflower_1_mesh = &ret->lookup( "waterflower1" );
 	waterflower_2_mesh = &ret->lookup( "waterflower2" );
 	waterflower_3_mesh = &ret->lookup( "waterflower3" );
+	beaconflower_1_mesh = &ret->lookup( "beacon1" );
+	beaconflower_2_mesh = &ret->lookup( "beacon2" );
+	beaconflower_3_mesh = &ret->lookup( "beacon3" );
 	corpseeater_1_mesh = &ret->lookup( "corpseeater1" );
 	corpseeater_2_mesh = &ret->lookup( "corpseeater2" );
 	corpseeater_3_mesh = &ret->lookup( "corpseeater3" );
@@ -188,7 +197,10 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 									  "Gives off fire aura." );
 	waterflower_plant = new PlantType( { waterflower_1_mesh, waterflower_2_mesh, waterflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
 									  Aura::aqua, 5, 0, 20.0f, "Sieve Flower", 
-									  "Gives off aqua aura." );							  
+									  "Gives off aqua aura." );
+	beaconflower_plant = new PlantType( { beaconflower_1_mesh, beaconflower_2_mesh, beaconflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
+									  Aura::beacon, 20, 0, 40.0f, "Beacon Flower", 
+									  "Gives off whatever aura it is planted in." );								  
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 
 									   Aura::none, 5, 50, 40.0f, "Detritus Dahlia", 
 									   "Feeds off a neighboring dead plant." );
@@ -208,6 +220,7 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	all_plants.push_back(cactus_plant);
 	all_plants.push_back(fireflower_plant);
 	all_plants.push_back(waterflower_plant);
+	all_plants.push_back(beaconflower_plant);
 	all_plants.push_back(corpseeater_plant);
 	all_plants.push_back(spreader_source_plant);
 	all_plants.push_back( spreader_child_plant );
@@ -441,6 +454,10 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 			{
 				current_grow_time += grow_power + elapsed;
 			}
+			else if ( plant_type == beaconflower_plant ) 
+			{				
+				current_grow_time += grow_power + elapsed;
+			}
 			else if( plant_type == cactus_plant )
 			{
 				if( fire_aura_effect > 0.1f && aqua_aura_effect <= 0.0f )
@@ -567,9 +584,13 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 	}
 
 	// apply fire & aqua aura effect onto neighbors (by putting into pending update)
-	if( plant_type && ( plant_type->get_aura_type()==Aura::fire || plant_type->get_aura_type()==Aura::aqua ) && !is_plant_dead() )
+	if( plant_type && ( plant_type->get_aura_type()==Aura::fire || plant_type->get_aura_type()==Aura::aqua || plant_type->get_aura_type()==Aura::beacon ) && !is_plant_dead() )
 	{
-		auto try_apply_aura = [elapsed]( GroundTile& target, Aura::Type aura_type ) {
+		// Beaconflower preprocessing
+		bool fire_apply = fire_aura_effect > 0.1f && fire_aura_effect > aqua_aura_effect;
+		bool water_apply = aqua_aura_effect > 0.1f && aqua_aura_effect > fire_aura_effect;
+
+		auto try_apply_aura = [elapsed, fire_apply, water_apply]( GroundTile& target, Aura::Type aura_type ) {
 			if( target.tile_type->get_can_plant() ) {
 				switch( aura_type ) {
 				case Aura::fire:
@@ -577,6 +598,13 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 					break;
 				case Aura::aqua:
 					target.pending_update.aqua_aura_effect += 0.2f * elapsed;
+					break;
+				case Aura::beacon:
+					if ( fire_apply ) {
+						target.pending_update.fire_aura_effect += 0.2f * elapsed;
+					} else if ( water_apply ) {
+						target.pending_update.aqua_aura_effect += 0.2f * elapsed;
+					}
 					break;
 				default: // the rest of aura types are decorations only
 					break;
@@ -636,6 +664,12 @@ void GroundTile::update_plant_visuals()
 				suck_aura = nullptr;
 			}
 		}
+		if( plant_type->get_aura_type() == Aura::beacon && is_plant_dead() ) {
+			if( beacon_aura ) {
+				delete beacon_aura;
+				beacon_aura = nullptr;
+			}
+		}
 	}
 	else
 	{
@@ -689,6 +723,7 @@ void GroundTile::update_aura_visuals( float elapsed, Scene::Transform* camera_tr
 
 	if( help_aura ) help_aura->update( help_aura->max_strength, elapsed, camera_transform );
 	if( suck_aura ) suck_aura->update( suck_aura->max_strength, elapsed, camera_transform );
+	if ( beacon_aura ) beacon_aura->update( beacon_aura->max_strength, elapsed, camera_transform );
 }
 
 bool GroundTile::try_swap_plants(GroundTile& tile_a, GroundTile& tile_b )
@@ -727,6 +762,8 @@ bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 			help_aura = new Aura( tile_drawable->transform->position, Aura::help, 4 );
 		} else if( plant_type->get_aura_type() == Aura::suck ) {
 			suck_aura = new Aura( tile_drawable->transform->position, Aura::suck, 6 );
+		} else if ( plant_type->get_aura_type() == Aura::beacon ) {
+			beacon_aura = new Aura( tile_drawable->transform->position, Aura::beacon, 4 );
 		}
 		return true;
 	}
@@ -745,6 +782,10 @@ bool GroundTile::try_remove_plant()
 		if( plant_type->get_aura_type() == Aura::suck && suck_aura ) {
 			delete suck_aura;
 			suck_aura = nullptr;
+		}
+		if ( plant_type->get_aura_type() == Aura::beacon && beacon_aura ) {
+			delete beacon_aura;
+			beacon_aura = nullptr;
 		}
 		plant_type = nullptr;
 		update_plant_visuals();
