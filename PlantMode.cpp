@@ -196,26 +196,12 @@ void PlantMode::reset_game()
 	{
 		num_coins = 30;
 		change_num_coins( 0 );
-		//inventory = Inventory( this );
+		
+		for( auto plant : all_plants ) {
+			inventory.change_seeds_num( plant, 0 );
+			inventory.change_harvest_num( plant, 0 );
+		}
 		inventory.change_seeds_num( test_plant, 5 );
-		inventory.change_seeds_num( friend_plant, 0 );
-		inventory.change_seeds_num( vampire_plant, 0 );
-		inventory.change_seeds_num( cactus_plant, 0 );
-		inventory.change_seeds_num( fireflower_plant, 0 );
-		inventory.change_seeds_num( corpseeater_plant, 0 );
-		inventory.change_seeds_num( spreader_source_plant, 0 );
-		inventory.change_seeds_num( spreader_child_plant, 0 );
-		inventory.change_seeds_num( teleporter_plant, 0 );
-
-		inventory.change_harvest_num( test_plant, 0 );
-		inventory.change_harvest_num( friend_plant, 0 );
-		inventory.change_harvest_num( vampire_plant, 0 );
-		inventory.change_harvest_num( cactus_plant, 0 );
-		inventory.change_harvest_num( fireflower_plant, 0 );
-		inventory.change_harvest_num( corpseeater_plant, 0 );
-		inventory.change_harvest_num( spreader_source_plant, 0 );
-		inventory.change_harvest_num( spreader_child_plant, 0 );
-		inventory.change_harvest_num( teleporter_plant, 0 );
 	}
 
 	// Reset Island
@@ -436,7 +422,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			set_current_tool( shovel );
 			break;
-		case SDLK_R:
+		case SDLK_r:
 			if( paused ) reset_game();
 			break;
 		default:
@@ -507,6 +493,7 @@ void PlantMode::update(float elapsed)
 
 		// Add in how many required plants we need to fulfill orders
 		{
+			/*
 			auto it = current_main_order->get_required_plants().begin();
 			while( it != current_main_order->get_required_plants().end() )
 			{
@@ -519,6 +506,15 @@ void PlantMode::update(float elapsed)
 			{
 				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
 				it++;
+			}
+			*/
+
+			for (auto req : current_main_order->get_required_plants()) {
+				main_plant_count.insert( req );
+			}
+
+			for (auto req : current_daily_order->get_required_plants()) {
+				daily_plant_count.insert( req );
 			}
 		}
 

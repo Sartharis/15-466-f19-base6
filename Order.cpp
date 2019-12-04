@@ -136,6 +136,16 @@ Load< void > daily_order_load_from_file(LoadTagLate, []() {
 	for(int i=0;i<3;i++){
 		daily_orders.push_back(generate_random_daily_order());
 	}
+
+	// validity check
+	for (auto order : daily_orders) {
+		assert(order);
+		auto reqs = order->get_required_plants();
+		for (auto req : reqs) {
+			assert(req.first);
+		}
+	}
+
 	std::cout << "----all daily orders loaded." << std::endl;
 });
 
@@ -202,6 +212,14 @@ Load< void > main_order_load_from_file(LoadTagLate, []() {
 			}
 		}
 		
+	}
+	// validity check
+	for (auto order : main_orders) {
+		assert(order);
+		auto reqs = order->get_required_plants();
+		for (auto req : reqs) {
+			assert(req.first);
+		}
 	}
 	std::cout << "----all main orders loaded." << std::endl;
 });
