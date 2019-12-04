@@ -240,6 +240,7 @@ void PlantMode::setup_UI() {
 	UI.toolbar.glove->set_on_mouse_down([this](){
 		set_current_tool( default_hand );
 	});
+	UI.toolbar.glove->set_hotkey(SDLK_1);
 	new UIElem(
 		UI.toolbar.glove,
 		glm::vec2(0, 0), // anchor
@@ -273,6 +274,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == watering_can ) set_current_tool( default_hand );
 		else set_current_tool( watering_can );
 	});
+	UI.toolbar.watering_can->set_hotkey(SDLK_2);
 	new UIElem(
 		UI.toolbar.watering_can,
 		glm::vec2(0, 0), // anchor
@@ -306,6 +308,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == fertilizer ) set_current_tool( default_hand );
 		else set_current_tool( fertilizer );
 	});
+	UI.toolbar.fertilizer->set_hotkey(SDLK_3);
 	new UIElem(
 		UI.toolbar.fertilizer,
 		glm::vec2(0, 0), // anchor
@@ -339,6 +342,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == shovel ) set_current_tool( default_hand );
 		else set_current_tool( shovel );
 	});
+	UI.toolbar.shovel->set_hotkey(SDLK_4);
 	new UIElem(
 		UI.toolbar.shovel,
 		glm::vec2(0, 0), // anchor
@@ -653,6 +657,7 @@ void PlantMode::setup_UI() {
 	magicbook_icon->set_on_mouse_leave([magicbook_text](){
 		magicbook_text->hide();
 	});
+	magicbook_icon->set_hotkey(SDLK_TAB);
 
 	UIElem* magicbook_bg = new UIElem(
 		UI.root,
@@ -683,11 +688,11 @@ void PlantMode::setup_UI() {
 		ui_sprites.close, "close magicbook",
 		glm::vec2(20, 20),
 		0.35f, true, false, false);
-	magicbook_close_btn->set_on_mouse_down([magicbook_bg, this](){
+	magicbook_close_btn->set_on_mouse_down([magicbook_bg](){
 		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
-		UI.magicbook_page = 0;
 	});
+	magicbook_close_btn->set_hotkey(SDLK_TAB);
 
 	UIElem* all_choices = new UIElem(magicbook_bg);
 	all_choices->set_layout_children_fn([this, all_choices](){
@@ -707,10 +712,10 @@ void PlantMode::setup_UI() {
 	UIElem* magicbook_prev_page = new UIElem(
 		magicbook_bg,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(60, 570), //pos
-		glm::vec2(26, 26), //size
+		glm::vec2(58, 568), //pos
+		glm::vec2(32, 32), //size
 		ui_sprites.magicbook.prev, "magic book prev page",
-		glm::vec2(0, 0),
+		glm::vec2(2, 2),
 		0.45f, true);
 	magicbook_prev_page->set_on_mouse_down([this, all_choices](){
 		if (UI.magicbook_page >= 2 ) {
@@ -719,14 +724,15 @@ void PlantMode::setup_UI() {
 			all_choices->layout_children();
 		}
 	});
+	magicbook_prev_page->set_hotkey(SDLK_q);
 	
 	UIElem* magicbook_next_page = new UIElem(
 		magicbook_bg,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(842, 570), //pos
-		glm::vec2(26, 26), //size
+		glm::vec2(840, 568), //pos
+		glm::vec2(32, 32), //size
 		ui_sprites.magicbook.next, "magic book next page",
-		glm::vec2(0, 0),
+		glm::vec2(2, 2),
 		0.45f, true);
 	magicbook_next_page->set_on_mouse_down([this, all_choices](){
 		int max_pages = (int)std::ceil(all_choices->children.size() / 2.0f) - 1;
@@ -736,6 +742,7 @@ void PlantMode::setup_UI() {
 			all_choices->layout_children();
 		}
 	});
+	magicbook_next_page->set_hotkey(SDLK_e);
 
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
@@ -777,11 +784,11 @@ void PlantMode::setup_UI() {
 		name->set_scale(0.6f);
 		name->hide();
 
-		// name
+		// buy button
 		UIElem* buy = new UIElem( entry );
 		buy->make_interactive();
 		buy->set_position( glm::vec2( 100, 0 ), glm::vec2( 0, 0 ) );
-		buy->set_size( glm::vec2( 300, 40 ) );
+		buy->set_size( glm::vec2( 55, 40 ) );
 		buy->set_text( "BUY" );
 		buy->set_tint( text_tint );
 		buy->set_scale( 0.6f );
@@ -789,16 +796,15 @@ void PlantMode::setup_UI() {
 			if( num_coins >= plant->get_cost() ){
 				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				change_num_coins( -plant->get_cost() );
-
 				inventory.change_seeds_num( plant, 1 );
 			}
-								 } );
+		} );
 		buy->set_on_mouse_enter( [buy, this](){
 			buy->set_tint( text_highlight_tint );
-								  } );
+		} );
 		buy->set_on_mouse_leave( [buy, this](){
 			buy->set_tint( text_tint );
-								  } );
+		} );
 		buy->hide();
 
 		// description
@@ -827,7 +833,7 @@ void PlantMode::setup_UI() {
 	UIElem* order1 = new UIElem(
 		UI.root,
 		glm::vec2(1, 0), // anchor
-		glm::vec2(0, 100), // pos
+		glm::vec2(0, 90), // pos
 		glm::vec2(0, 0), // size
 		nullptr, "", glm::vec2(0, 0), 1.0f);
 
@@ -835,13 +841,13 @@ void PlantMode::setup_UI() {
 	UIElem* order2 = new UIElem(
 		UI.root,
 		glm::vec2(1, 0), //anchor
-		glm::vec2(0, 280), //pos
+		glm::vec2(0, 290), //pos
 		glm::vec2(0, 0), //size
 		nullptr, "", glm::vec2(0, 0), 1.0f);
 
-	float order_w1 = 168.0f;
-	float order_w2 = 350.0f;
-	float order_h = 158.0f;
+	float order_w1 = 189.0f;
+	float order_w2 = 394.0f;
+	float order_h = 178.0f;
 
 	// MAIN ORDER ---------
 	
@@ -851,8 +857,8 @@ void PlantMode::setup_UI() {
 		glm::vec2(-order_w1, 0), //pos
 		glm::vec2(order_w1, order_h), //size
 		ui_sprites.order.rolledup, "",
-		glm::vec2(order_w1, -12), //sprite pos
-		0.4f, true, false, false);
+		glm::vec2(order_w1, -14), //sprite pos
+		0.45f, true, false, false);
 
 	UIElem* order1_expanded = new UIElem(
 		order1,
@@ -860,8 +866,8 @@ void PlantMode::setup_UI() {
 		glm::vec2(-order_w2, 0), //pos
 		glm::vec2(order_w2, order_h), //size
 		ui_sprites.order.expanded, "",
-		glm::vec2(order_w2, -12), //sprite pos
-		0.4f, true, true, false);
+		glm::vec2(order_w2, -14), //sprite pos
+		0.45f, true, true, false);
 
 	order1_rolledup->set_on_mouse_enter([order1_rolledup, order1_expanded](){
 		order1_rolledup->hide();
@@ -875,25 +881,25 @@ void PlantMode::setup_UI() {
 	UI.main_order.description = new UIElem(
 		order1_expanded,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(16, 10), //pos
+		glm::vec2(20, 10), //pos
 		glm::vec2(0, 0), //size doesn't matter
 		nullptr, "default description",
-		glm::vec2(0, 0), 0.36f);
+		glm::vec2(0, 0), 0.4f);
 	UI.main_order.description->set_tint(text_tint);
-	UI.main_order.description->set_max_text_width(198.0f);
+	UI.main_order.description->set_max_text_width(220.0f);
 
 	UIElem* complete_btn = new UIElem(
 		order1_expanded,
 		glm::vec2(0, 1), //anchor
-		glm::vec2(64, -38), //pos
-		glm::vec2(72, 20), //size
+		glm::vec2(68, -38), //pos
+		glm::vec2(82, 22), //size
 		nullptr, "COMPLETE",
-		glm::vec2(0, 0), 0.38f, true);
+		glm::vec2(0, 0), 0.4f, true);
 	complete_btn->set_tint(text_tint);
 	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
 	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
 	complete_btn->set_on_mouse_down([this](){
-		std::cout << "Submit Main Order Button Click!" << std::endl;
+		// std::cout << "Submit Main Order Button Click!" << std::endl;
 		std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
 		bool orderFinished = true;
 		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
@@ -927,7 +933,7 @@ void PlantMode::setup_UI() {
 			}
 			else
 			{
-				std::cout << "main_order_idx " << current_main_order_idx << std::endl;
+				// std::cout << "main_order_idx " << current_main_order_idx << std::endl;
 				set_main_order( current_main_order_idx );
 			}
 		}
@@ -936,7 +942,7 @@ void PlantMode::setup_UI() {
 	UI.main_order.unlock_plant = new UIElem(
 		order1,
 		glm::vec2(1, 0), //anchor
-		glm::vec2(-134, 18), //pos
+		glm::vec2(-148, 18), //pos
 		glm::vec2(0, 0), //size doesn't matter
 		nullptr, "default unlock plant text",
 		glm::vec2(0, 0), 0.44f);
@@ -946,7 +952,7 @@ void PlantMode::setup_UI() {
 	UI.main_order.requirements = new UIElem(
 		order1,
 		glm::vec2(1, 0), //anchor
-		glm::vec2(-126, 68), //pos
+		glm::vec2(-142, 68), //pos
 		glm::vec2(0, 0), //size
 		nullptr, "",
 		glm::vec2(0, 0), 1.0f);
@@ -958,7 +964,7 @@ void PlantMode::setup_UI() {
 		for (int i=0; i<reqs->children.size(); i++) {
 			// make sure this part is in sync with where the requirement labels are created (in set_main_order())
 			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
-			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 160.0f);
 			moving_anchor.y += size.y + 4.0f;
 		}
 	});
@@ -971,8 +977,8 @@ void PlantMode::setup_UI() {
 		glm::vec2(-order_w1, 0), //pos
 		glm::vec2(order_w1, order_h), //size
 		ui_sprites.order.rolledup, "",
-		glm::vec2(order_w1, -12), //sprite pos
-		0.4f, true, false, false);
+		glm::vec2(order_w1, -14), //sprite pos
+		0.45f, true, false, false);
 
 	UIElem* order2_expanded = new UIElem(
 		order2,
@@ -980,8 +986,8 @@ void PlantMode::setup_UI() {
 		glm::vec2(-order_w2, 0), //pos
 		glm::vec2(order_w2, order_h), //size
 		ui_sprites.order.expanded, "",
-		glm::vec2(order_w2, -12), //sprite pos
-		0.4f, true, true, false);
+		glm::vec2(order_w2, -14), //sprite pos
+		0.45f, true, true, false);
 
 	order2_rolledup->set_on_mouse_enter([order2_rolledup, order2_expanded](){
 		order2_rolledup->hide();
@@ -995,25 +1001,25 @@ void PlantMode::setup_UI() {
 	UI.daily_order.description = new UIElem(
 		order2_expanded,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(16, 10), //pos
+		glm::vec2(20, 10), //pos
 		glm::vec2(0, 0), //size doesn't matter
 		nullptr, "default description",
-		glm::vec2(0, 0), 0.36f);
+		glm::vec2(0, 0), 0.4f);
 	UI.daily_order.description->set_tint(text_tint);
-	UI.daily_order.description->set_max_text_width(198.0f);
+	UI.daily_order.description->set_max_text_width(224.0f);
 
 	complete_btn = new UIElem(
 		order2_expanded,
 		glm::vec2(0, 1), //anchor
 		glm::vec2(24, -38), //pos
-		glm::vec2(72, 20), //size
+		glm::vec2(82, 22), //size
 		nullptr, "COMPLETE",
-		glm::vec2(0, 0), 0.38f, true);
+		glm::vec2(0, 0), 0.4f, true);
 	complete_btn->set_tint(text_tint);
 	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
 	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
 	complete_btn->set_on_mouse_down([this](){
-		std::cout << "Submit Button Click!" << std::endl;
+		// std::cout << "Submit Button Click!" << std::endl;
 		std::map< PlantType const*, int > require_plants = current_daily_order->get_required_plants();
 		bool orderFinished = true;
 		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
@@ -1048,10 +1054,10 @@ void PlantMode::setup_UI() {
 	UIElem* cancel_btn = new UIElem(
 		order2_expanded,
 		glm::vec2(0, 1), //anchor
-		glm::vec2(114, -38), //pos
-		glm::vec2(62, 20), //size
+		glm::vec2(120, -38), //pos
+		glm::vec2(66, 22), //size
 		nullptr, "CANCEL",
-		glm::vec2(0, 0), 0.38f, true);
+		glm::vec2(0, 0), 0.4f, true);
 	cancel_btn->set_tint(text_tint);
 	cancel_btn->set_on_mouse_enter([this, cancel_btn](){ cancel_btn->set_tint(text_highlight_tint); });
 	cancel_btn->set_on_mouse_leave([this, cancel_btn](){ cancel_btn->set_tint(text_tint); });
@@ -1071,7 +1077,7 @@ void PlantMode::setup_UI() {
 	UI.daily_order.reward = new UIElem(
 		order2,
 		glm::vec2(1, 0), //anchor
-		glm::vec2(-128, 28), //pos
+		glm::vec2(-128, 24), //pos
 		glm::vec2(0, 0), //size doesn't matter
 		nullptr, "default reward text",
 		glm::vec2(0, 0), 0.44f);
@@ -1081,7 +1087,7 @@ void PlantMode::setup_UI() {
 	UI.daily_order.requirements = new UIElem(
 		order2,
 		glm::vec2(1, 0), //anchor
-		glm::vec2(-126, 58), //pos
+		glm::vec2(-142, 58), //pos
 		glm::vec2(0, 0), //size
 		nullptr, "",
 		glm::vec2(0, 0), 1.0f);
@@ -1093,7 +1099,7 @@ void PlantMode::setup_UI() {
 		for (int i=0; i<reqs->children.size(); i++) {
 			// make sure this part is in sync with where the requirement labels are created (in set_daily_order())
 			reqs->children[i]->set_position(moving_anchor, glm::vec2(0, 0));
-			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 140.0f);
+			draw_text.get_text_extents(reqs->children[i]->get_text(), glm::vec2(0, 0), 0.36f, &tmin, &size, 160.0f);
 			moving_anchor.y += size.y + 4.0f;
 		}
 	});

@@ -1,0 +1,77 @@
+@charset "utf-8";
+@font-face {
+  font-family: neucha; 
+  src: url(https://miyehn.me/hosting/fonts/neucha.otf); 
+}
+
+:root {
+    /* Space unit */
+    --space-s: 12px;
+    --space-ms:18px;
+    --space-m: 24px;
+    --space-ml:48px;
+    --space-l: 120px;
+
+    /* Font families */
+    --fallback-font-family: Helvetica, Arial, "Hiragino Sans GB", 
+    "Hiragino Sans GB W3", "Microsoft JhengHei", "WenQuanYi Micro Hei", "Microsoft YaHei", sans-serif;
+    --base-font-family: "neucha", var(--fallback-font-family);
+    --code-font-family: "inconsolata", Consolas, monospace, sans-serif;
+
+    /* Font configuration */
+    --base-font-size:   24pt;
+    --small-font-size:  18pt;
+    --big-font-size:    30pt;
+    --huge-font-size:   36pt;
+    --base-line-height: 1.5em;
+
+    /* Colors */
+    --black:            #5c4c35;
+    --white:            #ffffff;
+    --background-color: #eae9e0;
+    --highlight-color:  #917f64;
+    --selection-color:  #d8c7a8;
+    --grey-color:       #b3b3b3;
+}
+
+*{
+    margin: 0; padding: 0; 
+    border: none;
+    background: transparent;
+}
+
+*::selection {
+  background: var(--selection-color);
+}
+
+*:focus {
+    outline: none;
+}
+
+img{
+    display: block;
+}
+
+a{
+    text-decoration: underline;
+    color: var(--black);
+    transition: color 100ms ease-in;
+}
+
+a:visited{
+    color: var(--black);
+    transition: color 100ms ease-in;
+}
+
+a:hover{
+    color: var(--highlight-color);
+    transition: color 100ms ease-in;
+}
+
+html{
+    background-color: var(--background-color);
+    font-family: var(--base-font-family);
+    font-size: var(--base-font-size);
+    line-height: var(--base-line-height);
+    color: var(--black);
+}
