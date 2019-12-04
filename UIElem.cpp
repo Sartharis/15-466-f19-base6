@@ -17,16 +17,13 @@ UIElem::~UIElem(){
 }
 
 // TODO: should take z-index into consideration here as well
-UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
-	if (hidden || get_in_animation()) return none;
+bool UIElem::test_event_mouse(glm::vec2 mouse_pos, Action action){
+	if (hidden || get_in_animation()) return false;
 	for (int i=0; i<children.size(); i++) {
-		Action child_result = children[i]->test_event(mouse_pos, action);
-		if (child_result != none) {
-			return child_result;
-		}
+		if (children[i]->test_event_mouse(mouse_pos, action)) return true;
 	}
 
-	if (!interactive) return none;
+	if (!interactive) return false;
 	switch (action) {
 	case mouseDown:
 		if (inside(mouse_pos)) {
@@ -34,7 +31,7 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 			if (on_mouse_down) {
 				on_mouse_down();
 			}
-			return mouseDown;
+			return true;
 		}
 		break;
 
@@ -45,7 +42,7 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 				if (default_sound) Sound::play( *button_click_sound, 0.0f, 1.0f );
 				on_mouse_up();
 			}
-			return mouseUp;
+			return true;
 		} */
 		break;
 
@@ -56,7 +53,7 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 				on_mouse_enter();
 			}
 			hovered = true;
-			return mouseEnter;
+			return true;
 		}
 		break;
 
@@ -64,15 +61,28 @@ UIElem::Action UIElem::test_event(glm::vec2 mouse_pos, Action action){
 		if (hovered && !inside(mouse_pos)) {
 			if (on_mouse_leave) on_mouse_leave();
 			hovered = false;
-			return mouseLeave;
+			return true;
 		}
 		break;
 
 	case none:
-		return none;
+		return false;
 		break;
 	}
-	return none;
+	return false;
+}
+
+bool UIElem::test_event_keyboard(SDL_Keycode key_in) {
+	if (hidden || get_in_animation()) return false;
+	for (int i=0; i<children.size(); i++) {
+		if (children[i]->test_event_keyboard(key_in)) return true;
+	}
+	if (!interactive) return false;
+	if (key_in == hotkey && on_mouse_down) {
+		on_mouse_down();
+		return true;
+	}
+	return false;
 }
 
 bool UIElem::inside(glm::vec2 mouse_pos){

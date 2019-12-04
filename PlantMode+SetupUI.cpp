@@ -240,6 +240,7 @@ void PlantMode::setup_UI() {
 	UI.toolbar.glove->set_on_mouse_down([this](){
 		set_current_tool( default_hand );
 	});
+	UI.toolbar.glove->set_hotkey(SDLK_1);
 	new UIElem(
 		UI.toolbar.glove,
 		glm::vec2(0, 0), // anchor
@@ -273,6 +274,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == watering_can ) set_current_tool( default_hand );
 		else set_current_tool( watering_can );
 	});
+	UI.toolbar.watering_can->set_hotkey(SDLK_2);
 	new UIElem(
 		UI.toolbar.watering_can,
 		glm::vec2(0, 0), // anchor
@@ -306,6 +308,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == fertilizer ) set_current_tool( default_hand );
 		else set_current_tool( fertilizer );
 	});
+	UI.toolbar.fertilizer->set_hotkey(SDLK_3);
 	new UIElem(
 		UI.toolbar.fertilizer,
 		glm::vec2(0, 0), // anchor
@@ -339,6 +342,7 @@ void PlantMode::setup_UI() {
 		if( current_tool == shovel ) set_current_tool( default_hand );
 		else set_current_tool( shovel );
 	});
+	UI.toolbar.shovel->set_hotkey(SDLK_4);
 	new UIElem(
 		UI.toolbar.shovel,
 		glm::vec2(0, 0), // anchor
@@ -653,6 +657,7 @@ void PlantMode::setup_UI() {
 	magicbook_icon->set_on_mouse_leave([magicbook_text](){
 		magicbook_text->hide();
 	});
+	magicbook_icon->set_hotkey(SDLK_TAB);
 
 	UIElem* magicbook_bg = new UIElem(
 		UI.root,
@@ -687,6 +692,7 @@ void PlantMode::setup_UI() {
 		Sound::play( *magic_book_toggle_sound, 0.0f, 1.0f );
 		magicbook_bg->hide();
 	});
+	magicbook_close_btn->set_hotkey(SDLK_TAB);
 
 	UIElem* all_choices = new UIElem(magicbook_bg);
 	all_choices->set_layout_children_fn([this, all_choices](){
@@ -718,6 +724,7 @@ void PlantMode::setup_UI() {
 			all_choices->layout_children();
 		}
 	});
+	magicbook_prev_page->set_hotkey(SDLK_q);
 	
 	UIElem* magicbook_next_page = new UIElem(
 		magicbook_bg,
@@ -735,6 +742,7 @@ void PlantMode::setup_UI() {
 			all_choices->layout_children();
 		}
 	});
+	magicbook_next_page->set_hotkey(SDLK_e);
 
 	// magicbook buy choices
 	auto add_buy_choice = [this, all_choices]( PlantType const* plant ) {
@@ -788,16 +796,15 @@ void PlantMode::setup_UI() {
 			if( num_coins >= plant->get_cost() ){
 				Sound::play( *magic_book_purchase_sound, 0.0f, 1.0f );
 				change_num_coins( -plant->get_cost() );
-
 				inventory.change_seeds_num( plant, 1 );
 			}
-								 } );
+		} );
 		buy->set_on_mouse_enter( [buy, this](){
 			buy->set_tint( text_highlight_tint );
-								  } );
+		} );
 		buy->set_on_mouse_leave( [buy, this](){
 			buy->set_tint( text_tint );
-								  } );
+		} );
 		buy->hide();
 
 		// description

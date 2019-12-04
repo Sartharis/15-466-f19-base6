@@ -262,13 +262,11 @@ void PlantMode::on_click( int x, int y )
 	//---- first detect click on UI. If UI handled the click, return.
 	if( paused )
 	{
-		UIElem::Action action = UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseDown );
-		if( action == UIElem::mouseDown ) return;
+		if( UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseDown ) ) return;
 	}
 	else
 	{
-		UIElem::Action action = UI.root->test_event( glm::vec2( x, y ), UIElem::mouseDown );
-		if( action == UIElem::mouseDown ) return;
+		if( UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseDown ) ) return;
 	}
 	//---- Otherwise, detect click on tiles.
 	GroundTile* collided_tile = get_tile_under_mouse( x, y );
@@ -412,22 +410,12 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 	if( evt.type == SDL_KEYDOWN )
 	{
 		switch( evt.key.keysym.sym ){
-		case SDLK_1:
-			set_current_tool( default_hand );
-			break;
-		case SDLK_2:
-			set_current_tool( watering_can );
-			break;
-		case SDLK_3:
-			set_current_tool( fertilizer );
-			break;
-		case SDLK_4:
-			set_current_tool( shovel );
-			break;
 		case SDLK_r:
 			if( paused ) reset_game();
 			break;
 		default:
+			if( UI.root ) UI.root->test_event_keyboard( evt.key.keysym.sym );
+			if( UI.root_pause ) UI.root_pause->test_event_keyboard( evt.key.keysym.sym );
 			break;
 		}
 	}
@@ -472,13 +460,13 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 		if( paused )
 		{
-			if( UI.root_pause ) UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseEnter );
-			if( UI.root_pause ) UI.root_pause->test_event( glm::vec2( x, y ), UIElem::mouseLeave );
+			if( UI.root_pause ) UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
+			if( UI.root_pause ) UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
 		}
 		else
 		{
-			if( UI.root ) UI.root->test_event( glm::vec2( x, y ), UIElem::mouseEnter );
-			if( UI.root ) UI.root->test_event( glm::vec2( x, y ), UIElem::mouseLeave );
+			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
+			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
 		}
 	}
 

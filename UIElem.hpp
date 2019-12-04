@@ -4,17 +4,11 @@
 #include "DrawSprites.hpp"
 #include "Load.hpp"
 #include "Sound.hpp"
+#include <SDL.h>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <functional>
 
-/* currently sizeof(UIElem) gives 336. The most expensive parts are the function pointers
- * don't think we'll actually need to optimize out every bit of memory
- * but if needed (or I get bored) could also store all the bools into bits of a flag,
- * store char* instead of std::string,
- * use short for positions and sizes,
- * and use __fp16 as low-precision floats for things like anchor and scale.
- */
 struct UIElem {
 
 	enum Action { mouseDown, mouseUp, mouseEnter, mouseLeave, none };
@@ -56,7 +50,8 @@ struct UIElem {
 	void draw_self(DrawSprites& draw_sprites, DrawSprites& draw_text); // draw this elem only (not its children)
 	void gather(std::vector<UIElem*> &list);
 
-	Action test_event(glm::vec2 mouse_pos, Action action);
+	bool test_event_mouse(glm::vec2 mouse_pos, Action action);
+	bool test_event_keyboard(SDL_Keycode key_in);
 
 	void set_position(glm::vec2 _position, glm::vec2 _anchor, float _animation_duration = 0.0f);
 	void set_size(glm::vec2 _size) { size = _size; }
@@ -67,6 +62,7 @@ struct UIElem {
 	void set_z_index(int _z_index){ z_index = _z_index; }
 	void set_tint(glm::u8vec4 _tint){ tint = _tint; }
 	void set_max_text_width(float _w){ max_text_width = _w; }
+	void set_hotkey(SDL_Keycode _hotkey){ hotkey = _hotkey; }
 	void make_interactive() { interactive = true; }
 
 	glm::vec2 get_position(){ return position; }
@@ -117,6 +113,7 @@ private:
 	std::function<void()> on_mouse_enter = nullptr;
 	std::function<void()> on_mouse_leave = nullptr;
 	std::function<void()> layout_children_fn = nullptr;
+	SDL_Keycode hotkey = SDLK_DELETE;
 	
 	// animation related
 	glm::vec2 target_position = glm::vec2(0,0); // good so far
