@@ -287,21 +287,23 @@ void PlantMode::on_click( int x, int y )
 					}
 				}
 
-				// Removing  dead plant
-				if( collided_tile->is_plant_dead() ) {
-					Sound::play( *harvest_sound, 0.0f, 2.0f );
-					collided_tile->try_remove_plant();
-				}
 			}
 
 		} else if( current_tool == watering_can ) {
 			collided_tile->moisture = 1.0f;
-		} else if( current_tool == fertilizer && fertilization_cost <= num_coins && collided_tile->is_cleared()) {
+		} else if( current_tool == fertilizer 
+				&& fertilization_cost <= num_coins 
+				&& !collided_tile->is_plant_dead()
+				&& collided_tile->plant_type && collided_tile->plant_health < 1.0f) {
 			change_num_coins( -fertilization_cost );
 			collided_tile->fertilization = fertilization_duration;
 			Sound::play( *fertilize_sound, 0.0f, 1.0f );
 		} else if( current_tool == shovel ) {
-			// Removing dead plant
+			// Remove dead plant
+			if( collided_tile->is_plant_dead() ) {
+				Sound::play( *harvest_sound, 0.0f, 2.0f );
+				collided_tile->try_remove_plant();
+			}
 
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
 				int cost = collided_tile->tile_type->get_clear_cost();
@@ -705,10 +707,6 @@ void PlantMode::update(float elapsed)
 						{
 							action_description = "Growing";
 						}
-						else
-						{
-							action_description = "Remove ";
-						}
 					}
 
 				}
@@ -719,13 +717,20 @@ void PlantMode::update(float elapsed)
 
 				}
 				else if( current_tool == fertilizer ) {
-					if( hovered_tile->is_cleared() ) action_description = "Spray -$" + std::to_string( fertilization_cost );
+					if( !hovered_tile->is_plant_dead()
+							&& hovered_tile->plant_type && hovered_tile->plant_health < 1.0f) {
+						action_description = "Spray -$" + std::to_string( fertilization_cost );
+					}
 				}
 				else if( current_tool == shovel ) {
-					if( hovered_tile->can_be_cleared( grid ) ) {
+					if( hovered_tile->can_be_cleared( grid ) ) 
+					{
 						action_description = "Dig -$" + std::to_string( hovered_tile->tile_type->get_clear_cost() );
 					}
-
+					else if( hovered_tile->is_plant_dead() )
+					{
+						action_description = "Remove";
+					}
 
 				}
 				else if( current_tool == seed ) {
@@ -776,7 +781,7 @@ void PlantMode::update(float elapsed)
 			cursor.scale = 0.2f;
 			cursor.offset = glm::vec2( 0, 0 );
 			break;
-		case seed: //TODO
+		case seed:
 			cursor.sprite = selectedPlant->get_seed_sprite();
 			cursor.scale = 0.3f;
 			cursor.offset = glm::vec2( 0, 0 );
@@ -1213,7 +1218,7 @@ void PlantMode::set_main_order(int index) {
 		req->set_text(get_req_text(*it));
 		req->set_scale(0.36f);
 		req->set_tint(text_tint);
-		req->set_max_text_width(140.0f);
+		req->set_max_text_width(160.0f);
 	}
 	UI.main_order.requirements->layout_children();
 }
@@ -1233,7 +1238,7 @@ void PlantMode::set_daily_order(int index) {
 		req->set_text(get_req_text(*it));
 		req->set_scale(0.36f);
 		req->set_tint(text_tint);
-		req->set_max_text_width(140.0f);
+		req->set_max_text_width(160.0f);
 	}
 	UI.daily_order.requirements->layout_children();
 }
