@@ -196,26 +196,14 @@ void PlantMode::reset_game()
 	{
 		num_coins = 30;
 		change_num_coins( 0 );
-		//inventory = Inventory( this );
-		inventory.change_seeds_num( test_plant, 5 );
-		inventory.change_seeds_num( friend_plant, 0 );
-		inventory.change_seeds_num( vampire_plant, 0 );
-		inventory.change_seeds_num( cactus_plant, 0 );
-		inventory.change_seeds_num( fireflower_plant, 0 );
-		inventory.change_seeds_num( corpseeater_plant, 0 );
-		inventory.change_seeds_num( spreader_source_plant, 0 );
-		inventory.change_seeds_num( spreader_child_plant, 0 );
-		inventory.change_seeds_num( teleporter_plant, 0 );
 
-		inventory.change_harvest_num( test_plant, 0 );
-		inventory.change_harvest_num( friend_plant, 0 );
-		inventory.change_harvest_num( vampire_plant, 0 );
-		inventory.change_harvest_num( cactus_plant, 0 );
-		inventory.change_harvest_num( fireflower_plant, 0 );
-		inventory.change_harvest_num( corpseeater_plant, 0 );
-		inventory.change_harvest_num( spreader_source_plant, 0 );
-		inventory.change_harvest_num( spreader_child_plant, 0 );
-		inventory.change_harvest_num( teleporter_plant, 0 );
+		for( auto p : all_plants )
+		{
+			inventory.change_seeds_num( p, -inventory.get_seeds_num( p ) );
+			inventory.change_harvest_num( p, -inventory.get_harvest_num( p ) );
+		}
+
+		inventory.change_seeds_num( test_plant, 5 );
 	}
 
 	// Reset Island
@@ -436,7 +424,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_4:
 			set_current_tool( shovel );
 			break;
-		case SDLK_R:
+		case SDLK_r:
 			if( paused ) reset_game();
 			break;
 		default:
@@ -499,101 +487,6 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-	// Lose check
-	if(current_main_order && current_daily_order )
-	{
-		std::unordered_map<PlantType const*, int> main_plant_count = std::unordered_map<PlantType const*, int>();
-		std::unordered_map<PlantType const*, int> daily_plant_count = std::unordered_map<PlantType const*, int>();
-
-		// Add in how many required plants we need to fulfill orders
-		{
-			auto it = current_main_order->get_required_plants().begin();
-			while( it != current_main_order->get_required_plants().end() )
-			{
-				main_plant_count.insert( std::make_pair( it->first, it->second ) );
-				it++;
-			}
-
-			it = current_daily_order->get_required_plants().begin();
-			while( it != current_daily_order->get_required_plants().end() )
-			{
-				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
-				it++;
-			}
-		}
-
-		// Remove all plants harvested, as seeds or on tiles to get remaining to buy amount
-		{
-			auto it = main_plant_count.begin();
-			while( it != main_plant_count.end() )
-			{
-				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
-				it++;
-			}
-
-			it = daily_plant_count.begin();
-			while( it != daily_plant_count.end() )
-			{
-				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
-				it++;
-			}
-
-			for( int32_t x = 0; x < grid.size_x; ++x )
-			{
-				for( int32_t y = 0; y < grid.size_y; ++y )
-				{
-					GroundTile& tile = grid.tiles[x][y];
-					if( tile.plant_type && !tile.is_plant_dead() )
-					{
-						auto plant_it = main_plant_count.find( tile.plant_type );
-						if( plant_it != main_plant_count.end() )
-						{
-							plant_it->second--;
-							plant_it++;
-						}
-
-						plant_it = daily_plant_count.find( tile.plant_type );
-						if( plant_it != daily_plant_count.end() )
-						{
-							plant_it->second--;
-							plant_it++;
-						}
-					}
-				}
-			}
-		}
-
-		// Calculate how much money we still need to fulfill the order
-		{
-			int total_main_order_cost = 0;
-			auto it = main_plant_count.begin();
-			while( it != main_plant_count.end() && it->first)
-			{
-				if( it->second > 0 ) total_main_order_cost += (it->first->get_cost() * it->second);
-				it++;
-			}
-
-			int total_daily_order_cost = 0;
-			it = daily_plant_count.begin();
-			while( it != daily_plant_count.end() && it->first )
-			{
-				if(it->second > 0 ) total_daily_order_cost += (it->first->get_cost() * it->second);
-				it++;
-			}
-
-			int debt = total_main_order_cost;
-			if( total_daily_order_cost <= num_coins)
-			{
-				debt -= current_daily_order->get_bonus_cash();
-			}
-
-			if( debt > num_coins && UI.lose_screen->get_hidden())
-			{
-				UI.lose_screen->show();
-			}
-		}
-
-	}
 
 	// Update Camera Position
 	{
@@ -638,6 +531,10 @@ void PlantMode::update(float elapsed)
 
 	if( !paused )
 	{
+
+		// Lose check
+		
+
 		// update timer
 		{
 			timer += elapsed;
@@ -1199,6 +1096,100 @@ void PlantMode::unlock_plant( const PlantType* plant )
 void PlantMode::change_num_coins(int change) {
 	num_coins += change;
 	UI.coins_text->set_text( std::to_string(num_coins) );
+
+	if( current_main_order && current_daily_order )
+	{
+		std::unordered_map<PlantType const*, int> main_plant_count = std::unordered_map<PlantType const*, int>();
+		std::unordered_map<PlantType const*, int> daily_plant_count = std::unordered_map<PlantType const*, int>();
+
+		// Add in how many required plants we need to fulfill orders
+		{
+			auto it = current_main_order->get_required_plants().begin();
+			while( it != current_main_order->get_required_plants().end() )
+			{
+				main_plant_count.insert( std::make_pair( it->first, it->second ) );
+				it++;
+			}
+
+			it = current_daily_order->get_required_plants().begin();
+			while( it != current_daily_order->get_required_plants().end() )
+			{
+				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
+				it++;
+			}
+		}
+
+		// Remove all plants harvested, as seeds or on tiles to get remaining to buy amount
+		{
+			auto it = main_plant_count.begin();
+			while( it != main_plant_count.end() )
+			{
+				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
+				it++;
+			}
+
+			it = daily_plant_count.begin();
+			while( it != daily_plant_count.end() )
+			{
+				it->second -= inventory.get_harvest_num( it->first ) + inventory.get_seeds_num( it->first );
+				it++;
+			}
+
+			for( int32_t x = 0; x < grid.size_x; ++x )
+			{
+				for( int32_t y = 0; y < grid.size_y; ++y )
+				{
+					GroundTile& tile = grid.tiles[x][y];
+					if( tile.plant_type && !tile.is_plant_dead() )
+					{
+						auto plant_it = main_plant_count.find( tile.plant_type );
+						if( plant_it != main_plant_count.end() )
+						{
+							plant_it->second--;
+							plant_it++;
+						}
+
+						plant_it = daily_plant_count.find( tile.plant_type );
+						if( plant_it != daily_plant_count.end() )
+						{
+							plant_it->second--;
+							plant_it++;
+						}
+					}
+				}
+			}
+		}
+
+		// Calculate how much money we still need to fulfill the order
+		{
+			int total_main_order_cost = 0;
+			auto it = main_plant_count.begin();
+			while( it != main_plant_count.end() && it->first )
+			{
+				if( it->second > 0 ) total_main_order_cost += ( it->first->get_cost() * it->second );
+				it++;
+			}
+
+			int total_daily_order_cost = 0;
+			it = daily_plant_count.begin();
+			while( it != daily_plant_count.end() && it->first )
+			{
+				if( it->second > 0 ) total_daily_order_cost += ( it->first->get_cost() * it->second );
+				it++;
+			}
+
+			int debt = total_main_order_cost;
+			if( total_daily_order_cost <= num_coins )
+			{
+				debt -= current_daily_order->get_bonus_cash();
+			}
+
+			if( debt > num_coins && UI.lose_screen->get_hidden() )
+			{
+				UI.lose_screen->show();
+			}
+		}
+	}
 }
 
 void PlantMode::set_current_tool(Tool tool) {
@@ -1209,7 +1200,7 @@ void PlantMode::set_current_tool(Tool tool) {
 void PlantMode::set_main_order(int index) {
 	current_main_order = main_orders[index];
 	UI.main_order.description->set_text( current_main_order->get_description() );
-	UI.main_order.unlock_plant->set_text( "@ " + current_main_order->get_bonus_plant()->get_name() );
+	UI.main_order.unlock_plant->set_text( "@ New Plants + $" + std::to_string(current_main_order->get_bonus_cash()));
 	UI.main_order.requirements->clear_children();
 	auto reqs = current_main_order->get_required_plants();
 	for (auto it=reqs.begin(); it!=reqs.end(); it++) {
