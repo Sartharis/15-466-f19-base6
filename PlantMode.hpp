@@ -103,6 +103,9 @@ struct PlantMode : public Mode
 	std::vector<PlantType const*> unlocked_plants;
 
 	float scroll_delay = 0.0f;
+
+	const float inactivity_reset_time = 90;
+	float current_reset_time = 0;
 	
 	Inventory inventory = Inventory(this);
 	int num_coins = 30;
