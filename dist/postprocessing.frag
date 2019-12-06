@@ -32,6 +32,14 @@ vec4 over(vec4 elem, vec4 canvas) {
   return vec4(cr, cg, cb, ca);
 }
 
+float linearizeDepth(in vec2 uv)
+{
+  float zNear = 0.01;    // TODO: Replace by the zNear of your perspective projection
+  float zFar  = 20.0; // TODO: Replace by the zFar  of your perspective projection
+  float depth = texture(TEX2, uv).x;
+  return (2.0 * zNear) / (zFar + zNear - depth * (zFar - zNear));
+}
+
 float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
 void main() {
@@ -94,8 +102,8 @@ void main() {
 		}
 
   } else if (TASK == 4) { // debug use
-    vec4 tex = texture(TEX0, TexCoords);
-    fragColor = tex;
+    float d = linearizeDepth(TexCoords);
+    fragColor = vec4(d, d, d, 1);
   } else {
     fragColor = vec4(1,1,1,1);
   }

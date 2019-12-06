@@ -47,6 +47,8 @@ WaterProgram::WaterProgram() {
   OBJECT_TO_LIGHT_mat4x3 = glGetUniformLocation(program, "OBJECT_TO_LIGHT");
   NORMAL_TO_LIGHT_mat3 = glGetUniformLocation(program, "NORMAL_TO_LIGHT");
   TIME_float = glGetUniformLocation(program, "TIME");
+	DEPTH_tex = glGetUniformLocation(program, "DEPTH");
+	CANVAS_SIZE_vec2 = glGetUniformLocation(program, "CANVAS_SIZE");
 }
 
 WaterProgram::~WaterProgram() {
