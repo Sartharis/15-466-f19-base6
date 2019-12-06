@@ -268,7 +268,6 @@ void PlantMode::on_click( int x, int y )
 	//---- first detect click on UI. If UI handled the click, return.
 	if( paused && title )
 	{
-		std::cout << "GHOAISF" << std::endl;
 		if( UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseDown ) ) return;
 	}
 	else if( paused )
@@ -505,7 +504,6 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 		if( paused && title )
 		{
-			std::cout << "AHHH" << std::endl;
 			if( UI.root_title ) UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
 			if( UI.root_title ) UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
 		}
