@@ -188,6 +188,8 @@ PlantMode::~PlantMode() {
 void PlantMode::reset_game()
 {
 	set_current_tool( default_hand );
+	UI.win_screen->hide();
+	UI.lose_screen->hide();
 
 	// Reset Inventory
 	{
@@ -311,10 +313,23 @@ void PlantMode::on_click( int x, int y )
 			collided_tile->fertilization = fertilization_duration;
 			Sound::play( *fertilize_sound, 0.0f, 1.0f );
 		} else if( current_tool == shovel ) {
-			// Remove dead plant
-			if( collided_tile->is_plant_dead() ) {
-				Sound::play( *harvest_sound, 0.0f, 2.0f );
-				collided_tile->try_remove_plant();
+			// Remove any plant
+			if( collided_tile->plant_type ) {
+				Sound::play( *dig_sound, 0.0f, 2.0f );
+
+				if( collided_tile->is_tile_harvestable() )
+				{
+					PlantType const* plant = collided_tile->plant_type;
+					if( collided_tile->try_remove_plant() ) {
+						Sound::play( *harvest_sound, 0.0f, 2.0f );
+						assert( plant );
+						inventory.change_harvest_num( plant, 1 );
+					}
+				}
+				else
+				{
+					collided_tile->try_remove_plant();
+				}
 			}
 
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
@@ -418,6 +433,7 @@ glm::vec2 PlantMode::get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size) {
 bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
 	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
+		current_reset_time = inactivity_reset_time;
 		return false;
 	}
 
@@ -445,6 +461,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			if( UI.root_title ) UI.root_title->test_event_keyboard( evt.key.keysym.sym );
 			break;
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEWHEEL )
@@ -465,6 +482,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			set_current_tool( scroll_tool_order[index] );
 			scroll_delay = 0.08f;
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEBUTTONDOWN )
@@ -477,7 +495,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		{
 			set_current_tool( default_hand );
 		}
-		return false;
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEMOTION )
@@ -501,6 +519,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
 			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	return false;
@@ -508,8 +527,11 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-
-	
+	current_reset_time -= elapsed;
+	if( current_reset_time < 0.0f )
+	{
+		reset_game();
+	}
 
 	// Update Camera Position
 	{
@@ -653,7 +675,7 @@ void PlantMode::update(float elapsed)
 					{
 						action_description = "Dig -$" + std::to_string( hovered_tile->tile_type->get_clear_cost() );
 					}
-					else if( hovered_tile->is_plant_dead() )
+					else if( hovered_tile->plant_type )
 					{
 						action_description = "Remove";
 					}
@@ -1369,7 +1391,7 @@ void PlantMode::set_current_tool_tooltip( Tool tool )
 		break;
 	case shovel:
 		tool_name = "Shovel:";
-		tool_description = "Remove grass for planting new plants";
+		tool_description = "Remove grass/plants for planting new plants";
 		break;
 	case seed:
 		tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
