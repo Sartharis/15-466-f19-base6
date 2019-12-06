@@ -38,7 +38,7 @@
 
 	#content{
 		margin: 0 auto;
-		width: 75%;
+		width: 65%;
 		position: relative;
 		top: -30px;
 	}
@@ -56,6 +56,8 @@
 
 #content-body{
 	margin: 0 16%;
+	position: relative;
+	left: 12px;
 }
 
 #availableOn{
@@ -75,6 +77,10 @@
 }
 
 #highlights>p{
+	margin: var(--space-ms) 0;
+}
+
+#instructions>p{
 	margin: var(--space-ms) 0;
 }
 
