@@ -125,6 +125,11 @@ Load< void > plant_sprites(LoadTagDefault, [](){
 	spreader_child_harvest_sprite = &main_atlas->lookup( "spreaderChild" );
 	teleporter_seed_sprite = &main_atlas->lookup( "teleporterSeed" );
 	teleporter_harvest_sprite = &main_atlas->lookup( "teleporter" );
+	waterflower_seed_sprite = &main_atlas->lookup( "waterflowerSeed" );
+	waterflower_harvest_sprite = &main_atlas->lookup( "waterflower" );
+	beaconflower_seed_sprite = &main_atlas->lookup( "beaconSeed" );
+	beaconflower_harvest_sprite = &main_atlas->lookup( "beacon" );
+
 });
 
 Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
@@ -196,10 +201,10 @@ Load< MeshBuffer > plant_meshes( LoadTagDefault, [](){
 	fireflower_plant = new PlantType( { fireflower_1_mesh, fireflower_2_mesh, fireflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
 									  Aura::fire, 5, 0, 20.0f, "Fire Flower", 
 									  "Gives off fire aura." );
-	waterflower_plant = new PlantType( { waterflower_1_mesh, waterflower_2_mesh, waterflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
+	waterflower_plant = new PlantType( { waterflower_1_mesh, waterflower_2_mesh, waterflower_3_mesh }, waterflower_seed_sprite, waterflower_harvest_sprite, 
 									  Aura::aqua, 5, 0, 20.0f, "Sieve Flower", 
 									  "Gives off aqua aura." );
-	beaconflower_plant = new PlantType( { beaconflower_1_mesh, beaconflower_2_mesh, beaconflower_3_mesh }, fireflower_seed_sprite, fireflower_harvest_sprite, 
+	beaconflower_plant = new PlantType( { beaconflower_1_mesh, beaconflower_2_mesh, beaconflower_3_mesh }, beaconflower_seed_sprite, beaconflower_harvest_sprite, 
 									  Aura::beacon, 20, 0, 40.0f, "Beacon Flower", 
 									  "Gives off whatever aura it is planted in." );								  
 	corpseeater_plant = new PlantType( { corpseeater_1_mesh, corpseeater_2_mesh, corpseeater_3_mesh }, corpseeater_seed_sprite, corpseeater_harvest_sprite, 

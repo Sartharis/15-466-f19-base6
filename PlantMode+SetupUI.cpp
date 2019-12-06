@@ -115,6 +115,7 @@ void PlantMode::setup_UI() {
 		nullptr, "You ran out of money. Pause and press R to restart.",
 		glm::vec2( 0, 0 ), // sprite pos
 		0.8f, false, false);
+	(void)lose_text;
 
 	UI.win_screen = new UIElem(
 		UI.root,
@@ -133,6 +134,7 @@ void PlantMode::setup_UI() {
 		nullptr, "You fulfilled all of the orders! Congratulations!",
 		glm::vec2( 0, 0 ), // sprite pos
 		0.8f, false, false);
+	(void)win_text;
 
 
 	//----------------- instructions  -----------------
