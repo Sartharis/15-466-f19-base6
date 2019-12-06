@@ -90,6 +90,7 @@ struct PlantMode : public Mode
 	const PlantType* selectedPlant = nullptr;
 	const PlantType* orderPlant = nullptr;
 	Scene scene;
+	Scene water;
 	Scene::Camera *camera = nullptr;
 	Scene::Drawable* selector = nullptr;
 	Scene::Drawable* sea = nullptr;
@@ -176,6 +177,8 @@ struct PlantMode : public Mode
 	GLuint firstpass_fbo = 0;
 	GLuint firstpass_color_attachments[2]; 
 	GLuint firstpass_depth_attachment = 0;
+
+	GLuint firstpass_depth_texture = 0;
 
 	GLuint aura_fbo = 0; // shares depth attachment with firstpass_fbo
 	GLuint aura_color_attachment = 0;

@@ -21,6 +21,8 @@ struct WaterProgram {
 	GLuint OBJECT_TO_LIGHT_mat4x3 = -1U;
 	GLuint NORMAL_TO_LIGHT_mat3 = -1U;
 	GLuint TIME_float = -1U;
+	GLuint DEPTH_tex = -1U;
+	GLuint CANVAS_SIZE_vec2 = -1U;
 
 };
 

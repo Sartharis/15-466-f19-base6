@@ -149,21 +149,17 @@ PlantMode::PlantMode()
 	side_dir = glm::normalize( glm::vec3( side_camera_dir.x, side_camera_dir.y, 0.0f ) );
 
 	{ // make sea
-		scene.transforms.emplace_back();
-		Scene::Transform* sea_transform = &scene.transforms.back();
+		water.transforms.emplace_back();
+		Scene::Transform* sea_transform = &water.transforms.back();
 		sea_transform->position = glm::vec3();
 		sea_transform->scale = glm::vec3( 40, 40, 1 );
-		scene.drawables.emplace_back( sea_transform );
-		sea = &scene.drawables.back();
+		water.drawables.emplace_back( sea_transform );
+		sea = &water.drawables.back();
 
 		Scene::Drawable::Pipeline sea_info = water_program_pipeline;
 		sea_info.vao = *plant_meshes_for_water_program;
 		sea_info.start = sea_mesh->start;
 		sea_info.count = sea_mesh->count;
-		GLint TIME_float_loc = water_program->TIME_float;
-		sea_info.set_uniforms = [TIME_float_loc, this](){
-			glUniform1f(TIME_float_loc, timer);
-		};
 		sea->pipeline = sea_info;
 	}
 
@@ -411,18 +407,6 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 	if( evt.type == SDL_KEYDOWN )
 	{
 		switch( evt.key.keysym.sym ){
-		case SDLK_1:
-			set_current_tool( default_hand );
-			break;
-		case SDLK_2:
-			set_current_tool( watering_can );
-			break;
-		case SDLK_3:
-			set_current_tool( fertilizer );
-			break;
-		case SDLK_4:
-			set_current_tool( shovel );
-			break;
 		case SDLK_r:
 			if( paused ) reset_game();
 			break;
@@ -532,9 +516,6 @@ void PlantMode::update(float elapsed)
 
 	if( !paused )
 	{
-
-		// Lose check
-		
 
 		// update timer
 		{
@@ -715,8 +696,8 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glViewport(0, 0, 
 		(GLsizei)( drawable_size.x / postprocessing_program->pixel_size),
 		(GLsizei)( drawable_size.y / postprocessing_program->pixel_size));
-	//glClearColor(86.0f / 255.0f, 110.0f / 255.0f, 139.0f / 255.0f, 1.0f);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//-- set up basic OpenGL state --
 	glEnable(GL_DEPTH_TEST);
@@ -724,6 +705,13 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	glDisable(GL_BLEND);
 	// draw the scene
 	scene.draw(*camera);
+	// bind depth as texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, firstpass_depth_texture);
+	// draw water with read only depth
+	glDepthMask(GL_FALSE);
+	water.draw(*camera);
+	glDepthMask(GL_TRUE);
 	// draw aura
 	glBindFramebuffer(GL_FRAMEBUFFER, aura_fbo);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -897,11 +885,21 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 				GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, firstpass_color_attachments[i], 0
 			);
 		}
-		// setup associated depth buffer
-		glGenRenderbuffers( 1, &firstpass_depth_attachment );
-		glBindRenderbuffer( GL_RENDERBUFFER, firstpass_depth_attachment );
-		glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT, (GLsizei)new_drawable_size.x, (GLsizei)new_drawable_size.y );
-		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment );
+		// setup associated depth buffer (as texture)
+		glGenTextures( 1, &firstpass_depth_texture );
+		glBindTexture( GL_TEXTURE_2D, firstpass_depth_texture );
+		glTexImage2D(
+			GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+			(GLint)( new_drawable_size.x / postprocessing_program->pixel_size ),
+			(GLint)( new_drawable_size.y / postprocessing_program->pixel_size ),
+			0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL
+		);
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, firstpass_depth_texture, 0 );
+		GL_ERRORS();
 
 		glDrawBuffers( 2, color_attachments );
 		assert( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE );
@@ -928,7 +926,8 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 		);
 		// make it share depth buffer with firstpass
 		glBindRenderbuffer( GL_RENDERBUFFER, firstpass_depth_attachment );
-		glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment );
+		// glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, firstpass_depth_attachment );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, firstpass_depth_texture, 0 );
 		glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 		// check status, unbind things
 		assert( glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE );
@@ -975,6 +974,19 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 		}
 		glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 	}
+
+	{// sea shader uniforms
+		GLint TIME_float_loc = water_program->TIME_float;
+		GLint CANVAS_SIZE_vec2_loc = water_program->CANVAS_SIZE_vec2;
+		glm::vec2 canvas_size = glm::vec2(
+			screen_size.x / postprocessing_program->pixel_size,
+			screen_size.y / postprocessing_program->pixel_size );
+		sea->pipeline.set_uniforms = [TIME_float_loc, CANVAS_SIZE_vec2_loc, canvas_size, this](){
+			glUniform1f(TIME_float_loc, timer);
+			glUniform2f(CANVAS_SIZE_vec2_loc, canvas_size.x, canvas_size.y);
+		};
+	}
+
 	if (UI.root) {
 		UI.root->set_size( screen_size );
 		UI.root->update_absolute_position();
@@ -1108,6 +1120,7 @@ void PlantMode::change_num_coins(int change) {
 
 		// Add in how many required plants we need to fulfill orders
 		{
+			/*
 			auto it = current_main_order->get_required_plants().begin();
 			while( it != current_main_order->get_required_plants().end() )
 			{
@@ -1120,6 +1133,13 @@ void PlantMode::change_num_coins(int change) {
 			{
 				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
 				it++;
+			}
+			*/
+			for (auto req : current_main_order->get_required_plants()) {
+				main_plant_count.insert(req);
+			}
+			for (auto req : current_daily_order->get_required_plants()) {
+				daily_plant_count.insert(req);
 			}
 		}
 

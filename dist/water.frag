@@ -1,6 +1,8 @@
 #version 330
 
 uniform float TIME;
+uniform sampler2D DEPTH;
+uniform vec2 CANVAS_SIZE;
 in vec2 pos;
 layout(location = 0) out vec4 outColor0;
 layout(location = 1) out vec4 outColor1;
@@ -94,17 +96,41 @@ float cnoise(vec3 P){
   return 2.2 * n_xyz;
 }
 
+float linearize(float raw_depth) {
+  float zNear = 0.01; // TODO: Replace by the zNear of your perspective projection
+  float zFar  = 18.0; // TODO: Replace by the zFar  of your perspective projection
+  return (2.0 * zNear) / (zFar + zNear - raw_depth * (zFar - zNear));
+}
+
 void main() {
 	// big wave
 	float noise_L = cnoise( vec3(pos.x / 4.0f , pos.y / 4.0f , TIME / 10.0f) );
 	vec3 dark_L = vec3( 80.0f / 255.0f, 131.0f / 255.0f, 195.0f / 255.0f );
 	vec3 light_L = vec3( 97.0f / 255.0f, 145.0f / 255.0f, 203.0f / 255.0f );
-	vec3 L = (noise_L < -0.2f || noise_L > 0.3f) ? dark_L : light_L;
-
+	vec4 L = (noise_L < -0.2f || noise_L > 0.3f) ? vec4(dark_L, 1) : vec4(light_L, 1);
+	// small wave
 	float noise_S = cnoise(  vec3(pos.x / 1.5f , pos.y / 1.5f , TIME / 5.0f) );
 	vec3 col_S = vec3( 184.0f / 255.0f, 211.0f / 255.0f, 226.0f / 255.0f );
-	vec3 S = (noise_S > 0.15f && noise_S < 0.2f) ? col_S : L;
+	vec4 S = (noise_S > 0.15f && noise_S < 0.2f) ? vec4(col_S, 1) : vec4(0,0,0,0);
 
-  outColor1 = over( vec4(S, 1), vec4(L, 1 ) );
+	vec2 texcoords = vec2( gl_FragCoord.x / CANVAS_SIZE.x, gl_FragCoord.y / CANVAS_SIZE.y );
+
+	float land_d = linearize(texture( DEPTH, texcoords ).x);
+	float sea_d = linearize(gl_FragCoord.z);
+	float diff = land_d - sea_d;
+
+	vec4 land_ca = vec4( 207.0f / 255.0f, 183.0f / 255.0f, 145.0f / 255.0f, 1.0f );
+	vec3 sea_c = L.rgb;
+	float sea_a = 1.0f;
+	if (diff < 0.05) sea_a = 0.9f;
+	if (diff < 0.04) sea_a = 0.7f;
+	if (diff < 0.03) sea_a = 0.5f;
+
+	float wave_width = (sin(TIME) + 1) * 0.002 + 0.001;
+	if (diff < wave_width) { 
+		sea_a = 1.0f;
+		sea_c = col_S;
+	}
+	outColor1 = over( S, over( vec4(sea_c, sea_a), land_ca ) );
 	outColor0 = vec4(0, 0, 0, 0);
 }
