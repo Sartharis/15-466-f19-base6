@@ -92,6 +92,7 @@ void PlantMode::setup_UI() {
 	// root
 	UI.root = new UIElem(nullptr);
 	UI.root_pause = new UIElem( nullptr );
+	UI.root_title = new UIElem( nullptr );
 
 	//--------------- win / lose ----------------------
 	UI.lose_screen = new UIElem(
@@ -190,6 +191,39 @@ void PlantMode::setup_UI() {
 		glm::vec2( 0, 0 ), // sprite pos
 		0.5f );
 	seed_use_text->set_max_text_width( 600.0f );
+
+    //---------------- title ------------------
+	UIElem* title_text = new UIElem(
+		UI.root_title,
+		glm::vec2( 0.5f, 0.5f), // anchor
+		glm::vec2( -250, -150 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "HARVEST ISLAND",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.5f );
+	(void)title_text;
+
+	// start button
+	UIElem* start = new UIElem(
+		UI.root_title,
+		glm::vec2( 0.5f, 0.5f), // anchor
+		glm::vec2( -250, 0 ), // pos
+		glm::vec2( 0, 0 ), // size
+		ui_sprites.instructions_icon, "START GAME",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.0f, true );
+		start->set_tint( text_tint );
+	    start->set_on_mouse_enter( [start, this](){
+			start->set_tint( text_highlight_tint );
+		} );
+		start->make_interactive();
+		start->set_on_mouse_leave( [start, this](){
+			start->set_tint( text_tint );
+		} );
+		start->set_on_mouse_down( [this](){
+			paused = false;
+			title = false;
+		} );
 
 	//---------------- money ------------------
 	UIElem* money_icon = new UIElem(

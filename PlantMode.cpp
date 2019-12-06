@@ -182,6 +182,7 @@ PlantMode::~PlantMode() {
 	}
 	if (UI.root) delete UI.root;
 	if( UI.root_pause ) delete UI.root_pause;
+	if (UI.root_title) delete UI.root_title;
 }
 
 void PlantMode::reset_game()
@@ -254,12 +255,21 @@ void PlantMode::reset_game()
 		set_main_order( current_main_order_idx );
 		set_daily_order( current_daily_order_idx );
 	}
+
+	// Show title
+	paused = true;
+	title = true;
 }
 
 void PlantMode::on_click( int x, int y )
 {
 	//---- first detect click on UI. If UI handled the click, return.
-	if( paused )
+	if( paused && title )
+	{
+		std::cout << "GHOAISF" << std::endl;
+		if( UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseDown ) ) return;
+	}
+	else if( paused )
 	{
 		if( UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseDown ) ) return;
 	}
@@ -415,10 +425,12 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 	{
 		switch( evt.key.keysym.sym ){
 		case SDLK_SPACE:
-			paused = !paused;
-			break;
+			if (!title) {
+				paused = !paused;
+				break;
+			}
 		case SDLK_r:
-			if( paused ) reset_game();
+			if( paused && ! title ) reset_game();
 			break;
 		case SDLK_c:
 			for( auto p : all_plants )
@@ -430,6 +442,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		default:
 			if( UI.root ) UI.root->test_event_keyboard( evt.key.keysym.sym );
 			if( UI.root_pause ) UI.root_pause->test_event_keyboard( evt.key.keysym.sym );
+			if( UI.root_title ) UI.root_title->test_event_keyboard( evt.key.keysym.sym );
 			break;
 		}
 	}
@@ -472,7 +485,13 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		int x, y;
 		SDL_GetMouseState( &x, &y );
 
-		if( paused )
+		if( paused && title )
+		{
+			std::cout << "AHHH" << std::endl;
+			if( UI.root_title ) UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
+			if( UI.root_title ) UI.root_title->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
+		}
+		else if( paused )
 		{
 			if( UI.root_pause ) UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
 			if( UI.root_pause ) UI.root_pause->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
@@ -675,6 +694,7 @@ void PlantMode::update(float elapsed)
 	else
 	{
 		if( UI.root_pause ) UI.root_pause->update( elapsed );
+		if( UI.root_title ) UI.root_title->update( elapsed );
 		selector->transform->position = glm::vec3( 0.0f, 0.0f, -1000.0f );
 		set_current_tool( default_hand );
 	}
@@ -847,7 +867,16 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			// UI elements
 			std::vector<UIElem*> elems = std::vector<UIElem*>();
-			if( paused )
+			if( paused && title )
+			{
+				UI.root_title->gather( elems );
+				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
+				// text for UI elements
+				for( int i = 0; i < elems.size(); i++ ){
+					elems[i]->draw_self( draw_sprites, draw_text );
+				}
+			}
+			else if( paused )
 			{
 				UI.root_pause->gather( elems );
 				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
@@ -1020,6 +1049,11 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 	if( UI.root_pause ) {
 		UI.root_pause->set_size( screen_size );
 		UI.root_pause->update_absolute_position();
+	}
+
+	if( UI.root_title ) {
+		UI.root_title->set_size( screen_size );
+		UI.root_title->update_absolute_position();
 	}
 }
 

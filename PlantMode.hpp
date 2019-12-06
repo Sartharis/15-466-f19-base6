@@ -57,6 +57,7 @@ struct PlantMode : public Mode
 	void reset_game();
 
 	float timer = 0.0f;
+	bool title = true;
 
 	//orders:
 	int current_daily_order_idx = 0;
@@ -134,6 +135,7 @@ struct PlantMode : public Mode
 	struct {
 		UIElem* root;
 		UIElem* root_pause;
+		UIElem* root_title;
 		UIElem* coins_text;
 		UIElem* win_screen;
 		UIElem* lose_screen;
