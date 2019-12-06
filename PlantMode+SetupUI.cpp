@@ -119,7 +119,7 @@ void PlantMode::setup_UI() {
 		glm::vec2( 0.0f, 0.0f ), // anchor
 		glm::vec2( 20, 20 ), // pos
 		glm::vec2( 40, 40 ), // size
-		ui_sprites.instructions_icon, "",
+		ui_sprites.instructions_icon, "open help",
 		glm::vec2( 0, 0 ), // sprite pos
 		0.2f,true );
 
@@ -132,7 +132,7 @@ void PlantMode::setup_UI() {
 		glm::vec2( 0.0f, 0.0f ), // anchor
 		glm::vec2( 20, 20 ), // pos
 		glm::vec2( 40, 40 ), // size
-		ui_sprites.instructions_icon, "",
+		ui_sprites.instructions_icon, "close help",
 		glm::vec2( 0, 0 ), // sprite pos
 		0.2f, true );
 
@@ -712,11 +712,11 @@ void PlantMode::setup_UI() {
 	UIElem* magicbook_prev_page = new UIElem(
 		magicbook_bg,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(58, 568), //pos
-		glm::vec2(32, 32), //size
+		glm::vec2(78, 528), //pos
+		glm::vec2(64, 64), //size
 		ui_sprites.magicbook.prev, "magic book prev page",
 		glm::vec2(2, 2),
-		0.45f, true);
+		1.0f, true);
 	magicbook_prev_page->set_on_mouse_down([this, all_choices](){
 		if (UI.magicbook_page >= 2 ) {
 			Sound::play( *magic_book_flip_sound, 0.0f, 1.0f );
@@ -729,11 +729,11 @@ void PlantMode::setup_UI() {
 	UIElem* magicbook_next_page = new UIElem(
 		magicbook_bg,
 		glm::vec2(0, 0), //anchor
-		glm::vec2(840, 568), //pos
-		glm::vec2(32, 32), //size
+		glm::vec2(820, 528), //pos
+		glm::vec2(64, 64), //size
 		ui_sprites.magicbook.next, "magic book next page",
 		glm::vec2(2, 2),
-		0.45f, true);
+		1.0f, true);
 	magicbook_next_page->set_on_mouse_down([this, all_choices](){
 		int max_pages = (int)std::ceil(all_choices->children.size() / 2.0f) - 1;
 		if (UI.magicbook_page + 2 <= max_pages) {

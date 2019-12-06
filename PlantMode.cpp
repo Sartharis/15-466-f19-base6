@@ -169,7 +169,7 @@ PlantMode::PlantMode()
 
 	{//init UI
 		setup_UI();
-		unlock_plant( test_plant );
+		
 	}
 
 	reset_game();
@@ -199,9 +199,11 @@ void PlantMode::reset_game()
 
 		for( auto p : all_plants )
 		{
+			lock_plant( p );
 			inventory.change_seeds_num( p, -inventory.get_seeds_num( p ) );
 			inventory.change_harvest_num( p, -inventory.get_harvest_num( p ) );
 		}
+		unlock_plant( test_plant );
 		inventory.change_seeds_num( test_plant, 5 );
 	}
 
@@ -427,6 +429,9 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			break;
 		case SDLK_4:
 			set_current_tool( shovel );
+			break;
+		case SDLK_SPACE:
+			paused = !paused;
 			break;
 		case SDLK_r:
 			if( paused ) reset_game();
@@ -1098,19 +1103,49 @@ UIElem* Inventory::get_harvest_item( const PlantType* plant ) {
 
 void PlantMode::unlock_plant( const PlantType* plant )
 {
-	auto it = plant_to_magicbook_entry.find( plant );
-	assert( it != plant_to_magicbook_entry.end() );
-	UIElem* entry = it->second;
-	for( UIElem* c : entry->children )
+	auto vit = std::find( unlocked_plants.begin(), unlocked_plants.end(), plant );
+	if( vit == unlocked_plants.end() )
 	{
-		if( c->get_hidden() )
+		auto it = plant_to_magicbook_entry.find( plant );
+		assert( it != plant_to_magicbook_entry.end() );
+		UIElem* entry = it->second;
+		for( UIElem* c : entry->children )
 		{
-			c->show();
+			if( c->get_hidden() )
+			{
+				c->show();
+			}
+			else
+			{
+				c->hide();
+			}
 		}
-		else
+		unlocked_plants.emplace_back( plant );
+	}
+	
+	
+}
+
+void PlantMode::lock_plant( const PlantType* plant )
+{
+	auto vit = std::find( unlocked_plants.begin(), unlocked_plants.end(), plant );
+	if( vit != unlocked_plants.end() )
+	{
+		auto it = plant_to_magicbook_entry.find( plant );
+		assert( it != plant_to_magicbook_entry.end() );
+		UIElem* entry = it->second;
+		for( UIElem* c : entry->children )
 		{
-			c->hide();
+			if( c->get_hidden() )
+			{
+				c->show();
+			}
+			else
+			{
+				c->hide();
+			}
 		}
+		unlocked_plants.erase( vit );
 	}
 }
 

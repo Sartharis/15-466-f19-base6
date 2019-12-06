@@ -97,7 +97,9 @@ struct PlantMode : public Mode
 
 	// Magicbook unlocking
 	void unlock_plant(const PlantType *plant);
+	void lock_plant( const PlantType* plant );
 	std::unordered_map<PlantType const*, UIElem*> plant_to_magicbook_entry;
+	std::vector<PlantType const*> unlocked_plants;
 
 	float scroll_delay = 0.0f;
 	
