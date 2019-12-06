@@ -286,6 +286,11 @@ void PlantMode::on_click( int x, int y )
 					}
 				}
 
+				else if( collided_tile->is_plant_dead() ) {
+					Sound::play( *harvest_sound, 0.0f, 2.0f );
+					collided_tile->try_remove_plant();
+				}
+
 			}
 
 		} else if( current_tool == watering_can ) {
@@ -426,6 +431,13 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		case SDLK_r:
 			if( paused ) reset_game();
 			break;
+		case SDLK_c:
+			for( auto p : all_plants )
+			{
+				inventory.change_seeds_num( p, 1000 );
+				inventory.change_harvest_num( p, 1000 );
+			}
+			break;
 		default:
 			if( UI.root ) UI.root->test_event_keyboard( evt.key.keysym.sym );
 			if( UI.root_pause ) UI.root_pause->test_event_keyboard( evt.key.keysym.sym );
@@ -489,6 +501,8 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 void PlantMode::update(float elapsed) 
 {
 
+	
+
 	// Update Camera Position
 	{
 		const Uint8* state = SDL_GetKeyboardState( NULL );
@@ -533,8 +547,8 @@ void PlantMode::update(float elapsed)
 	if( !paused )
 	{
 
-		// Lose check
-		
+		// Update plant timer
+		plant_time += elapsed;
 
 		// update timer
 		{
@@ -607,6 +621,10 @@ void PlantMode::update(float elapsed)
 						{
 							action_description = "Growing";
 						}
+						else
+						{
+							action_description = "Remove";
+						}
 					}
 
 				}
@@ -635,8 +653,7 @@ void PlantMode::update(float elapsed)
 				}
 				else if( current_tool == seed ) {
 					if( selectedPlant
-						&& hovered_tile->tile_type->get_can_plant()
-						&& !hovered_tile->plant_type ) {
+						&& hovered_tile->can_plant() ) {
 						action_description = "Plant";
 					}
 				}

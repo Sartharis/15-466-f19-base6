@@ -102,6 +102,7 @@ struct GroundTile
 	
 	bool is_tile_harvestable();
 	bool is_plant_dead();
+	bool can_plant();
 	
 	bool can_be_cleared(const TileGrid& grid) const;
 	bool try_clear_tile();
@@ -114,10 +115,13 @@ struct GroundTile
 	const PlantType* plant_type = nullptr;
 	Scene::Drawable* tile_drawable = nullptr;
 	Scene::Drawable* plant_drawable = nullptr;
+	glm::vec3 plant_position = glm::vec3();
 
 	// Tile data
 	int grid_x = 0;
 	int grid_y = 0;
+
+	float shake = 0.0f;
 
 	const float plant_health_restore_rate = 1.0f / 5.0f;
 	const float plant_health_fertilization_restore_rate = 1.0f / 3.0f;
@@ -160,6 +164,7 @@ struct TileGrid
 
 const int fertilization_cost = 10;
 const float fertilization_duration = 5.0f;
+extern float plant_time;
 extern const MeshBuffer* plant_mesh_buffer;
 extern Mesh const* sea_mesh;
 extern glm::vec2 plant_grid_tile_size;

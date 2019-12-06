@@ -12,6 +12,7 @@
 #include <iostream>
 #include "Sound.hpp"
 
+float plant_time = 0;
 const MeshBuffer* plant_mesh_buffer;
 glm::vec2 plant_grid_tile_size = glm::vec2( 1.0f, 1.0f );
 PlantType const* test_plant = nullptr;
@@ -290,6 +291,7 @@ TileGrid setup_grid_for_scene( Scene& scene, int plant_grid_x, int plant_grid_y 
 				scene.transforms.emplace_back();
 				Scene::Transform* tile_transform = &scene.transforms.back();
 				tile_transform->position = glm::vec3( plant_grid_tile_size.x * x, plant_grid_tile_size.y * y, 0.0f ) - tile_center_pos;
+				grid.tiles[x][y].plant_position = tile_transform->position;
 				scene.drawables.emplace_back( tile_transform );
 				Scene::Drawable* tile = &scene.drawables.back();
 				tile->pipeline = default_info;
@@ -336,6 +338,8 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 
 void GroundTile::update( float elapsed, Scene::Transform* camera_transform, const TileGrid& grid )
 {
+	shake = glm::mix( shake, 0.0f, 0.05f );
+
 	// update plant state
 	if( plant_type )
 	{
@@ -412,6 +416,7 @@ void GroundTile::update( float elapsed, Scene::Transform* camera_transform, cons
 				{
 					victims[rand() % victims.size()]->change_health (- elapsed * ( 2*plant_health_restore_rate + 0.2f ));
 					current_grow_time += grow_power + elapsed * std::sqrtf(moisture);
+					victims[rand() % victims.size()]->shake = 0.01f;
 				}
 				else
 				{
@@ -643,10 +648,17 @@ void GroundTile::update_plant_visuals()
 	if( plant_type )
 	{
 		float percent_grown = current_grow_time / plant_type->get_growth_time();
-		plant_drawable->transform->scale = glm::mix( glm::vec3( 0.5f, 0.5f, 0.2f ), glm::vec3( 1.0f, 1.0f, 1.0f ), plant_type->get_stage_percent( percent_grown ) );
+		glm::vec3 scale_time_boost = percent_grown < 1.0f ? ( std::sin( plant_time * 4.0f ) * glm::vec3( 0.02f, 0.02f, 0.02f ) ) : glm::vec3(0,0,0);
+		plant_drawable->transform->scale =  scale_time_boost + glm::mix( glm::vec3( 0.5f, 0.5f, 0.5f ), glm::vec3( 1.0f, 1.0f, 1.0f ), plant_type->get_stage_percent( percent_grown ) );
 		const Mesh* plant_mesh = is_plant_dead() ? dead_plant_mesh : plant_type->get_mesh( percent_grown );
 		plant_drawable->pipeline.start = plant_mesh->start;
 		plant_drawable->pipeline.count = plant_mesh->count;
+
+		if( shake > 0.001f )
+		{
+			plant_drawable->transform->position = plant_position + shake * ( glm::vec3( 2* ( (float)rand() / ( RAND_MAX ) ) , 2 * ( (float)rand() / ( RAND_MAX ) ) , 0 ) - glm::vec3( 1, 1, 0 ) );
+		}
+
 		// set health uniform. TODO: move this to somewhere that gets called less often
 		GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
 		plant_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
@@ -749,23 +761,28 @@ bool GroundTile::try_swap_plants(GroundTile& tile_a, GroundTile& tile_b )
 bool GroundTile::try_add_plant( const PlantType* plant_type_in )
 {
 	// If we can plant on the tile and there is no plant already there, add a plant
-	if( tile_type->get_can_plant() && !plant_type )
+	if( can_plant() )
 	{
-		plant_type = plant_type_in;
-		plant_drawable->pipeline.start = plant_type->get_mesh( 0.0f )->start;
-		plant_drawable->pipeline.count = plant_type->get_mesh( 0.0f )->count;
+		if( !plant_type || try_remove_plant() )
+		{
+			plant_type = plant_type_in;
+			plant_drawable->pipeline.start = plant_type->get_mesh( 0.0f )->start;
+			plant_drawable->pipeline.count = plant_type->get_mesh( 0.0f )->count;
 
-		current_grow_time = 0.0f;
-		plant_health = 1.0f;
-		update_plant_visuals();
-		if( plant_type->get_aura_type() == Aura::help ) {
-			help_aura = new Aura( tile_drawable->transform->position, Aura::help, 4 );
-		} else if( plant_type->get_aura_type() == Aura::suck ) {
-			suck_aura = new Aura( tile_drawable->transform->position, Aura::suck, 6 );
-		} else if ( plant_type->get_aura_type() == Aura::beacon ) {
-			beacon_aura = new Aura( tile_drawable->transform->position, Aura::beacon, 4 );
+			current_grow_time = 0.0f;
+			plant_health = 1.0f;
+			update_plant_visuals();
+			if( plant_type->get_aura_type() == Aura::help ) {
+				help_aura = new Aura( tile_drawable->transform->position, Aura::help, 4 );
+			}
+			else if( plant_type->get_aura_type() == Aura::suck ) {
+				suck_aura = new Aura( tile_drawable->transform->position, Aura::suck, 6 );
+			}
+			else if( plant_type->get_aura_type() == Aura::beacon ) {
+				beacon_aura = new Aura( tile_drawable->transform->position, Aura::beacon, 4 );
+			}
+			return true;
 		}
-		return true;
 	}
 	return false;
 }
@@ -802,6 +819,11 @@ bool GroundTile::is_tile_harvestable()
 bool GroundTile::is_plant_dead()
 {
 	return plant_type && plant_health <= 0.0f;
+}
+
+bool GroundTile::can_plant()
+{
+	return tile_type->get_can_plant() && (!plant_type || is_plant_dead());
 }
 
 bool GroundTile::can_be_cleared(const TileGrid& grid ) const
