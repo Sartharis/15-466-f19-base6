@@ -27,6 +27,7 @@ Load< Sound::Sample > order_completed_sound( LoadTagDefault, []() -> Sound::Samp
 } );
 
 struct {
+	Sprite const* banner = nullptr;
 	struct {
 		Sprite const* background = nullptr;
 		Sprite const* hand = nullptr;
@@ -64,6 +65,8 @@ struct {
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
+	// banner
+	ui_sprites.banner = &ret->lookup("banner");
 	// tools
 	ui_sprites.tools.background = &ret->lookup("toolsBackground");
 	ui_sprites.tools.hand = &ret->lookup("hand");
@@ -219,35 +222,39 @@ void PlantMode::setup_UI() {
     //---------------- title ------------------
 	UIElem* title_text = new UIElem(
 		UI.root_title,
-		glm::vec2( 0.5f, 0.5f), // anchor
-		glm::vec2( -250, -150 ), // pos
+		glm::vec2( 0.0f, 0.0), // anchor
+		glm::vec2( 0, 0 ), // pos
 		glm::vec2( 0, 0 ), // size
-		nullptr, "HARVEST ISLAND",
+		ui_sprites.banner, "HARVEST ISLAND",
 		glm::vec2( 0, 0 ), // sprite pos
-		1.5f );
+		1.0f );
 	(void)title_text;
 
 	// start button
 	UIElem* start = new UIElem(
 		UI.root_title,
 		glm::vec2( 0.5f, 0.5f), // anchor
-		glm::vec2( -250, 0 ), // pos
-		glm::vec2( 0, 0 ), // size
-		ui_sprites.instructions_icon, "START GAME",
+		glm::vec2( -150, 150 ), // pos
+		glm::vec2( 300, 100 ), // size
+		nullptr, "START GAME",
 		glm::vec2( 0, 0 ), // sprite pos
 		1.0f, true );
-		start->set_tint( text_tint );
-	    start->set_on_mouse_enter( [start, this](){
-			start->set_tint( text_highlight_tint );
-		} );
 		start->make_interactive();
-		start->set_on_mouse_leave( [start, this](){
-			start->set_tint( text_tint );
-		} );
 		start->set_on_mouse_down( [this](){
 			paused = false;
 			title = false;
 		} );
+	start->set_max_text_width( 600.0f );
+
+	UIElem* credit_text = new UIElem(
+		UI.root_title,
+		glm::vec2( 0.5f, 0.5f ), // anchor
+		glm::vec2( -300, 50 ), // pos
+		glm::vec2( 0, 0 ), // size
+		nullptr, "A game by: Rain Du, Lexi Luo, Jan Orlowski, Margot Stewart",
+		glm::vec2( 0, 0 ), // sprite pos
+		0.5f );
+	credit_text->set_max_text_width( 600.0f );
 
 	//---------------- money ------------------
 	UIElem* money_icon = new UIElem(
