@@ -423,6 +423,7 @@ glm::vec2 PlantMode::get_hover_loc(glm::vec2 cursor_loc, glm::vec2 box_size) {
 bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//ignore any keys that are the result of automatic key repeat:
 	if (evt.type == SDL_KEYDOWN && evt.key.repeat) {
+		current_reset_time = inactivity_reset_time;
 		return false;
 	}
 
@@ -447,6 +448,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			if( UI.root_pause ) UI.root_pause->test_event_keyboard( evt.key.keysym.sym );
 			break;
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEWHEEL )
@@ -467,6 +469,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			set_current_tool( scroll_tool_order[index] );
 			scroll_delay = 0.08f;
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEBUTTONDOWN )
@@ -479,7 +482,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		{
 			set_current_tool( default_hand );
 		}
-		return false;
+		current_reset_time = inactivity_reset_time;
 	}
 
 	if( evt.type == SDL_MOUSEMOTION )
@@ -497,6 +500,7 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseEnter );
 			if( UI.root ) UI.root->test_event_mouse( glm::vec2( x, y ), UIElem::mouseLeave );
 		}
+		current_reset_time = inactivity_reset_time;
 	}
 
 	return false;
@@ -504,8 +508,11 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 
 void PlantMode::update(float elapsed) 
 {
-
-	
+	current_reset_time -= elapsed;
+	if( current_reset_time < 0.0f )
+	{
+		reset_game();
+	}
 
 	// Update Camera Position
 	{

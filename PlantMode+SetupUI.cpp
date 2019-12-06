@@ -1073,7 +1073,7 @@ void PlantMode::setup_UI() {
 		}
 	});
 
-	UIElem* cancel_btn = new UIElem(
+	/*UIElem* cancel_btn = new UIElem(
 		order2_expanded,
 		glm::vec2(0, 1), //anchor
 		glm::vec2(120, -38), //pos
@@ -1094,7 +1094,7 @@ void PlantMode::setup_UI() {
 		}else{
 			std::cout << "Cannot cancel this order!" << std::endl;
 		}				
-	});
+	});*/
 
 	UI.daily_order.reward = new UIElem(
 		order2,
