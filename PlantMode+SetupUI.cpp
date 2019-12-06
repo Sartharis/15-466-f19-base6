@@ -58,6 +58,8 @@ struct {
 	Sprite const* close = nullptr;
 	Sprite const* coins = nullptr;
 	Sprite const* instructions_icon = nullptr;
+	Sprite const* win = nullptr;
+	Sprite const* lose = nullptr;
 } ui_sprites;
 
 Load< void > more_ui_sprites(LoadTagDefault, []() {
@@ -86,6 +88,8 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	ui_sprites.coins = &ret->lookup("coins");
 	ui_sprites.close = &ret->lookup("magicbookClose");
 	ui_sprites.instructions_icon = &ret->lookup("helpIcon");
+	ui_sprites.win = &ret->lookup( "youWin" );
+	ui_sprites.lose = &ret->lookup( "youLose" );
 });
 
 void PlantMode::setup_UI() {
@@ -97,20 +101,38 @@ void PlantMode::setup_UI() {
 	UI.lose_screen = new UIElem(
 		UI.root,
 		glm::vec2( 0.5f, 0.5f ), // anchor
-		glm::vec2( -500, 0 ), // pos
+		glm::vec2( -400, -200 ), // pos
+		glm::vec2( 0, 0 ), // size
+		ui_sprites.lose, "You ran out of money. Pause and press R to restart.",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.0f, false, true );
+
+	UIElem* lose_text = new UIElem(
+		UI.lose_screen,
+		glm::vec2( 0, 0 ), // anchor
+		glm::vec2( -70.0f, 400.0f ), // pos
 		glm::vec2( 0, 0 ), // size
 		nullptr, "You ran out of money. Pause and press R to restart.",
 		glm::vec2( 0, 0 ), // sprite pos
-		1.0f, false, true );
+		0.8f, false, false);
 
 	UI.win_screen = new UIElem(
 		UI.root,
 		glm::vec2( 0.5f, 0.5f ), // anchor
-		glm::vec2( -500, 0 ), // pos
+		glm::vec2( -400, -200 ), // pos
+		glm::vec2( 0, 0 ), // size
+		ui_sprites.win, "You fulfilled all of the orders! Congratulations!",
+		glm::vec2( 0, 0 ), // sprite pos
+		1.0f, false, true );
+
+	UIElem* win_text = new UIElem(
+		UI.win_screen,
+		glm::vec2( 0, 0 ), // anchor
+		glm::vec2( -20.0f, 400.0f ), // pos
 		glm::vec2( 0, 0 ), // size
 		nullptr, "You fulfilled all of the orders! Congratulations!",
 		glm::vec2( 0, 0 ), // sprite pos
-		1.0f, false, true );
+		0.8f, false, false);
 
 
 	//----------------- instructions  -----------------

@@ -187,6 +187,8 @@ PlantMode::~PlantMode() {
 void PlantMode::reset_game()
 {
 	set_current_tool( default_hand );
+	UI.win_screen->hide();
+	UI.lose_screen->hide();
 
 	// Reset Inventory
 	{
@@ -301,10 +303,23 @@ void PlantMode::on_click( int x, int y )
 			collided_tile->fertilization = fertilization_duration;
 			Sound::play( *fertilize_sound, 0.0f, 1.0f );
 		} else if( current_tool == shovel ) {
-			// Remove dead plant
-			if( collided_tile->is_plant_dead() ) {
-				Sound::play( *harvest_sound, 0.0f, 2.0f );
-				collided_tile->try_remove_plant();
+			// Remove any plant
+			if( collided_tile->plant_type ) {
+				Sound::play( *dig_sound, 0.0f, 2.0f );
+
+				if( collided_tile->is_tile_harvestable() )
+				{
+					PlantType const* plant = collided_tile->plant_type;
+					if( collided_tile->try_remove_plant() ) {
+						Sound::play( *harvest_sound, 0.0f, 2.0f );
+						assert( plant );
+						inventory.change_harvest_num( plant, 1 );
+					}
+				}
+				else
+				{
+					collided_tile->try_remove_plant();
+				}
 			}
 
 			if( collided_tile->can_be_cleared(grid) ) { // clearing the ground
@@ -634,7 +649,7 @@ void PlantMode::update(float elapsed)
 					{
 						action_description = "Dig -$" + std::to_string( hovered_tile->tile_type->get_clear_cost() );
 					}
-					else if( hovered_tile->is_plant_dead() )
+					else if( hovered_tile->plant_type )
 					{
 						action_description = "Remove";
 					}
@@ -1335,7 +1350,7 @@ void PlantMode::set_current_tool_tooltip( Tool tool )
 		break;
 	case shovel:
 		tool_name = "Shovel:";
-		tool_description = "Remove grass for planting new plants";
+		tool_description = "Remove grass/plants for planting new plants";
 		break;
 	case seed:
 		tool_name = selectedPlant->get_name() + " x" + std::to_string( inventory.get_seeds_num( selectedPlant ) ) + " :";
