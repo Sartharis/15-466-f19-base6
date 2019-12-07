@@ -24,8 +24,6 @@ struct OrderType
 	int get_bonus_cash() const { return bonus_cash; };
 	PlantType const* get_bonus_plant() const {return bonus_plant;};
 
-	void draw(glm::uvec2 const &drawable_size, Inventory& inventory ) const;
-	void draw_main_order(glm::uvec2 const &drawable_size, Inventory& inventory) const;
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(1000, 800);
 	glm::vec2 text_min = glm::vec2(0,0);

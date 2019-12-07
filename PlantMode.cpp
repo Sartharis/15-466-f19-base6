@@ -30,8 +30,6 @@ int plant_grid_y = 10;
 
 Mesh const* selector_mesh = nullptr;
 
-Sprite const* order_background_sprite = nullptr;
-
 // Sounds --------------------------------------------------------------------------------------------
 Load< Sound::Sample > background_music( LoadTagDefault, []() -> Sound::Sample const* {
 	return new Sound::Sample( data_path( "FarmTrackV1.wav" ) );
@@ -62,15 +60,6 @@ Load< Sound::Sample > fertilize_sound( LoadTagDefault, []() -> Sound::Sample con
 												 } );
 
 // Sprites -------------------------------------------------------------------------------------------
-Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
-	std::cout << "----sprites loaded:" << std::endl;
-	for( auto p : ret->sprites ) {
-		std::cout << p.first << std::endl;
-	}
-	order_background_sprite = &ret->lookup("orderBackground");
-	return ret;
-});
 
 Load< MeshBuffer > ui_meshes( LoadTagDefault, [](){
 	auto ret = new MeshBuffer( data_path( "solidarityui.pnct" ) );

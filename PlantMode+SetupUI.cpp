@@ -63,8 +63,12 @@ struct {
 	Sprite const* lose = nullptr;
 } ui_sprites;
 
-Load< void > more_ui_sprites(LoadTagDefault, []() {
+Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	SpriteAtlas const *ret = new SpriteAtlas(data_path("solidarity"));
+	std::cout << "----sprites loaded:" << std::endl;
+	for( auto p : ret->sprites ) {
+		std::cout << p.first << std::endl;
+	}
 	// banner
 	ui_sprites.banner = &ret->lookup("banner");
 	// tools
@@ -93,6 +97,8 @@ Load< void > more_ui_sprites(LoadTagDefault, []() {
 	ui_sprites.instructions_icon = &ret->lookup("helpIcon");
 	ui_sprites.win = &ret->lookup( "youWin" );
 	ui_sprites.lose = &ret->lookup( "youLose" );
+
+	return ret;
 });
 
 void PlantMode::setup_UI() {
@@ -281,7 +287,7 @@ void PlantMode::setup_UI() {
 		ui_sprites.tools.background, // sprite
 		"tools background", // text
 		glm::vec2(-270,0), // sprite pos
-		0.4f); // sprite scale
+		0.8f); // sprite scale
 
 	// default hand
 	UI.toolbar.glove = new UIElem(
@@ -435,7 +441,7 @@ void PlantMode::setup_UI() {
 		ui_sprites.storage.background,
 		"storage background",
 		glm::vec2(0, 0), // sprite anchor
-		0.5f, true);
+		0.8333f, true);
 	storage_bg->set_z_index(2);
 
 	storage_close = new UIElem(
@@ -816,7 +822,7 @@ void PlantMode::setup_UI() {
 
 		UIElem* lock = new UIElem( entry ); 
 		lock->set_sprite( ui_sprites.magicbook.lock );
-		lock->set_scale( 0.5f );
+		lock->set_scale( 0.8333f );
 		lock->set_position( glm::vec2( 0, 0 ), glm::vec2( 0, 0 ) );
 
 		// icon
