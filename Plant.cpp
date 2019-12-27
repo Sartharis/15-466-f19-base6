@@ -326,12 +326,18 @@ void GroundTile::change_tile_type( const GroundTileType* tile_type_in )
 	if( tile_type_in )
 	{
 		tile_type = tile_type_in;
+		moisture = 1.0f;
 		tile_drawable->pipeline.start = tile_type->get_mesh()->start;
 		tile_drawable->pipeline.count = tile_type->get_mesh()->count;
+		
+		GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
 		if( tile_type->get_can_plant() ) {
-			GLint PROPERTIES_vec3_loc = firstpass_program->PROPERTIES_vec3;
 			tile_drawable->pipeline.set_uniforms = [this, PROPERTIES_vec3_loc](){
 				glUniform3f(PROPERTIES_vec3_loc, 1.0f, moisture, 0.0f);
+			};
+		} else {
+			tile_drawable->pipeline.set_uniforms = [PROPERTIES_vec3_loc](){
+				glUniform3f(PROPERTIES_vec3_loc, 1.0f, 0.0f, 0.0f);
 			};
 		}
 	}
@@ -912,3 +918,29 @@ void PlantType::make_menu_items(const PlantType** selectedPlant, Tool* current_t
 		0.4f);
 }
 
+void GroundTile::remove_all_auras() {
+	if( help_aura ) {
+		delete help_aura;
+		help_aura = nullptr;
+	}
+	if( suck_aura ) {
+		delete suck_aura;
+		suck_aura = nullptr;
+	}
+	if( beacon_aura ) {
+		delete beacon_aura;
+		beacon_aura = nullptr;
+	}
+	if( fire_aura ) {
+		delete fire_aura;
+		fire_aura = nullptr;
+	}
+	if( aqua_aura ) {
+		delete aqua_aura;
+		aqua_aura = nullptr;
+	}
+	fire_aura_effect = 0.0f;
+	aqua_aura_effect = 0.0f;
+	pending_update.fire_aura_effect = 0.0f;
+	pending_update.aqua_aura_effect = 0.0f;
+}

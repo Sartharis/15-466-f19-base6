@@ -147,7 +147,8 @@ int main(int argc, char **argv) {
 					Mode::set_current( nullptr );
 					break;
 				}
-				else if( evt.type == SDL_KEYDOWN && (evt.key.keysym.sym == SDLK_p /*|| evt.key.keysym.sym == SDLK_ESCAPE*/ ) )
+				/*
+				else if( evt.type == SDL_KEYDOWN && (evt.key.keysym.sym == SDLK_p || evt.key.keysym.sym == SDLK_ESCAPE ) )
 				{
 					Mode::current->paused = !Mode::current->paused;
 					if( Mode::current->paused )
@@ -159,6 +160,7 @@ int main(int argc, char **argv) {
 						Mode::current->on_unpaused();
 					}
 				}
+				*/
 				else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_F4) {
 					// --- report draw timing key ---
 					glFinish();

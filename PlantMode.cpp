@@ -79,7 +79,7 @@ PlantMode::PlantMode()
 {
 	grid = setup_grid_for_scene( scene, plant_grid_x, plant_grid_y );
 
-	Sound::loop(*background_music, 0.0f, 1.0f);
+	// Sound::loop(*background_music, 0.0f, 1.0f);
 	Sound::loop( *land_ambience, 0.0f, 0.85f );
 
 	{
@@ -154,7 +154,6 @@ PlantMode::PlantMode()
 
 	{//init UI
 		setup_UI();
-		
 	}
 
 	reset_game();
@@ -177,8 +176,8 @@ PlantMode::~PlantMode() {
 void PlantMode::reset_game()
 {
 	set_current_tool( default_hand );
-	UI.win_screen->hide();
-	UI.lose_screen->hide();
+	UI.root->show();
+	UI.root_gameover->hide();
 
 	// Reset Inventory
 	{
@@ -234,6 +233,10 @@ void PlantMode::reset_game()
 						type = ground_tile;
 					}
 					grid.tiles[x][y].change_tile_type( type );
+
+					// init tile properties
+					grid.tiles[x][y].moisture = 1.0f;
+					grid.tiles[x][y].remove_all_auras();
 				}
 			}
 		}
@@ -250,6 +253,7 @@ void PlantMode::reset_game()
 	// Show title
 	paused = true;
 	title = true;
+	gameover = false;
 }
 
 void PlantMode::on_click( int x, int y )
@@ -425,16 +429,35 @@ bool PlantMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
 		return false;
 	}
 
+	// pause and unpause
+	if (evt.type == SDL_KEYDOWN && ( evt.key.keysym.sym == SDLK_p || evt.key.keysym.sym == SDLK_SPACE ) )
+	{
+		if (!title) {
+			paused = !paused;
+		}
+	}
+
+	// gameover reset
+	if( gameover )
+	{
+		if( evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_r ) 
+		{
+			current_reset_time = inactivity_reset_time;
+			reset_game();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// other events
 	if( evt.type == SDL_KEYDOWN )
 	{
 		switch( evt.key.keysym.sym ){
-		case SDLK_SPACE:
-			if (!title) {
-				paused = !paused;
-				break;
-			}
 		case SDLK_r:
-			if( paused && ! title ) reset_game();
+			if( paused && !title ) reset_game();
 			break;
 		case SDLK_c:
 			for( auto p : all_plants )
@@ -521,7 +544,7 @@ void PlantMode::update(float elapsed)
 	}
 
 	// Update Camera Position
-	{
+	if( !gameover ){
 		const Uint8* state = SDL_GetKeyboardState( NULL );
 
 		if( state[SDL_SCANCODE_A] )
@@ -561,7 +584,7 @@ void PlantMode::update(float elapsed)
 		sea->transform->position.z = -0.15f;
 	}
 
-	if( !paused )
+	if( !paused && !gameover )
 	{
 
 		// Update plant timer
@@ -819,7 +842,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 		postprocessing_program->pixel_size / drawable_size.x,
 		postprocessing_program->pixel_size / drawable_size.y);
 	// set uniform for filter
-	glUniform1i(postprocessing_program->FILTER_int, (int)paused);
+	glUniform1i(postprocessing_program->FILTER_int, (int)(paused || gameover));
 	// bind inputs
 	glUniform1i(postprocessing_program->TEX0_tex, 0);
 	glUniform1i(postprocessing_program->TEX1_tex, 1);
@@ -847,7 +870,7 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 	{ //draw all the text
 		DrawSprites draw( neucha_font, glm::vec2( 0.0f, 0.0f ), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 		//draw.draw_text( tool_name, glm::vec2( 20.0f, 170.0f ), 0.8f);
-		if(!paused) draw.draw_text(tool_description, glm::vec2( 20.0f, 140.0f ), 0.6f );
+		if(!paused && !gameover) draw.draw_text(tool_description, glm::vec2( 20.0f, 140.0f ), 0.6f );
 		// draw.draw_text( "Energy: " + std::to_string( num_coins ), glm::vec2( drawable_size.x - 160.0f, drawable_size.y - 20.0f ), 0.6f );
 
 		glm::mat4 world_to_clip = camera->make_projection() * camera->transform->make_world_to_local();
@@ -876,7 +899,16 @@ void PlantMode::draw(glm::uvec2 const &drawable_size) {
 			DrawSprites draw_sprites( *main_atlas, glm::vec2(0, 0), drawable_size, drawable_size, DrawSprites::AlignSloppy );
 			// UI elements
 			std::vector<UIElem*> elems = std::vector<UIElem*>();
-			if( paused && title )
+			if( gameover )
+			{
+				UI.root_gameover->gather( elems );
+				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
+				// text for UI elements
+				for( int i = 0; i < elems.size(); i++ ){
+					elems[i]->draw_self( draw_sprites, draw_text );
+				}
+			}
+			else if( paused && title )
 			{
 				UI.root_title->gather( elems );
 				std::stable_sort( elems.begin(), elems.end(), UIElem::z_index_comp_fn );
@@ -1050,7 +1082,7 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 		};
 	}
 
-	if (UI.root) {
+	if( UI.root ) {
 		UI.root->set_size( screen_size );
 		UI.root->update_absolute_position();
 	}
@@ -1063,6 +1095,11 @@ void PlantMode::on_resize( glm::uvec2 const& new_drawable_size )
 	if( UI.root_title ) {
 		UI.root_title->set_size( screen_size );
 		UI.root_title->update_absolute_position();
+	}
+
+	if ( UI.root_gameover ) {
+		UI.root_gameover->set_size( screen_size );
+		UI.root_gameover->update_absolute_position();
 	}
 }
 
@@ -1218,21 +1255,6 @@ void PlantMode::change_num_coins(int change) {
 
 		// Add in how many required plants we need to fulfill orders
 		{
-			/*
-			auto it = current_main_order->get_required_plants().begin();
-			while( it != current_main_order->get_required_plants().end() )
-			{
-				main_plant_count.insert( std::make_pair( it->first, it->second ) );
-				it++;
-			}
-
-			it = current_daily_order->get_required_plants().begin();
-			while( it != current_daily_order->get_required_plants().end() )
-			{
-				daily_plant_count.insert( std::make_pair( it->first, it->second ) );
-				it++;
-			}
-			*/
 			for (auto req : current_main_order->get_required_plants()) {
 				main_plant_count.insert(req);
 			}
@@ -1308,6 +1330,10 @@ void PlantMode::change_num_coins(int change) {
 
 			if( debt > num_coins && UI.lose_screen->get_hidden() )
 			{
+				gameover = true;
+				UI.root->hide();
+				UI.root_gameover->show();
+				UI.win_screen->hide();
 				UI.lose_screen->show();
 			}
 		}

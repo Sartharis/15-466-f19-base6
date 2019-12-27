@@ -58,6 +58,7 @@ struct PlantMode : public Mode
 
 	float timer = 0.0f;
 	bool title = true;
+	bool gameover = false;
 
 	//orders:
 	int current_daily_order_idx = 0;
@@ -139,6 +140,7 @@ struct PlantMode : public Mode
 		UIElem* root;
 		UIElem* root_pause;
 		UIElem* root_title;
+		UIElem* root_gameover;
 		UIElem* coins_text;
 		UIElem* win_screen;
 		UIElem* lose_screen;

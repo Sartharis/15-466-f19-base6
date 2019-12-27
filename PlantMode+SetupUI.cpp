@@ -103,34 +103,45 @@ Load< SpriteAtlas > main_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 
 void PlantMode::setup_UI() {
 	// root
-	UI.root = new UIElem(nullptr);
+	UI.root = new UIElem( nullptr );
 	UI.root_pause = new UIElem( nullptr );
 	UI.root_title = new UIElem( nullptr );
+	UI.root_gameover = new UIElem( nullptr );
 
 	//--------------- win / lose ----------------------
-	UI.lose_screen = new UIElem(
-		UI.root,
-		glm::vec2( 0.5f, 0.5f ), // anchor
-		glm::vec2( -400, -200 ), // pos
+	
+	new UIElem(
+		UI.root_gameover,
+		glm::vec2( 0.5f, 0.75f ), // anchor
+		glm::vec2( -150, 0 ), // pos
 		glm::vec2( 0, 0 ), // size
-		ui_sprites.lose, "You ran out of money. Pause and press R to restart.",
+		nullptr, "Press R to restart",
+		glm::vec2( 0, 0 ), // sprite pos,
+		0.8f, false, false);
+
+	UI.lose_screen = new UIElem(
+		UI.root_gameover,
+		glm::vec2( 0.5f, 0.4f ), // anchor
+		glm::vec2( -400, -189 ), // pos
+		glm::vec2( 0, 0 ), // size
+		ui_sprites.lose, "You ran out of money.",
 		glm::vec2( 0, 0 ), // sprite pos
 		1.0f, false, true );
 
 	UIElem* lose_text = new UIElem(
 		UI.lose_screen,
 		glm::vec2( 0, 0 ), // anchor
-		glm::vec2( -70.0f, 400.0f ), // pos
+		glm::vec2( 0.0f, 400.0f ), // pos
 		glm::vec2( 0, 0 ), // size
-		nullptr, "You ran out of money. Pause and press R to restart.",
-		glm::vec2( 0, 0 ), // sprite pos
+		nullptr, "You ran out of money.",
+		glm::vec2( 220, 0 ), // sprite pos
 		0.8f, false, false);
 	(void)lose_text;
 
 	UI.win_screen = new UIElem(
-		UI.root,
-		glm::vec2( 0.5f, 0.5f ), // anchor
-		glm::vec2( -400, -200 ), // pos
+		UI.root_gameover,
+		glm::vec2( 0.5f, 0.4f ), // anchor
+		glm::vec2( -400, -201 ), // pos
 		glm::vec2( 0, 0 ), // size
 		ui_sprites.win, "You fulfilled all of the orders! Congratulations!",
 		glm::vec2( 0, 0 ), // sprite pos
@@ -139,7 +150,7 @@ void PlantMode::setup_UI() {
 	UIElem* win_text = new UIElem(
 		UI.win_screen,
 		glm::vec2( 0, 0 ), // anchor
-		glm::vec2( -20.0f, 400.0f ), // pos
+		glm::vec2( 50.0f, 400.0f ), // pos
 		glm::vec2( 0, 0 ), // size
 		nullptr, "You fulfilled all of the orders! Congratulations!",
 		glm::vec2( 0, 0 ), // sprite pos
@@ -228,12 +239,12 @@ void PlantMode::setup_UI() {
     //---------------- title ------------------
 	UIElem* title_text = new UIElem(
 		UI.root_title,
-		glm::vec2( 0.0f, 0.0), // anchor
-		glm::vec2( 0, 0 ), // pos
+		glm::vec2( 0.5f, 0.36f ), // anchor
+		glm::vec2( -450.0f, -152.3f ), // pos
 		glm::vec2( 0, 0 ), // size
 		ui_sprites.banner, "HARVEST ISLAND",
 		glm::vec2( 0, 0 ), // sprite pos
-		1.0f );
+		0.75f );
 	(void)title_text;
 
 	// start button
@@ -241,7 +252,7 @@ void PlantMode::setup_UI() {
 		UI.root_title,
 		glm::vec2( 0.5f, 0.5f), // anchor
 		glm::vec2( -150, 150 ), // pos
-		glm::vec2( 300, 100 ), // size
+		glm::vec2( 256, 60 ), // size
 		nullptr, "START GAME",
 		glm::vec2( 0, 0 ), // sprite pos
 		1.0f, true );
@@ -254,8 +265,8 @@ void PlantMode::setup_UI() {
 
 	UIElem* credit_text = new UIElem(
 		UI.root_title,
-		glm::vec2( 0.5f, 0.5f ), // anchor
-		glm::vec2( -300, 50 ), // pos
+		glm::vec2( 0.5f, 0.6f ), // anchor
+		glm::vec2( -300, 0 ), // pos
 		glm::vec2( 0, 0 ), // size
 		nullptr, "A game by: Rain Du, Lexi Luo, Jan Orlowski, Margot Stewart",
 		glm::vec2( 0, 0 ), // sprite pos
@@ -970,7 +981,6 @@ void PlantMode::setup_UI() {
 	complete_btn->set_on_mouse_enter([this, complete_btn](){ complete_btn->set_tint(text_highlight_tint); });
 	complete_btn->set_on_mouse_leave([this, complete_btn](){ complete_btn->set_tint(text_tint); });
 	complete_btn->set_on_mouse_down([this](){
-		// std::cout << "Submit Main Order Button Click!" << std::endl;
 		std::map< PlantType const*, int > require_plants = current_main_order->get_required_plants();
 		bool orderFinished = true;
 		std::map<PlantType const*, int>::iterator iter = require_plants.begin();
@@ -999,8 +1009,12 @@ void PlantMode::setup_UI() {
 			change_num_coins( current_main_order->get_bonus_cash() );
 			current_main_order_idx += 1;
 			if( current_main_order_idx >= main_orders.size() ){
-				current_main_order_idx =  (int)main_orders.size()-1;
+				current_main_order_idx = (int)main_orders.size()-1;
+				gameover = true;
+				UI.root->hide();
+				UI.root_gameover->show();
 				UI.win_screen->show();
+				UI.lose_screen->hide();
 			}
 			else
 			{
@@ -1082,7 +1096,7 @@ void PlantMode::setup_UI() {
 	complete_btn = new UIElem(
 		order2_expanded,
 		glm::vec2(0, 1), //anchor
-		glm::vec2(24, -38), //pos
+		glm::vec2(68, -38), //pos // if cancel btn enabled, set x to 24
 		glm::vec2(82, 22), //size
 		nullptr, "COMPLETE",
 		glm::vec2(0, 0), 0.4f, true);

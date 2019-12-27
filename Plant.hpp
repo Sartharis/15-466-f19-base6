@@ -99,6 +99,7 @@ struct GroundTile
 	static bool try_swap_plants(GroundTile& tile_a, GroundTile& tile_b );
 	bool try_add_plant( const PlantType* plant_type_in );
 	bool try_remove_plant();
+	void remove_all_auras();
 	
 	bool is_tile_harvestable();
 	bool is_plant_dead();
